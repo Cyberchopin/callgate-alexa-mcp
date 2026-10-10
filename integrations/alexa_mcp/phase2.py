@@ -50,8 +50,7 @@ def build_app(replay_db: Path, approval_base_url: str, contact_token: str, *,
               contact_origin="contact-device"):
     replay_db.parent.mkdir(parents=True, exist_ok=True)
     issuer, reviewer = Ed25519PrivateKey.generate(), Ed25519PrivateKey.generate()
-    gateway = CapabilityGateway(replay_db, {"local-demo": issuer.public_key()}, clock=clock,
-                                subject=subject)
+    gateway = CapabilityGateway(replay_db, {"local-demo": issuer.public_key()}, clock=clock)
     contacts = ContactDirectory([SavedContact(identity="saved-family", reviewer="family",
                                                credential_origin=contact_origin)])
     coordinator = ConfirmationCoordinator("local-demo", issuer,

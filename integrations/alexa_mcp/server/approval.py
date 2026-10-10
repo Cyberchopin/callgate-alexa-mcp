@@ -40,7 +40,7 @@ class ApprovalFlow:
         self.approved: dict[str, Any] = {}
 
     def _key(self, arguments):
-        return f"{self.subject}:{operation_resource('send_money', arguments, self.subject)}"
+        return f"{self.subject}:{operation_resource('send_money', arguments)}"
 
     async def authorize(self, arguments, *, session_id, claimed_identity, mcp_session):
         key = self._key(arguments)
@@ -48,9 +48,8 @@ class ApprovalFlow:
         if credential is not None:
             return self.gateway.authorize("send_money", arguments, session_id=session_id,
                                           proof=credential.model_dump())
-        confirmation = self.coordinator.create_v2(session_id=session_id,
-            operation_type="send_money", parameters=arguments, subject=self.subject,
-            claimed_identity=claimed_identity)
+        confirmation = self.coordinator.create(session_id=session_id,
+            resource=operation_resource("send_money", arguments), claimed_identity=claimed_identity)
         elicitation_id = secrets.token_hex(16)
         self.pending[elicitation_id] = PendingApproval(
             confirmation, dict(arguments), session_id, mcp_session)

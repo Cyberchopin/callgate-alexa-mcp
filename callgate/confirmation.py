@@ -8,17 +8,11 @@ import json
 import secrets
 import threading
 import time
-from typing import Annotated, Literal
+from typing import Literal
 from pydantic import Field
 from cryptography.exceptions import InvalidSignature
 from .models import StrictModel
-from .commitment import commitment_hash, parameters_hash
-from .verification import (
-    VerificationClaim,
-    VerificationClaimV2,
-    issue_for_demo,
-    issue_for_demo_v2_hash,
-)
+from .verification import VerificationClaim, issue_for_demo
 
 
 class ConfirmationRequest(StrictModel):
@@ -33,25 +27,8 @@ class ConfirmationRequest(StrictModel):
     expires_at: int
 
 
-class ConfirmationRequestV2(StrictModel):
-    version: Literal["callgate-confirmation-v2"] = "callgate-confirmation-v2"
-    request_id: str
-    reviewer: str
-    claimed_identity: str | None = Field(default=None, min_length=1, max_length=80)
-    session_id: str
-    resource: str = Field(pattern=r"^[a-f0-9]{64}$")
-    action: Literal["simulate_protected_action"] = "simulate_protected_action"
-    operation_type: str = Field(min_length=1, max_length=80)
-    substantive_parameters_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
-    subject: str = Field(min_length=1, max_length=160)
-    commitment_version: Literal[2] = 2
-    issued_at: int
-    expires_at: int
-
-
 class ReviewerDecision(StrictModel):
-    request: Annotated[ConfirmationRequest | ConfirmationRequestV2,
-                       Field(discriminator="version")]
+    request: ConfirmationRequest
     approved: bool
     signature: str = Field(pattern=r"^[a-f0-9]{128}$")
 
@@ -79,7 +56,8 @@ class ConfirmationCoordinator:
     def contact_identities(self):
         return [] if self._contacts is None else self._contacts.identities()
 
-    def _reviewer(self, reviewer, claimed_identity):
+    def create(self, *, session_id, resource, reviewer=None, claimed_identity=None):
+        """Trusted orchestration selects reviewer; caller speech cannot enroll keys."""
         if self._contacts is not None:
             selected = self._contacts.resolve(claimed_identity, self._initiator_origin)
             if reviewer is not None and reviewer != selected:
@@ -89,19 +67,6 @@ class ConfirmationCoordinator:
             raise ValueError('saved contact enrollment required')
         if reviewer not in self._reviewers:
             raise ValueError("unknown reviewer")
-        return reviewer
-
-    def _store(self, request, now):
-        with self._lock:
-            self._pending = {k:v for k,v in self._pending.items() if v.expires_at > now}
-            if len(self._pending) >= 1000:
-                raise ValueError("confirmation capacity reached")
-            self._pending[request.request_id] = request
-        return request
-
-    def create(self, *, session_id, resource, reviewer=None, claimed_identity=None):
-        """Trusted orchestration selects reviewer; caller speech cannot enroll keys."""
-        reviewer = self._reviewer(reviewer, claimed_identity)
         now = int(self._clock())
         # Reuse the credential schema's bounded scope validation before storing.
         VerificationClaim(issuer=self._issuer, session_id=session_id, resource=resource,
@@ -109,24 +74,12 @@ class ConfirmationCoordinator:
         request = ConfirmationRequest(request_id=secrets.token_hex(32), reviewer=reviewer,
             session_id=session_id, resource=resource, claimed_identity=claimed_identity,
             issued_at=now, expires_at=now+120)
-        return self._store(request, now)
-
-    def create_v2(self, *, session_id, operation_type, parameters, subject,
-                  reviewer=None, claimed_identity=None):
-        reviewer = self._reviewer(reviewer, claimed_identity)
-        now = int(self._clock())
-        resource = commitment_hash(operation_type=operation_type, parameters=parameters,
-                                   subject=subject)
-        parameter_digest = parameters_hash(parameters)
-        VerificationClaimV2(issuer=self._issuer, session_id=session_id, resource=resource,
-            operation_type=operation_type, substantive_parameters_hash=parameter_digest,
-            subject=subject, issued_at=now, expires_at=now+120,
-            nonce=secrets.token_hex(32))
-        request = ConfirmationRequestV2(request_id=secrets.token_hex(32), reviewer=reviewer,
-            session_id=session_id, resource=resource, claimed_identity=claimed_identity,
-            operation_type=operation_type, substantive_parameters_hash=parameter_digest,
-            subject=subject, issued_at=now, expires_at=now+120)
-        return self._store(request, now)
+        with self._lock:
+            self._pending = {k:v for k,v in self._pending.items() if v.expires_at > now}
+            if len(self._pending) >= 1000:
+                raise ValueError("confirmation capacity reached")
+            self._pending[request.request_id] = request
+        return request
 
     def expired(self, request):
         """Trusted clock query; never accept a client-provided current time."""
@@ -149,14 +102,8 @@ class ConfirmationCoordinator:
             if not decision.approved:
                 del self._pending[request.request_id]
                 return None
-            if isinstance(request, ConfirmationRequestV2):
-                credential = issue_for_demo_v2_hash(self._signing_key, issuer=self._issuer,
-                    session_id=request.session_id, operation_type=request.operation_type,
-                    substantive_parameters_hash=request.substantive_parameters_hash,
-                    subject=request.subject, resource=request.resource, now=now)
-            else:
-                credential = issue_for_demo(self._signing_key, issuer=self._issuer,
-                    session_id=request.session_id, resource=request.resource, now=now)
+            credential = issue_for_demo(self._signing_key, issuer=self._issuer,
+                session_id=request.session_id, resource=request.resource, now=now)
             del self._pending[request.request_id]
             return credential
 

@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from mcp.client.session import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
-from callgate.verification import issue_for_demo, issue_for_demo_v2
+from callgate.verification import issue_for_demo
 from integrations.alexa_mcp.server import CapabilityGateway, create_server, operation_resource
 
 
@@ -62,9 +62,8 @@ def test_real_client_connects_lists_tools_and_rejects_missing_proof(tmp_path):
 def test_canary_is_blocked_even_with_valid_proof(tmp_path):
     key = Ed25519PrivateKey.generate()
     arguments = {"recipient": "simulated-recipient"}
-    proof = issue_for_demo_v2(key, issuer="issuer", session_id="session-a",
-        operation_type="share_verification_code", parameters=arguments,
-        subject="simulated-household", now=1000)
+    proof = issue_for_demo(key, issuer="issuer", session_id="session-a",
+        resource=operation_resource("share_verification_code", arguments), now=1000)
     gateway = CapabilityGateway(tmp_path / "replay.sqlite3",
                                 {"issuer": key.public_key()}, clock=lambda: 1001)
     with running_server(gateway) as url:
@@ -77,9 +76,8 @@ def test_canary_is_blocked_even_with_valid_proof(tmp_path):
 def test_sqlite_replay_rejected_after_server_restart(tmp_path):
     key = Ed25519PrivateKey.generate()
     arguments = {"destination": "simulated-wallet", "amount_cents": 5000}
-    proof = issue_for_demo_v2(key, issuer="issuer", session_id="session-a",
-        operation_type="send_money", parameters=arguments,
-        subject="simulated-household", now=1000)
+    proof = issue_for_demo(key, issuer="issuer", session_id="session-a",
+        resource=operation_resource("send_money", arguments), now=1000)
     database = tmp_path / "replay.sqlite3"
     payload = {**arguments, "session_id": "session-a", "proof": proof.model_dump()}
 
@@ -93,17 +91,3 @@ def test_sqlite_replay_rejected_after_server_restart(tmp_path):
         _, _, replay = anyio.run(mcp_call, url, "send_money", payload)
     assert replay.is_error is True
     assert "already consumed" in str(replay.content)
-
-
-def test_mcp_gateway_rejects_valid_v1_proof_downgrade(tmp_path):
-    key = Ed25519PrivateKey.generate()
-    arguments = {"destination": "simulated-wallet", "amount_cents": 5000}
-    proof = issue_for_demo(key, issuer="issuer", session_id="session-a",
-        resource=operation_resource("send_money", arguments), now=1000)
-    gateway = CapabilityGateway(tmp_path / "replay.sqlite3",
-                                {"issuer": key.public_key()}, clock=lambda: 1001)
-    with running_server(gateway) as url:
-        _, _, result = anyio.run(mcp_call, url, "send_money", {
-            **arguments, "session_id": "session-a", "proof": proof.model_dump()})
-    assert result.is_error is True
-    assert "commitment v2 required" in str(result.content)
