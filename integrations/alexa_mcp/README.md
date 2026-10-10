@@ -54,3 +54,17 @@ server keeps the resulting v1 proof out of the MCP/LLM context and consumes it o
 the exact retry. `subject` is server configuration and is not derived from the MCP
 session. This is a thin compatibility boundary pending owner approval of
 commitment v2; it is not production identity or payment authorization.
+
+## Simulated merchant and injection experiment
+
+`python -m integrations.alexa_mcp.merchant` starts an independent Streamable HTTP
+merchant MCP server with `search_products`, `get_product`, `add_to_cart`, and
+`view_cart`. `python -m scripts.run_amazon_services` launches both local services.
+For a network-free deterministic comparison, run
+`python -m scripts.run_merchant_injection_demo`.
+
+The vulnerable demo agent is an intentionally unsafe scripted test double. It is
+not a real assistant, uses no LLM, and never participates in authorization. The
+offline command prints raw attempted and executed counts for both modes. Do not
+quote those counts until the command completes in the final environment. They are
+fixture counts, not a security rate or human-study result.

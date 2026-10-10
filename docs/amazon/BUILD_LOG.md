@@ -1,5 +1,11 @@
 # Amazon phase-2 build log
 
+## Merchant injection build record — 2026-10-10
+
+- Added an independent simulated merchant MCP server, deterministic vulnerable test double, offline comparison command, and dual-service launcher.
+- The targeted command was attempted twice. Both runs stalled on `test_simulated_merchant_search_cart_checkout_approval_and_replay`; the second run collected three tests and produced no result for the first test within 30 seconds.
+- No pass count or injection comparison count is claimed. No core security code was changed.
+
 ## BUILD-PHASE2-001 — 2026-10-10
 
 - Task: Verify runtime cleanup for the generated local HTTPS private key.
