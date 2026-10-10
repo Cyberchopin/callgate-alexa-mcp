@@ -9,12 +9,14 @@ new file mode 100644
 --- /dev/null
 +++ b/callgate/commitment.py
 @@
-+import hashlib, json
++import hashlib, json, unicodedata
 +from decimal import Decimal
 +
 +def _normalize(value):
-+    if value is None or isinstance(value, (str, bool)):
++    if value is None or isinstance(value, bool):
 +        return value
++    if isinstance(value, str):
++        return unicodedata.normalize("NFC", value)
 +    if isinstance(value, (int, float, Decimal)):
 +        number = Decimal(str(value))
 +        if not number.is_finite():
@@ -24,8 +26,17 @@ new file mode 100644
 +    if isinstance(value, list):
 +        return [_normalize(item) for item in value]
 +    if isinstance(value, dict) and all(isinstance(key, str) for key in value):
-+        return {key: _normalize(value[key]) for key in sorted(value)}
++        normalized = {}
++        for key, item in value.items():
++            key = unicodedata.normalize("NFC", key)
++            if key in normalized:
++                raise ValueError("duplicate normalized JSON key")
++            normalized[key] = _normalize(item)
++        return {key: normalized[key] for key in sorted(normalized)}
 +    raise ValueError("JSON-compatible substantive parameters required")
++
++# The MCP boundary must reject duplicate keys while parsing raw tool arguments;
++# a dict has already lost the information needed to distinguish them.
 +
 +def parameters_hash(parameters):
 +    raw = json.dumps(_normalize(parameters), sort_keys=True, separators=(",", ":"),
@@ -58,6 +69,8 @@ diff --git a/callgate/verification.py b/callgate/verification.py
 +    issued_at: int
 +    expires_at: int
 +    nonce: str
++    # All fields above are serialized by the unchanged signing_bytes function
++    # before the existing Ed25519 signature is created.
 +
  class SignedVerification(StrictModel):
 -    claim: VerificationClaim
@@ -76,7 +89,9 @@ diff --git a/callgate/verification.py b/callgate/verification.py
 @@
 +        # For VerificationClaimV2, recompute both hashes and compare all four
 +        # v2 fields plus session_id/resource before the unchanged policy and
-+        # replay checks. For v1, reject v2 arguments and retain old behavior.
++        # replay checks. Preserve the old v1 path for legacy core callers.
++        # A required_commitment_version=2 call must reject v1 before policy or
++        # replay checks; every protected MCP route passes that requirement.
 diff --git a/callgate/confirmation.py b/callgate/confirmation.py
 --- a/callgate/confirmation.py
 +++ b/callgate/confirmation.py
@@ -106,7 +121,10 @@ new file mode 100644
 +def test_changed_cart_invalidates_proof(): ...
 +def test_different_subject_invalidates_proof(): ...
 +def test_numeric_and_key_order_normalization(): ...
++def test_unicode_nfc_equivalence_and_key_collision_rejection(): ...
++def test_duplicate_raw_json_keys_rejected_before_commitment(): ...
 +def test_legacy_commitment_still_verifies(): ...
++def test_mcp_rejects_valid_v1_commitment_downgrade(): ...
 ```
 
 The ellipses mark review-required implementation points; this file is a design diff,
