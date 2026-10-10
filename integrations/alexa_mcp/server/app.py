@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
 
 from callgate.replay_store import SQLiteReplayStore
@@ -56,16 +57,23 @@ class CapabilityGateway:
             raise PolicyBlocked(f"403 BLOCKED: {error}") from None
 
 
-def create_server(gateway: CapabilityGateway) -> MCPServer:
+def create_server(gateway: CapabilityGateway, approval_flow=None) -> MCPServer:
     server = MCPServer(name="callgate-simulated-voice-assistant", version="0.1.0",
         instructions="Simulated protected actions only; no real payment or Alexa+ connection.")
 
     @server.tool(description="Simulate sending money after CallGate authorization.")
-    def send_money(destination: str, amount_cents: int, session_id: str,
-                   proof: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def send_money(destination: str, amount_cents: int, session_id: str,
+                         ctx: Context, claimed_identity: str | None = None,
+                         proof: dict[str, Any] | None = None) -> dict[str, Any]:
         arguments = {"destination": destination, "amount_cents": amount_cents}
-        authorization = gateway.authorize("send_money", arguments,
-                                          session_id=session_id, proof=proof)
+        if claimed_identity is not None:
+            arguments["claimed_identity"] = claimed_identity
+        if approval_flow is not None and proof is None:
+            authorization = await approval_flow.authorize(arguments, session_id=session_id,
+                claimed_identity=claimed_identity, mcp_session=ctx.session)
+        else:
+            authorization = gateway.authorize("send_money", arguments,
+                                              session_id=session_id, proof=proof)
         return {**authorization, "tool": "send_money", "simulated": True}
 
     @server.tool(description="Simulate placing an order after CallGate authorization.")
