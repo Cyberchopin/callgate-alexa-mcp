@@ -4,6 +4,7 @@ import argparse
 import datetime
 import ipaddress
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import uvicorn
 from cryptography import x509
@@ -38,6 +39,12 @@ def ensure_development_certificate(directory: Path):
     return certificate, private_key
 
 
+def temporary_development_certificate(parent=Path(".test-tmp")):
+    """Keep the demo private key in an ignored runtime directory and remove it on exit."""
+    parent.mkdir(parents=True, exist_ok=True)
+    return TemporaryDirectory(prefix="callgate-mcp-certificate-", dir=parent)
+
+
 def build_app(replay_db: Path, approval_base_url: str, contact_token: str, *,
               subject="simulated-household", clock=None, initiator_origin="participant-device",
               contact_origin="contact-device"):
@@ -65,11 +72,12 @@ def main():
                         help="local simulated contact credential; never put it in the URL")
     parser.add_argument("--subject", default="simulated-household")
     args = parser.parse_args()
-    certificate, private_key = ensure_development_certificate(args.replay_db.parent)
     base_url = f"https://{args.host}:{args.port}"
     app, _ = build_app(args.replay_db, base_url, args.contact_token, subject=args.subject)
-    uvicorn.run(app, host=args.host, port=args.port, ssl_certfile=str(certificate),
-                ssl_keyfile=str(private_key))
+    with temporary_development_certificate() as directory:
+        certificate, private_key = ensure_development_certificate(Path(directory))
+        uvicorn.run(app, host=args.host, port=args.port, ssl_certfile=str(certificate),
+                    ssl_keyfile=str(private_key))
 
 
 if __name__ == "__main__":

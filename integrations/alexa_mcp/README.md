@@ -39,7 +39,9 @@ py -3.12 -m integrations.alexa_mcp.phase2 --replay-db .local/phase2.sqlite3 --co
 ```
 
 It serves MCP and the independent simulated-contact review page over local HTTPS
-with a generated, short-lived self-signed certificate. The MCP endpoint is
+with a generated, short-lived self-signed certificate. The certificate and private
+key are created below the Git-ignored `.test-tmp/` runtime directory and removed
+when the server exits, so an interrupted demo still cannot add them to Git. The MCP endpoint is
 `https://127.0.0.1:8443/mcp`. The approval URL contains only a random elicitation
 ID; the simulated contact credential is sent separately in the
 `X-CallGate-Contact-Token` header. The page displays the full amount, destination,

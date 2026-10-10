@@ -2,6 +2,7 @@ import socket
 import threading
 import time
 from contextlib import contextmanager
+from pathlib import Path
 
 import anyio
 import httpx2
@@ -12,11 +13,24 @@ from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.exceptions import MCPError, UrlElicitationRequiredError
 from mcp.types import ElicitResult
 
-from integrations.alexa_mcp.phase2 import build_app, ensure_development_certificate
+from integrations.alexa_mcp.phase2 import (
+    build_app,
+    ensure_development_certificate,
+    temporary_development_certificate,
+)
 
 
 async def accept_elicitation(context, params):
     return ElicitResult(action="accept")
+
+
+def test_development_private_key_is_removed_after_context(tmp_path):
+    with temporary_development_certificate(tmp_path) as directory:
+        root = Path(directory)
+        certificate, private_key = ensure_development_certificate(root)
+        assert certificate.is_file()
+        assert private_key.is_file()
+    assert not root.exists()
 
 
 async def require_url(session, arguments):
