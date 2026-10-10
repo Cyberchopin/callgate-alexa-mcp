@@ -30,3 +30,16 @@ ERROR: No matching distribution found for hypothesis
 - Node command: `node --test tests/review_ui.test.cjs`.
 - Node result: **3 passed, 0 failed, 0 skipped**.
 
+## BUILD-002 — T1 temporary-clone manifest check — 2026-10-10 (America/Los_Angeles)
+
+- Attempted twice with `git clone -c core.autocrlf=false`, once with `--no-local` and once with the normal local-clone path.
+- Both attempts failed before a checkout was created, so the manifest verifier was not run and `.gitattributes` was not added.
+- Raw error from both attempts:
+
+```text
+sh.exe: *** fatal error - NtCreateDirectoryObject(\BaseNamedObjects\msys-2.0S5-1888ae32e00d56aa): 0xC0000022
+fatal: Could not read from remote repository.
+```
+
+- Per the two-failure rule, T1 stopped. No frozen evaluation file was read or modified by this task.
+
