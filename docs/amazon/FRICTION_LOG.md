@@ -50,3 +50,23 @@ mcp.shared.exceptions.MCPError: URL elicitation required
 - Workaround: Verify code `-32042`, then call `UrlElicitationRequiredError.from_error(error.error)` before reading the URL-mode fields.
 - Actionable suggestion: Have the Python client dispatcher reconstruct `UrlElicitationRequiredError` automatically when it receives `-32042`, or document the manual conversion next to the server example.
 
+### Retest record — 2026-10-10
+
+- Version check: `pip index versions mcp` reported **2.3.0** as the latest available release; the isolated reproduction also reported `mcp_version=2.3.0`.
+- Minimal reproduction: serialize the SDK's own `UrlElicitationRequiredError` to `ErrorData`, then reconstruct it through the client-facing `MCPError.from_error_data` path used for protocol errors.
+- Actual output (raw):
+
+```text
+mcp_version=2.3.0
+received_type=MCPError
+received_code=-32042
+manual_conversion_type=UrlElicitationRequiredError
+manual_conversion_count=1
+```
+
+- Result: reproduced on the latest release. The client-facing factory returns generic `MCPError`; explicit `UrlElicitationRequiredError.from_error(received.error)` remains necessary to recover the typed elicitation list.
+- Upstream search:
+  - [python-sdk #1768](https://github.com/modelcontextprotocol/python-sdk/issues/1768) is closed and related, but describes SDK 1.23.3 returning the URL-elicitation condition as a tool result rather than this exact 2.3.0 generic-exception reconstruction behavior.
+  - [python-sdk #1788](https://github.com/modelcontextprotocol/python-sdk/issues/1788) is closed and concerns server-side propagation of flow-control exceptions, not client-side specialization.
+  - No exact upstream issue for automatic `-32042` client reconstruction was found in the searched official issue results; do not file a duplicate without a broader issue search and maintainer guidance.
+

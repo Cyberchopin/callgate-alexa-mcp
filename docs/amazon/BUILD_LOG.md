@@ -23,3 +23,10 @@
 - Required response: commit `a05f675` reverted the implementation attempt because previously passing MCP tests failed.
 - Post-revert targeted result on the original Phase 2 code: **1 passed, 9 failed**, again solely MCP/Uvicorn startup timeouts. This shows the current environment is also blocking the pre-v2 server tests; it does not establish that the v2 code caused the timeout.
 - Status: BLOCKED. No v2 implementation remains applied at branch HEAD and no v2 success claim is made.
+
+## BUILD-INDEPENDENT-001 — 2026-10-10
+
+- `pytest -rs` skip inventory in the MCP venv: **3 skipped**. `test_silero_real_model_silence_and_isolation` and `test_sensor_failure_preserves_audio` require optional `onnxruntime`; `test_pipecat_actual_pipeline_and_transcript_boundary` requires optional `pipecat`. None involves MCP, HTTPS, or elicitation.
+- The attempted wider non-MCP run emitted progress but no final summary before process exit, so no total is claimed.
+- README/docs path scan found one local Windows path and username in `docs/REUSE_PLAN.md`; it was replaced with `<short-path>` guidance. The follow-up scan returned no match.
+- Latest MCP SDK check: PyPI reported `mcp==2.3.0`; FRICTION-003 reproduced through the SDK error-data reconstruction path. See the appended friction-log retest record.

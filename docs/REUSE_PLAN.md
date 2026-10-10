@@ -7,7 +7,7 @@
 1. **Silero VAD 原版模型**：复制未经修改的 16kHz ONNX 模型及 MIT 许可证，记录 SHA256 并在加载时核对。本地 CPU 推理；每个会话有独立状态。接入音频 WebSocket，输出说话活动，而不删掉静音、打断 STT 或把 VAD 当诈骗分数。
 2. **Pipecat 1.8.1 真正的 frame/pipeline API**：CallGateProcessor 放在 STT 后，利用 AssemblyAI Turn 元数据处理修订，输出 RiskDecisionFrame。真实 Pipecat 管线回放测试确认临时转录→最终转录→去重，并且原始文本不流向下游。它是可接入 Pipecat 的组件；当前麦克风页面仍用原本已验证的 AssemblyAI adapter，没有声称已整体迁移到 Pipecat transport。
 
-安装隔离环境：`python -m venv C:/短路径/cg-int`，然后用其中的 Python 安装 `requirements-integrations-lock.txt` 和 `pip install --no-deps -e .`。Windows 环境路径过长可能导致 ONNX Runtime 安装失败；本机测试环境在 `C:/Users/wangs/Documents/Codex/work/cg-int`，不会替换原来的基础环境。`CALLGATE_VAD=silero` 启用语音活动传感器；未配置时原有流程保持可用。
+安装隔离环境：`python -m venv <short-path>/cg-int`，然后用其中的 Python 安装 `requirements-integrations-lock.txt` 和 `pip install --no-deps -e .`。Windows 环境路径过长可能导致 ONNX Runtime 安装失败；建议使用仓库外的短路径隔离环境，不要替换原来的基础环境。`CALLGATE_VAD=silero` 启用语音活动传感器；未配置时原有流程保持可用。
 
 ## 每个项目的亮点、接法和边界
 
