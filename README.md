@@ -168,6 +168,12 @@ Recorded local checks: **184 Python tests and 3 Node logic tests passed**. These
 
 ## Security boundaries
 
+### Security evidence
+
+A fixed-version local evidence run used Bandit 1.9.4 over `callgate/`, `integrations/alexa_mcp/`, and `scripts/`. It reported 20 low-severity findings, one medium-severity finding, and no high-severity findings across 3,005 lines. The accepted findings and their limits are listed in [the scan record](docs/amazon/SECURITY_SCAN.md); this is not a certification.
+
+Agent Scan 0.6.8 could not start in the test environment because its Windows runtime could not import `pywintypes`. The dependency audit also did not complete. Neither is presented as a passing result. The fixed-version local reproduction command is `powershell -ExecutionPolicy Bypass -File scripts/run_security_scans.ps1`; remote MCP metadata analysis remains opt-in.
+
 ### Safety vs Coverage
 
 Authorization safety and warning coverage are different axes. The frozen pilot's recall is low: many scams receive no warning. The action gate still requires separately signed, scoped confirmation; neither transcript content nor a model's confidence grants permission. This safety claim applies only to the controlled simulator, not to a bank app or another device.

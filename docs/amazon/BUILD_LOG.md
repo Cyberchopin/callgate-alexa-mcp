@@ -1,5 +1,12 @@
 # Amazon phase-2 build log
 
+## Security evidence build record — 2026-10-10
+
+- Agent Scan 0.6.8 failed twice before inspection: `ModuleNotFoundError: No module named 'pywintypes'`. No MCP scan result is claimed.
+- pip-audit 2.10.1 first failed with `VirtualEnvError: Couldn't execute in a temporary directory` and `PermissionError: [WinError 5] Access is denied`. After relocating temporary files, two allowed query attempts returned no result before interruption. Dependency vulnerability status is unknown.
+- Bandit 1.9.4 completed: 3,005 lines scanned; 20 low, 1 medium, 0 high; 21 findings had high confidence; 0 files skipped.
+- No source finding was fixed on the evidence-only branch.
+
 ## ApprovalBench build record — 2026-10-10
 
 - First run failed because the Windows sandbox temporary directory could not open or remove the SQLite file (`sqlite3.OperationalError: unable to open database file`; `PermissionError: [WinError 5] Access is denied`).

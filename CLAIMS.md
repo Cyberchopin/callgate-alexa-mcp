@@ -318,6 +318,30 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
     "quote": "ApprovalBench compares **6 reference designs** across **6 scripted attacks** using **50 trials per cell** and fixed seed **20261010**; every count and interval is generated from `evaluation_checkout/approvalbench/results.json`.",
     "evidence": "evaluation_checkout/approvalbench/results.json",
     "check": "approvalbench_parameters"
+  },
+  {
+    "id": "readme-033",
+    "quote": "A fixed-version local evidence run used Bandit 1.9.4 over `callgate/`, `integrations/alexa_mcp/`, and `scripts/`. It reported 20 low-severity findings, one medium-severity finding, and no high-severity findings across 3,005 lines. The accepted findings and their limits are listed in [the scan record](docs/amazon/SECURITY_SCAN.md); this is not a certification.",
+    "evidence": "docs/amazon/SECURITY_SCAN.md",
+    "check": "source_literals",
+    "sources": [
+      {
+        "path": "docs/amazon/SECURITY_SCAN.md",
+        "literals": ["bandit==1.9.4", "Total lines of code: 3005", "Low: 20", "Medium: 1", "High: 0"]
+      }
+    ]
+  },
+  {
+    "id": "readme-034",
+    "quote": "Agent Scan 0.6.8 could not start in the test environment because its Windows runtime could not import `pywintypes`. The dependency audit also did not complete. Neither is presented as a passing result. The fixed-version local reproduction command is `powershell -ExecutionPolicy Bypass -File scripts/run_security_scans.ps1`; remote MCP metadata analysis remains opt-in.",
+    "evidence": "docs/amazon/SECURITY_SCAN.md",
+    "check": "source_literals",
+    "sources": [
+      {
+        "path": "docs/amazon/SECURITY_SCAN.md",
+        "literals": ["snyk-agent-scan==0.6.8", "ModuleNotFoundError: No module named 'pywintypes'", "dependency vulnerabilities is **unknown**"]
+      }
+    ]
   }
 ]
 ```
