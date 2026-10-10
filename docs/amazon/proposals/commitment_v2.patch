@@ -1,0 +1,114 @@
+Subject: [PROPOSAL ONLY] versioned operation commitment
+
+This patch is intentionally not applied. The approved implementation should make the
+following merged changes in one reviewable unit:
+
+```diff
+diff --git a/callgate/commitment.py b/callgate/commitment.py
+new file mode 100644
+--- /dev/null
++++ b/callgate/commitment.py
+@@
++import hashlib, json
++from decimal import Decimal
++
++def _normalize(value):
++    if value is None or isinstance(value, (str, bool)):
++        return value
++    if isinstance(value, (int, float, Decimal)):
++        number = Decimal(str(value))
++        if not number.is_finite():
++            raise ValueError("finite JSON number required")
++        number = Decimal(0) if number == 0 else number.normalize()
++        return {"$number": format(number, "f")}
++    if isinstance(value, list):
++        return [_normalize(item) for item in value]
++    if isinstance(value, dict) and all(isinstance(key, str) for key in value):
++        return {key: _normalize(value[key]) for key in sorted(value)}
++    raise ValueError("JSON-compatible substantive parameters required")
++
++def parameters_hash(parameters):
++    raw = json.dumps(_normalize(parameters), sort_keys=True, separators=(",", ":"),
++                     ensure_ascii=True, allow_nan=False).encode("ascii")
++    return hashlib.sha256(raw).hexdigest()
++
++def commitment_hash(*, operation_type, parameters, subject, commitment_version=2):
++    if commitment_version != 2 or not operation_type or not subject:
++        raise ValueError("invalid v2 commitment scope")
++    body = {"commitment_version": 2, "operation_type": operation_type,
++            "substantive_parameters_hash": parameters_hash(parameters),
++            "subject": subject}
++    raw = json.dumps(body, sort_keys=True, separators=(",", ":"),
++                     ensure_ascii=True).encode("ascii")
++    return hashlib.sha256(raw).hexdigest()
+diff --git a/callgate/verification.py b/callgate/verification.py
+--- a/callgate/verification.py
++++ b/callgate/verification.py
+@@
++class VerificationClaimV2(StrictModel):
++    version: Literal["callgate-verification-v2"] = "callgate-verification-v2"
++    issuer: str
++    session_id: str
++    action: Literal["simulate_protected_action"] = "simulate_protected_action"
++    resource: str
++    operation_type: str
++    substantive_parameters_hash: str
++    subject: str
++    commitment_version: Literal[2] = 2
++    issued_at: int
++    expires_at: int
++    nonce: str
++
+ class SignedVerification(StrictModel):
+-    claim: VerificationClaim
++    claim: Annotated[VerificationClaim | VerificationClaimV2,
++                     Field(discriminator="version")]
+@@
++def issue_for_demo_v2(key, *, issuer, session_id, operation_type, parameters, subject, now=None):
++    # Build VerificationClaimV2 with parameters_hash(parameters) and
++    # resource=commitment_hash(...), then sign with the existing signing_bytes.
+@@
+-    def execute(self, credential, *, session_id, resource, human_confirmed=False,
+-                policy_allows=False):
++    def execute(self, credential, *, session_id, resource, human_confirmed=False,
++                policy_allows=False, operation_type=None, parameters=None,
++                subject=None, commitment_version=None):
+@@
++        # For VerificationClaimV2, recompute both hashes and compare all four
++        # v2 fields plus session_id/resource before the unchanged policy and
++        # replay checks. For v1, reject v2 arguments and retain old behavior.
+diff --git a/callgate/confirmation.py b/callgate/confirmation.py
+--- a/callgate/confirmation.py
++++ b/callgate/confirmation.py
+@@
++class ConfirmationRequestV2(StrictModel):
++    # Same existing request fields plus operation_type,
++    # substantive_parameters_hash, subject, commitment_version=2.
+@@
+ class ReviewerDecision(StrictModel):
+-    request: ConfirmationRequest
++    request: Annotated[ConfirmationRequest | ConfirmationRequestV2,
++                       Field(discriminator="version")]
+@@
++    def create_v2(self, *, session_id, operation_type, parameters, subject,
++                  reviewer=None, claimed_identity=None):
++        # Reuse the existing contact-selection path; compute hashes server-side.
+@@
++            # Issue v2 when request is ConfirmationRequestV2; otherwise use the
++            # existing issue_for_demo path. Signature algorithm is unchanged.
+diff --git a/tests/test_commitment_v2.py b/tests/test_commitment_v2.py
+new file mode 100644
+--- /dev/null
++++ b/tests/test_commitment_v2.py
+@@
++def test_send_money_proof_cannot_authorize_place_order(): ...
++def test_changed_merchant_invalidates_proof(): ...
++def test_changed_cart_invalidates_proof(): ...
++def test_different_subject_invalidates_proof(): ...
++def test_numeric_and_key_order_normalization(): ...
++def test_legacy_commitment_still_verifies(): ...
+```
+
+The ellipses mark review-required implementation points; this file is a design diff,
+not an apply-ready patch and must not be represented as tested code.
+
