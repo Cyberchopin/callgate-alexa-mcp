@@ -312,6 +312,12 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
     "check": "nonmetric_reference",
     "reason": "Prospective evaluation folder name, no performance metric.",
     "references": []
+  },
+  {
+    "id": "readme-032",
+    "quote": "ApprovalBench compares **6 reference designs** across **6 scripted attacks** using **50 trials per cell** and fixed seed **20261010**; every count and interval is generated from `evaluation_checkout/approvalbench/results.json`.",
+    "evidence": "evaluation_checkout/approvalbench/results.json",
+    "check": "approvalbench_parameters"
   }
 ]
 ```

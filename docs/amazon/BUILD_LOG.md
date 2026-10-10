@@ -1,5 +1,15 @@
 # Amazon phase-2 build log
 
+## ApprovalBench build record — 2026-10-10
+
+- First run failed because the Windows sandbox temporary directory could not open or remove the SQLite file (`sqlite3.OperationalError: unable to open database file`; `PermissionError: [WinError 5] Access is denied`).
+- The rerun used the repository's ignored `.test-tmp/approvalbench` directory and completed.
+- Actual output: fixed seed `20261010`, `50` trials per matrix cell; D5 reported `0/50` attack success for A1 through A6.
+- OTP relay scan raw successes: `0/50`, `10/50`, `30/50`, `38/50`, `50/50` at the five requested probabilities.
+- Targeted result: `3 passed in 1.43s`.
+- Claims result: `registered=32 unresolved_or_inconsistent=0`.
+- A full-suite total is not claimed because the branch includes the merchant end-to-end test that had already stalled twice; the two-failure stop rule applies.
+
 ## Merchant injection build record — 2026-10-10
 
 - Added an independent simulated merchant MCP server, deterministic vulnerable test double, offline comparison command, and dual-service launcher.

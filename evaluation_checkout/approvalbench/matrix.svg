@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="700" viewBox="0 0 760 700">
+<rect width="100%" height="100%" fill="white"/>
+<text x="30" y="30" font-family="system-ui" font-size="20" font-weight="700">ApprovalBench simulated attack success</text>
+<text x="135" y="58" text-anchor="middle" font-family="system-ui">A1</text>
+<text x="227" y="58" text-anchor="middle" font-family="system-ui">A2</text>
+<text x="319" y="58" text-anchor="middle" font-family="system-ui">A3</text>
+<text x="411" y="58" text-anchor="middle" font-family="system-ui">A4</text>
+<text x="503" y="58" text-anchor="middle" font-family="system-ui">A5</text>
+<text x="595" y="58" text-anchor="middle" font-family="system-ui">A6</text>
+<text x="70" y="120" text-anchor="middle" font-family="system-ui">D0</text>
+<rect x="100" y="70" width="88" height="88" fill="rgb(255,128,128)"/>
+<text x="144" y="120" text-anchor="middle" font-family="system-ui">50/50</text>
+<rect x="192" y="70" width="88" height="88" fill="rgb(255,128,128)"/>
+<text x="236" y="120" text-anchor="middle" font-family="system-ui">50/50</text>
+<rect x="284" y="70" width="88" height="88" fill="rgb(255,128,128)"/>
+<text x="328" y="120" text-anchor="middle" font-family="system-ui">50/50</text>
+<rect x="376" y="70" width="88" height="88" fill="rgb(255,128,128)"/>
+<text x="420" y="120" text-anchor="middle" font-family="system-ui">50/50</text>
+<rect x="468" y="70" width="88" height="88" fill="rgb(255,128,128)"/>
+<text x="512" y="120" text-anchor="middle" font-family="system-ui">50/50</text>
+<rect x="560" y="70" width="88" height="88" fill="rgb(255,128,128)"/>
+<text x="604" y="120" text-anchor="middle" font-family="system-ui">50/50</text>
+<text x="70" y="212" text-anchor="middle" font-family="system-ui">D1</text>
+<rect x="100" y="162" width="88" height="88" fill="rgb(255,134,134)"/>
+<text x="144" y="212" text-anchor="middle" font-family="system-ui">47/50</text>
+<rect x="192" y="162" width="88" height="88" fill="rgb(255,139,139)"/>
+<text x="236" y="212" text-anchor="middle" font-family="system-ui">45/50</text>
+<rect x="284" y="162" width="88" height="88" fill="rgb(255,141,141)"/>
+<text x="328" y="212" text-anchor="middle" font-family="system-ui">44/50</text>
+<rect x="376" y="162" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="420" y="212" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="468" y="162" width="88" height="88" fill="rgb(255,147,147)"/>
+<text x="512" y="212" text-anchor="middle" font-family="system-ui">41/50</text>
+<rect x="560" y="162" width="88" height="88" fill="rgb(255,147,147)"/>
+<text x="604" y="212" text-anchor="middle" font-family="system-ui">41/50</text>
+<text x="70" y="304" text-anchor="middle" font-family="system-ui">D2</text>
+<rect x="100" y="254" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="144" y="304" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="192" y="254" width="88" height="88" fill="rgb(255,130,130)"/>
+<text x="236" y="304" text-anchor="middle" font-family="system-ui">49/50</text>
+<rect x="284" y="254" width="88" height="88" fill="rgb(255,132,132)"/>
+<text x="328" y="304" text-anchor="middle" font-family="system-ui">48/50</text>
+<rect x="376" y="254" width="88" height="88" fill="rgb(255,185,185)"/>
+<text x="420" y="304" text-anchor="middle" font-family="system-ui">24/50</text>
+<rect x="468" y="254" width="88" height="88" fill="rgb(255,145,145)"/>
+<text x="512" y="304" text-anchor="middle" font-family="system-ui">42/50</text>
+<rect x="560" y="254" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="604" y="304" text-anchor="middle" font-family="system-ui">0/50</text>
+<text x="70" y="396" text-anchor="middle" font-family="system-ui">D3</text>
+<rect x="100" y="346" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="144" y="396" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="192" y="346" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="236" y="396" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="284" y="346" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="328" y="396" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="376" y="346" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="420" y="396" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="468" y="346" width="88" height="88" fill="rgb(255,139,139)"/>
+<text x="512" y="396" text-anchor="middle" font-family="system-ui">45/50</text>
+<rect x="560" y="346" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="604" y="396" text-anchor="middle" font-family="system-ui">0/50</text>
+<text x="70" y="488" text-anchor="middle" font-family="system-ui">D4</text>
+<rect x="100" y="438" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="144" y="488" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="192" y="438" width="88" height="88" fill="rgb(255,136,136)"/>
+<text x="236" y="488" text-anchor="middle" font-family="system-ui">46/50</text>
+<rect x="284" y="438" width="88" height="88" fill="rgb(255,145,145)"/>
+<text x="328" y="488" text-anchor="middle" font-family="system-ui">42/50</text>
+<rect x="376" y="438" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="420" y="488" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="468" y="438" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="512" y="488" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="560" y="438" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="604" y="488" text-anchor="middle" font-family="system-ui">0/50</text>
+<text x="70" y="580" text-anchor="middle" font-family="system-ui">D5</text>
+<rect x="100" y="530" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="144" y="580" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="192" y="530" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="236" y="580" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="284" y="530" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="328" y="580" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="376" y="530" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="420" y="580" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="468" y="530" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="512" y="580" text-anchor="middle" font-family="system-ui">0/50</text>
+<rect x="560" y="530" width="88" height="88" fill="rgb(255,238,238)"/>
+<text x="604" y="580" text-anchor="middle" font-family="system-ui">0/50</text>
+</svg>

@@ -1,0 +1,501 @@
+{
+  "attacks": {
+    "A1": "Injected confirmation text misstates the actual operation, including Markdown/whitespace variants.",
+    "A2": "Amount, destination, or cart is changed after approval and before execution.",
+    "A3": "Approval for one tool is replayed across tools.",
+    "A4": "A pressured victim relays a one-time code.",
+    "A5": "The initiating principal approves their own request.",
+    "A6": "A consumed approval is replayed."
+  },
+  "d5_actual_gateway_checks": {
+    "A1": true,
+    "A2": true,
+    "A3": true,
+    "A4": true,
+    "A5": true,
+    "A6": true
+  },
+  "designs": {
+    "D0": "No approval boundary; simulated unguarded baseline.",
+    "D1": "In-loop confirmation whose wording is supplied by an untrusted agent/tool result.",
+    "D2": "One-time SMS-style code entered by the initiating principal.",
+    "D3": "Out-of-band exact-operation approval on another device owned by the same principal.",
+    "D4": "Independent contact approval that is one-time but not bound to operation parameters.",
+    "D5": "CallGate gateway with signed exact resource scope and SQLite replay consumption."
+  },
+  "disclosure": "D0-D4 are our reference implementations; feedback and corrections are welcome.",
+  "legitimate_utility": {
+    "D0": {
+      "completion": {
+        "denominator": 50,
+        "numerator": 50,
+        "value": 1.0,
+        "wilson95": [
+          0.9286499658256813,
+          1
+        ]
+      },
+      "verification_ms_median": 0.0,
+      "verification_ms_p95": 0
+    },
+    "D1": {
+      "completion": {
+        "denominator": 50,
+        "numerator": 45,
+        "value": 0.9,
+        "wilson95": [
+          0.7863950966521162,
+          0.956524876008429
+        ]
+      },
+      "verification_ms_median": 2764,
+      "verification_ms_p95": 3994
+    },
+    "D2": {
+      "completion": {
+        "denominator": 50,
+        "numerator": 45,
+        "value": 0.9,
+        "wilson95": [
+          0.7863950966521162,
+          0.956524876008429
+        ]
+      },
+      "verification_ms_median": 11642,
+      "verification_ms_p95": 15678
+    },
+    "D3": {
+      "completion": {
+        "denominator": 50,
+        "numerator": 40,
+        "value": 0.8,
+        "wilson95": [
+          0.6696262789551477,
+          0.8875637005402612
+        ]
+      },
+      "verification_ms_median": 13375.0,
+      "verification_ms_p95": 17610
+    },
+    "D4": {
+      "completion": {
+        "denominator": 50,
+        "numerator": 40,
+        "value": 0.8,
+        "wilson95": [
+          0.6696262789551477,
+          0.8875637005402612
+        ]
+      },
+      "verification_ms_median": 29069.5,
+      "verification_ms_p95": 36889
+    },
+    "D5": {
+      "completion": {
+        "denominator": 50,
+        "numerator": 35,
+        "value": 0.7,
+        "wilson95": [
+          0.562493877226366,
+          0.8089661091039063
+        ]
+      },
+      "verification_ms_median": 26030,
+      "verification_ms_p95": 39198
+    }
+  },
+  "matrix": {
+    "D0": {
+      "A1": {
+        "denominator": 50,
+        "numerator": 50,
+        "value": 1.0,
+        "wilson95": [
+          0.9286499658256813,
+          1
+        ]
+      },
+      "A2": {
+        "denominator": 50,
+        "numerator": 50,
+        "value": 1.0,
+        "wilson95": [
+          0.9286499658256813,
+          1
+        ]
+      },
+      "A3": {
+        "denominator": 50,
+        "numerator": 50,
+        "value": 1.0,
+        "wilson95": [
+          0.9286499658256813,
+          1
+        ]
+      },
+      "A4": {
+        "denominator": 50,
+        "numerator": 50,
+        "value": 1.0,
+        "wilson95": [
+          0.9286499658256813,
+          1
+        ]
+      },
+      "A5": {
+        "denominator": 50,
+        "numerator": 50,
+        "value": 1.0,
+        "wilson95": [
+          0.9286499658256813,
+          1
+        ]
+      },
+      "A6": {
+        "denominator": 50,
+        "numerator": 50,
+        "value": 1.0,
+        "wilson95": [
+          0.9286499658256813,
+          1
+        ]
+      }
+    },
+    "D1": {
+      "A1": {
+        "denominator": 50,
+        "numerator": 47,
+        "value": 0.94,
+        "wilson95": [
+          0.8378265662912299,
+          0.9793854036353695
+        ]
+      },
+      "A2": {
+        "denominator": 50,
+        "numerator": 45,
+        "value": 0.9,
+        "wilson95": [
+          0.7863950966521162,
+          0.956524876008429
+        ]
+      },
+      "A3": {
+        "denominator": 50,
+        "numerator": 44,
+        "value": 0.88,
+        "wilson95": [
+          0.7619492111337642,
+          0.9438247628937535
+        ]
+      },
+      "A4": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A5": {
+        "denominator": 50,
+        "numerator": 41,
+        "value": 0.82,
+        "wilson95": [
+          0.6920368054529739,
+          0.902299172675462
+        ]
+      },
+      "A6": {
+        "denominator": 50,
+        "numerator": 41,
+        "value": 0.82,
+        "wilson95": [
+          0.6920368054529739,
+          0.902299172675462
+        ]
+      }
+    },
+    "D2": {
+      "A1": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A2": {
+        "denominator": 50,
+        "numerator": 49,
+        "value": 0.98,
+        "wilson95": [
+          0.8950431352816304,
+          0.9964608319110235
+        ]
+      },
+      "A3": {
+        "denominator": 50,
+        "numerator": 48,
+        "value": 0.96,
+        "wilson95": [
+          0.8653966212204534,
+          0.9889613473391734
+        ]
+      },
+      "A4": {
+        "denominator": 50,
+        "numerator": 24,
+        "value": 0.48,
+        "wilson95": [
+          0.3479691239550571,
+          0.6148848774119157
+        ]
+      },
+      "A5": {
+        "denominator": 50,
+        "numerator": 42,
+        "value": 0.84,
+        "wilson95": [
+          0.7148551903823401,
+          0.9166267863791231
+        ]
+      },
+      "A6": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      }
+    },
+    "D3": {
+      "A1": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A2": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A3": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A4": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A5": {
+        "denominator": 50,
+        "numerator": 45,
+        "value": 0.9,
+        "wilson95": [
+          0.7863950966521162,
+          0.956524876008429
+        ]
+      },
+      "A6": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      }
+    },
+    "D4": {
+      "A1": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A2": {
+        "denominator": 50,
+        "numerator": 46,
+        "value": 0.92,
+        "wilson95": [
+          0.8116149745493629,
+          0.9684509967442093
+        ]
+      },
+      "A3": {
+        "denominator": 50,
+        "numerator": 42,
+        "value": 0.84,
+        "wilson95": [
+          0.7148551903823401,
+          0.9166267863791231
+        ]
+      },
+      "A4": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A5": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A6": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      }
+    },
+    "D5": {
+      "A1": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A2": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A3": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A4": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A5": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      },
+      "A6": {
+        "denominator": 50,
+        "numerator": 0,
+        "value": 0.0,
+        "wilson95": [
+          0,
+          0.07135003417431873
+        ]
+      }
+    }
+  },
+  "otp_relay_scan": {
+    "0.00": {
+      "denominator": 50,
+      "numerator": 0,
+      "p_relay": 0.0,
+      "value": 0.0,
+      "wilson95": [
+        0,
+        0.07135003417431873
+      ]
+    },
+    "0.25": {
+      "denominator": 50,
+      "numerator": 10,
+      "p_relay": 0.25,
+      "value": 0.2,
+      "wilson95": [
+        0.11243629945973886,
+        0.3303737210448524
+      ]
+    },
+    "0.50": {
+      "denominator": 50,
+      "numerator": 30,
+      "p_relay": 0.5,
+      "value": 0.6,
+      "wilson95": [
+        0.4618118910275937,
+        0.7239181021375425
+      ]
+    },
+    "0.75": {
+      "denominator": 50,
+      "numerator": 38,
+      "p_relay": 0.75,
+      "value": 0.76,
+      "wilson95": [
+        0.6258705062480763,
+        0.8570274759812779
+      ]
+    },
+    "1.00": {
+      "denominator": 50,
+      "numerator": 50,
+      "p_relay": 1.0,
+      "value": 1.0,
+      "wilson95": [
+        0.9286499658256813,
+        1
+      ]
+    }
+  },
+  "random_seed": 20261010,
+  "schema_version": "approvalbench-v1",
+  "title": "ApprovalBench \u2014 simulated, author script, not human study",
+  "trials_per_cell": 50
+}

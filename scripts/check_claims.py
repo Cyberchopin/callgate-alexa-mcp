@@ -29,6 +29,16 @@ def validate_entry(entry, readme, root):
         return [f'{prefix}: original README sentence changed or missing']
     if entry['check'] == 'pending':
         return [f'{prefix}: UNVERIFIED; {entry.get("reason", "needs an executable evidence binding")}']
+    if entry['check'] == 'approvalbench_parameters':
+        try:
+            data = json.loads((root / entry['evidence']).read_text(encoding='utf-8'))
+            actual = [int(value) for value in re.findall(r'\*\*(\d+)', quote)]
+            expected = [len(data['designs']), len(data['attacks']),
+                        data['trials_per_cell'], data['random_seed']]
+            return [] if actual == expected else [
+                f'{prefix}: ApprovalBench parameters {actual} != evidence {expected}']
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            return [f'{prefix}: cannot validate ApprovalBench parameters: {exc}']
     if entry['check'] == 'source_literals':
         try:
             for evidence in entry['sources']:

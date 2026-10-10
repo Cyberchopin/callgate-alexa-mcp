@@ -132,6 +132,8 @@ availability and delay parameters, with raw counts in
 and author-provided; it is not a real shopping metric or independent
 evaluation.
 
+ApprovalBench compares **6 reference designs** across **6 scripted attacks** using **50 trials per cell** and fixed seed **20261010**; every count and interval is generated from `evaluation_checkout/approvalbench/results.json`.
+
 | Metric | CallGate | Keyword baseline |
 | :--- | ---: | ---: |
 | Precision | 100.0% — 1 predicted positive | 40.0% |

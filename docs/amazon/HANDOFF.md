@@ -6,3 +6,10 @@
 - Do not use comparison counts in submission materials until that script exits successfully.
 - No LLM mode was added; the requested default-off behavior is satisfied by having no LLM dependency.
 
+## ApprovalBench
+
+- Status: DONE on `amazon/approvalbench` for the deterministic author simulation.
+- Reproduce with `python -m evaluation_checkout.approvalbench.run`.
+- D0 is explicitly documented as the inferred unguarded baseline; D1–D4 are labeled as our reference implementations and invite corrections.
+- D5 had no successful attack in this run, so no D5 failure was added to the red-team report.
+
