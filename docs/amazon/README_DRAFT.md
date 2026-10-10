@@ -67,6 +67,7 @@ client explicitly declares URL elicitation capability.
 - The local contact header is a demonstration credential, not proof of an
   independently enrolled human.
 - The self-signed local certificate is for development only.
+- Its private key is generated below Git-ignored `.test-tmp/` and removed on normal server exit; no certificate or private-key file is tracked.
 - Commitment v2 is awaiting owner approval. Phase 2 isolates current v1 commitment
   construction behind a thin adapter and does not claim subject binding inside the
   signed v1 credential.

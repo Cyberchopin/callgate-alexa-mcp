@@ -97,3 +97,19 @@ fatal: Could not read from remote repository.
 - Static heading check: **7 of 7 required sections present**.
 - No executable code changed; no test result was claimed for prose.
 
+## BUILD-009 — T7 author-date correction — 2026-10-10 (America/Los_Angeles)
+
+- Branch/commit: `amazon/tools` at `720681ca776a5933227542045e5882924b5aaee4`.
+- The first targeted run stopped because `.test-tmp` did not exist. After creating it, Windows Python lacked IANA `tzdata`, so the date-only LA cutoff was defined explicitly as `-07:00` without adding a dependency.
+- A global-Python full run then stopped on missing `hypothesis`; an attempted project venv failed in `ensurepip`. Reusing the same external verification dependency directory as T0 succeeded.
+- Targeted result: **3 passed**. Full Python result: **248 passed, 3 failed, 1 skipped**. Node result: **3 passed, 0 failed, 0 skipped**. No prior pass became a failure.
+- The one baseline skip is the optional `pipecat` test. The two additional T5/T6 skips are the optional `onnxruntime` tests; no MCP test was skipped.
+
+## BUILD-010 — history rescan and Phase 2 key cleanup — 2026-10-10 (America/Los_Angeles)
+
+- Gitleaks 8.30.1 all-branch scan with 100% redaction: **3 findings**, all `generic-api-key`, path `scambench/local-check.json`, commit `3b4525ff0ce85beab9bd541f377b442f44e7d27c`; no new finding.
+- Tracked-file inspection across all five Amazon work branches found no `.pem`, `.key`, `.p12`, or `.pfx` file.
+- Phase 2 global-Python collection first stopped on missing `httpx2`; the existing MCP venv then exposed a sandbox `PermissionError` for the OS temp directory. The implementation now uses Git-ignored `.test-tmp/` and removes the generated certificate/key directory on normal exit.
+- Branch/commit: `amazon/mcp-phase2` at `bff4e3679026585c93bd306f92f046a7f1aeb7ff`.
+- Targeted result: **7 passed**. Combined MCP result: **10 passed**. Full Python result: **253 passed, 3 failed, 3 skipped**. Node result: **3 passed, 0 failed, 0 skipped**. No prior pass became a failure.
+
