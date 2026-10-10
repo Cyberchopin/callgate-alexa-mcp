@@ -10,9 +10,21 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CUTOFF = "2026-08-31T10:15:00-07:00"
 
 
-def git(*args):
-    return subprocess.run(["git", *args], cwd=ROOT, check=True, text=True,
+def git(*args, root=ROOT):
+    return subprocess.run(["git", *args], cwd=root, check=True, text=True,
                           capture_output=True).stdout.strip()
+
+
+def parse_cutoff(value):
+    cutoff = datetime.datetime.fromisoformat(value)
+    pacific_daylight_time = datetime.timezone(datetime.timedelta(hours=-7))
+    return cutoff.replace(tzinfo=cutoff.tzinfo or pacific_daylight_time)
+
+
+def author_dated_commits(root):
+    rows = git("log", "--all", "--format=%H%x09%aI", root=root).splitlines()
+    return [(sha, datetime.datetime.fromisoformat(authored))
+            for sha, authored in (row.split("\t", 1) for row in rows)]
 
 
 def default_output(cutoff):
@@ -21,32 +33,36 @@ def default_output(cutoff):
     return ROOT / "docs" / "amazon" / name
 
 
-def generate(cutoff, output):
-    head = git("rev-parse", "HEAD")
-    pre_head = git("rev-list", "-1", f"--before={cutoff}", "--all")
+def generate(cutoff, output, root=ROOT):
+    cutoff_time = parse_cutoff(cutoff)
+    commits = author_dated_commits(root)
+    head = git("rev-parse", "HEAD", root=root)
+    eligible = [(sha, authored) for sha, authored in commits if authored < cutoff_time]
+    pre_head = max(eligible, key=lambda item: item[1])[0] if eligible else ""
     warning = []
-    if git("rev-parse", "--is-shallow-repository") == "true":
+    if git("rev-parse", "--is-shallow-repository", root=root) == "true":
         warning.append("WARNING: shallow history; boundary report may be incomplete.")
-    if git("replace", "-l"):
+    if git("replace", "-l", root=root):
         warning.append("WARNING: git replace refs detected; history may be rewritten locally.")
     modules = {}
     if pre_head:
-        for path in git("ls-tree", "-r", "--name-only", pre_head).splitlines():
+        for path in git("ls-tree", "-r", "--name-only", pre_head, root=root).splitlines():
             module = path.split("/", 1)[0]
             if module not in modules:
-                first = git("log", "--all", "--reverse", "--format=%H", "--", module)
+                first = git("log", "--all", "--reverse", "--format=%H", "--", module,
+                            root=root)
                 modules[module] = first.splitlines()[0] if first else "UNKNOWN"
     changed = {}
-    current_commit = None
-    log = git("log", "--all", f"--since={cutoff}", "--reverse",
-              "--format=commit:%H", "--name-only")
-    for line in log.splitlines():
-        if line.startswith("commit:"):
-            current_commit = line.removeprefix("commit:")
-        elif line and current_commit and line not in changed:
-            changed[line] = current_commit
+    for sha, authored in sorted(commits, key=lambda item: item[1]):
+        if authored < cutoff_time:
+            continue
+        paths = git("diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha,
+                    root=root)
+        for path in paths.splitlines():
+            changed.setdefault(path, sha)
     generated = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
     lines = ["# Pre-existing work boundary", "", f"- Cutoff: `{cutoff}`",
+             "- Date basis: Git author date (`%aI`)",
              f"- Source HEAD: `{head}`", f"- Generated: `{generated}`", ""]
     lines.extend(f"> {item}" for item in warning)
     if warning:
