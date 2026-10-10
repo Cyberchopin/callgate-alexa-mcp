@@ -33,10 +33,11 @@ thin adapter around the existing v1 operation commitment and an independent loca
 HTTPS review page. The approval URL contains only a random elicitation ID; amount,
 destination, identity, and contact credentials are not embedded in it.
 
-The approved credential remains server-side, is bound to the exact simulated
-operation, and is consumed on the next exact retry. A changed amount, destination,
-identity, contact, session, expired request, self-approval attempt, or replay is
-rejected by the tested flow.
+The approved v1 credential and pending-operation record remain server-side. The
+local adapter rejects a changed amount, destination, identity, contact, session,
+expired request, self-approval attempt, or replay in the tested flow. This is not
+yet a cryptographic claim that v1 binds the tool name or stable subject; the final
+submission must wait for an approved v2 commitment before making that claim.
 
 ## MCP details
 
