@@ -312,6 +312,12 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
     "check": "nonmetric_reference",
     "reason": "Prospective evaluation folder name, no performance metric.",
     "references": []
+  },
+  {
+    "id": "readme-032",
+    "quote": "The generated sensitivity sweep uses **5 OTP relay settings** and **100 deterministic trials per scenario**, with seed **20261010**; the report and both figures are regenerated from the JSON output. This is synthetic",
+    "evidence": "evaluation_checkout/results.json",
+    "check": "checkout_parameters"
   }
 ]
 ```
