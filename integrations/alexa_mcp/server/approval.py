@@ -1,6 +1,5 @@
 """URL-elicitation approval adapter for the simulated send_money tool."""
 
-import html
 import secrets
 from dataclasses import dataclass
 from typing import Any
@@ -14,6 +13,7 @@ from starlette.routing import Route
 from callgate.confirmation import ConfirmationCoordinator, ReviewerDecision, decision_bytes
 
 from .app import CapabilityGateway, operation_resource
+from .ui import render_contact_page, security_headers, ui_routes
 
 
 @dataclass
@@ -62,13 +62,7 @@ class ApprovalFlow:
         item = self.pending.get(request.path_params["elicitation_id"])
         if item is None or self.coordinator.expired(item.request):
             return JSONResponse({"error": "approval unavailable"}, status_code=410)
-        operation = item.arguments
-        body = ("<h1>Simulated contact review</h1>"
-                f"<p>Amount: {int(operation['amount_cents'])} cents</p>"
-                f"<p>Destination: {html.escape(operation['destination'])}</p>"
-                f"<p>Requested identity: {html.escape(item.request.claimed_identity or '')}</p>"
-                "<p>No real payment will occur.</p>")
-        return HTMLResponse(body)
+        return HTMLResponse(render_contact_page(item), headers=security_headers())
 
     async def decide(self, request: Request):
         elicitation_id = request.path_params["elicitation_id"]
@@ -94,6 +88,7 @@ class ApprovalFlow:
 
     def routes(self):
         return [
+            *ui_routes(),
             Route("/approval/{elicitation_id}", self.view, methods=["GET"]),
             Route("/approval/{elicitation_id}", self.decide, methods=["POST"]),
         ]
