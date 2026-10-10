@@ -55,7 +55,7 @@ was skipped.
 
 1. Inspect and resolve the three T2 findings before any public release or history migration. Finding metadata: rule `generic-api-key`, path `scambench/local-check.json`, commit `3b4525ff0ce85beab9bd541f377b442f44e7d27c`.
 2. Re-run T1 outside this sandbox. If the clean `core.autocrlf=false` clone still fails its manifest, inspect the differing paths and `git log -- <path>` before deciding whether frozen data or its manifest is wrong.
-3. Review `proposal/commitment-v2` commit `1fbb196`. It now requires signed v2 fields, Unicode/number/duplicate-key normalization tests, and MCP rejection of valid v1 credentials. Explicit approval is still required before an apply-ready core implementation or tests may be created.
+3. Proposal `1fbb196` was approved. Review the reverted attempt and rerun the original MCP tests outside this environment before authorizing a clean replacement implementation.
 4. Decide whether phase 2 may be merged while its stable subject binding remains server-side around a v1 signed proof, or whether merge must wait for commitment v2.
 5. Decide the final branch-combination order. No merge was performed automatically.
 6. Classify the three historical `generic-api-key` findings as SHA-256 false positives or revoke/rotate them. Until then, the publication gate stays closed.
@@ -110,3 +110,10 @@ Do not run migration or push commands while the red warning at the top remains u
 - Owner decision/action: run `amazon/mcp-phase2` MCP tests outside this environment. If they pass, authorize a fresh v2 attempt in a clean worktree or provide startup diagnostics.
 - Dependent merchant-injection, UI, resume, and final-gate branches were not started.
 - Latest SDK retest confirmed `mcp==2.3.0` still reconstructs `-32042` as generic `MCPError`; the detailed retest and related upstream issues are on the commitment branch's `FRICTION_LOG.md`.
+
+## 2026-10-10 pitch package
+
+- Status: DONE as an evidence-gated draft on `amazon/pitch`.
+- Added `DEVPOST.md`, `DEMO_SCRIPT.md`, `QA_BANK.md`, and `WE_WILL_NOT_CLAIM.md`.
+- The script explicitly blocks final recording of v2, merchant-injection, and UI scenes until those implementations exist and pass.
+- Owner action: provide one primary/public-authority impact source to replace `{{SOURCE_NEEDED}}`; resolve all `{{TBD}}` fields only from the final combined run.

@@ -113,3 +113,11 @@ fatal: Could not read from remote repository.
 - Branch/commit: `amazon/mcp-phase2` at `bff4e3679026585c93bd306f92f046a7f1aeb7ff`.
 - Targeted result: **7 passed**. Combined MCP result: **10 passed**. Full Python result: **253 passed, 3 failed, 3 skipped**. Node result: **3 passed, 0 failed, 0 skipped**. No prior pass became a failure.
 
+## BUILD-011 — English submission package — 2026-10-10 (America/Los_Angeles)
+
+- Added an English Devpost draft, evidence-gated three-minute script, judge Q&A bank, and explicit non-claims list.
+- Full Python result: **242 passed, 4 failed, 3 skipped**. The two spawned-process failures and frozen-manifest mismatch match known baseline/environment failures. A rate-limit boundary test initially returned `Retry-After: 61` instead of its asserted maximum `60`; its immediate isolated rerun passed (`1 passed in 0.88s`) without a code change, so it is recorded as timing-sensitive rather than repaired in core code.
+- Skip reasons: optional `onnxruntime` (two) and `pipecat` (one); none involves MCP, HTTPS, or elicitation.
+- Node result: **3 passed, 0 failed, 0 skipped**.
+- Documentation path scan found no local username or absolute home path.
+

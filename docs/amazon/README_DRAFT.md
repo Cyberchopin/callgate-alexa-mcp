@@ -49,8 +49,7 @@ submission must wait for an approved v2 commitment before making that claim.
   `UrlElicitationRequiredError` wire shape.
 - Completion: `notifications/elicitation/complete` is sent to the initiating MCP
   session after the saved-contact simulation approves.
-- Observed phase-1 MCP tests: **3 passed**.
-- Observed phase-2 MCP tests: **9 passed** across phase-1 and phase-2 integration tests.
+- Exact test counts must be inserted only from the final clean-environment run: `{{TBD}}`.
 
 ## Alexa+ track note
 
@@ -68,13 +67,13 @@ client explicitly declares URL elicitation capability.
   independently enrolled human.
 - The self-signed local certificate is for development only.
 - Its private key is generated below Git-ignored `.test-tmp/` and removed on normal server exit; no certificate or private-key file is tracked.
-- Commitment v2 is awaiting owner approval. Phase 2 isolates current v1 commitment
-  construction behind a thin adapter and does not claim subject binding inside the
-  signed v1 credential.
-- Full-history scanning found **3** redacted `generic-api-key` findings in one
-  historical file/commit. The repository history must not be published or migrated
-  until the owner resolves them.
-- Current full-suite runs retain **3** pre-existing failures in this sandbox: two
+- Commitment v2 was approved, but the first implementation attempt was reverted after
+  the MCP regression gate failed in this environment. Phase 2 isolates current v1
+  commitment construction behind a thin adapter and does not claim subject binding
+  inside the signed v1 credential.
+- Full-history scanning has unresolved redacted findings. The repository history must
+  not be published or migrated until the owner classifies them.
+- Current full-suite runs retain pre-existing failures in this sandbox: two
   Windows child-process pipe failures and one frozen-manifest mismatch. No green CI
   claim is made.
 
