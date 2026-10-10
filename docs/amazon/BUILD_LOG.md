@@ -43,3 +43,17 @@ fatal: Could not read from remote repository.
 
 - Per the two-failure rule, T1 stopped. No frozen evaluation file was read or modified by this task.
 
+## BUILD-003 — T2 full-history secret scan — 2026-10-10 (America/Los_Angeles)
+
+- Tool: official `gitleaks 8.30.1` Windows x64 release; the downloaded archive was checked against the release checksum file before execution.
+- Scope: Git history reachable through all refs (`gitleaks git`); **43 commits** scanned.
+- Result: **3 findings**.
+- Redacted finding metadata only:
+
+| Count | Rule | Path | Commit |
+|---:|---|---|---|
+| 3 | `generic-api-key` | `scambench/local-check.json` | `3b4525ff0ce85beab9bd541f377b442f44e7d27c` |
+
+- No secret value or matching line was printed or copied into repository files.
+- Consequence: T3 migration helper was skipped as required.
+
