@@ -57,3 +57,11 @@ fatal: Could not read from remote repository.
 - No secret value or matching line was printed or copied into repository files.
 - Consequence: T3 migration helper was skipped as required.
 
+## BUILD-004 — T4 commitment-v2 proposal — 2026-10-10 (America/Los_Angeles)
+
+- Branch: `proposal/commitment-v2`, based on `main`.
+- Proposal commit: `42cda8d8107f84d05817e47f2bf68adcf29916ab`.
+- Applying the executable core diff was rejected by the pre-existing approval gate. No core file or test was modified.
+- A review-only design diff and risk note were committed under `docs/amazon/`; the patch explicitly identifies itself as not apply-ready and not tested.
+- No tests were claimed for this proposal. The working branch was restored after the commit.
+

@@ -9,4 +9,5 @@
 - **T1 BLOCKED:** The required clean temporary clone could not be created after two attempts because Git for Windows could not create its MSYS named object in the sandbox (`0xC0000022`). No `.gitattributes` change was made. Re-run the T1 command outside this sandbox before relying on the frozen manifest result.
 - **T2 DONE WITH FINDINGS:** Three redacted findings were reported for rule `generic-api-key`, path `scambench/local-check.json`, commit `3b4525ff0ce85beab9bd541f377b442f44e7d27c`.
 - **T3 SKIPPED:** The migration dry-run helper was not created because T2 found possible secrets.
+- **T4 PARTIAL — DECISION REQUIRED:** The approval gate prevented applying core security changes even on the isolated proposal branch. Review commit `42cda8d8107f84d05817e47f2bf68adcf29916ab` and explicitly approve an apply-ready implementation if desired. Its current `.patch` is a design diff with marked implementation points, not tested executable code.
 
