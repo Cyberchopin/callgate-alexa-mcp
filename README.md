@@ -232,3 +232,9 @@ CallGate contributes revision-aware evidence handling, cross-turn risk rules, sc
 ## License
 
 [MIT](LICENSE). Reused libraries and models retain their respective licenses and attribution.
+Canonical tool-and-parameter binding is not yet implemented on the release candidate.
+The isolated MCP phase uses an exact cryptographic resource binding over parsed tool
+arguments, but it does not normalize Unicode, reject duplicate raw JSON keys, sign a
+stable subject, or carry an explicit commitment version. See
+[`docs/amazon/BINDING_FINDINGS.md`](docs/amazon/BINDING_FINDINGS.md).
+
