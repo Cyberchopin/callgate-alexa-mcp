@@ -10,7 +10,7 @@ This log contains only commands and results observed during the Amazon workstrea
 - `python.exe` alias check failed before tests:
 
 ```text
-Program 'python.exe' failed to run: An error occurred trying to start process 'C:\Users\wangs\AppData\Local\Microsoft\WindowsApps\python.exe' ... The file cannot be accessed by the system.
+Program 'python.exe' failed to run: An error occurred trying to start process '<LOCAL_WINDOWS_APPS>/python.exe' ... The file cannot be accessed by the system.
 ```
 
 - `hypothesis` was initially absent. The first install attempt failed because network access was unavailable:

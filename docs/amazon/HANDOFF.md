@@ -100,3 +100,13 @@ Do not run migration or push commands while the red warning at the top remains u
 - The self-signed certificate is suitable only for local development.
 - Phase 2 now writes its generated certificate/private key only below Git-ignored `.test-tmp/` and removes the temporary directory on normal exit; no key/certificate extension is tracked on any Amazon work branch.
 - The Python SDK client required manual conversion from generic `MCPError` code `-32042` to its specialized URL-elicitation error type.
+
+## 2026-10-10 commitment-v2 follow-up
+
+> 🔴 **Commitment v2 remains unapplied.** Owner approval for proposal `1fbb196` was received, but the implementation attempt on `amazon/commitment-v2` made existing MCP tests time out while starting Uvicorn. The attempt was committed for audit and then reverted as required. The same timeout remained when the original pre-v2 tests were rerun after the revert, so the current environment cannot attribute the failure to v2.
+
+- `amazon/commitment-v2` HEAD: `1385767`.
+- Attempt: `afc5e02`; required revert: `a05f675`.
+- Owner decision/action: run `amazon/mcp-phase2` MCP tests outside this environment. If they pass, authorize a fresh v2 attempt in a clean worktree or provide startup diagnostics.
+- Dependent merchant-injection, UI, resume, and final-gate branches were not started.
+- Latest SDK retest confirmed `mcp==2.3.0` still reconstructs `-32042` as generic `MCPError`; the detailed retest and related upstream issues are on the commitment branch's `FRICTION_LOG.md`.

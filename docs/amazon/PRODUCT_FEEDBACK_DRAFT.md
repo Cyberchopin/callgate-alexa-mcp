@@ -11,24 +11,22 @@ This draft contains only observations reproduced during development. Keep the ra
 
 ## What worked well
 
-- Streamable HTTP client/server interoperability was testable end to end with the real SDK rather than mocked JSON-RPC.
-- The SDK exposes the URL-elicitation server error and completion-notification primitives needed to implement the 2025-11-25 flow.
-- Typed tool schemas made the three simulated actions visible through a normal MCP `tools/list` call.
-- Pinning the SDK version made the demo and tests reproducible.
+- In the recorded successful integration run, a real `ClientSession` discovered all three typed tools over Streamable HTTP; this was not a mocked JSON-RPC exchange.
+- Raising `UrlElicitationRequiredError` produced protocol code `-32042`, and `send_elicit_complete` delivered the matching completion notification in the real-client test.
 
 ## What needs work
 
 ### Server-class migration discoverability
 
-In MCP Python SDK 2.x, the familiar FastMCP import path no longer exists; the server is imported as `MCPServer` from `mcp.server.mcpserver`. The initial import produced:
+In MCP Python SDK 2.x, the familiar FastMCP import path no longer exists; the server is imported as `MCPServer` from `mcp.server.mcpserver`. Importantly, the initial error message itself already contained the correct migration link and pinning alternative:
 
 ```text
 ModuleNotFoundError: No module named 'mcp.server.fastmcp'. This is mcp 2.x, where FastMCP was renamed to MCPServer (from mcp.server.mcpserver import MCPServer) and other APIs changed; see the migration guide at https://py.sdk.modelcontextprotocol.io/v2/migration/#fastmcp-renamed-to-mcpserver or pin 'mcp<2' to keep running v1 code.
 ```
 
-Workaround: use the v2 import and pin `mcp==2.3.0`. Suggestion: put the v2 import path directly beside current Streamable HTTP quickstart examples.
+Workaround: follow that diagnostic, use the v2 import, and pin `mcp==2.3.0`. The diagnostic is already actionable; the only suggestion is to repeat the v2 import path directly in the Streamable HTTP quickstart so users can avoid the error.
 
-### Expected policy denials
+### Documentation example for expected policy denials
 
 Raising a normal application exception hid the policy reason behind a generic tool error:
 
@@ -37,7 +35,7 @@ TextContent(type='text', text='Error executing tool send_money', annotations=Non
 mcp.server.mcpserver.exceptions.UnexpectedToolError: Error executing tool send_money
 ```
 
-Workaround: raise an SDK `ToolError` subtype for expected policy denials. Suggestion: document a policy-denial example that distinguishes expected tool errors from unexpected failures.
+The SDK behavior is consistent with treating an ordinary exception as unexpected. Workaround: raise an SDK `ToolError` subtype for an expected policy denial. This is a documentation request: add one policy-denial example showing when to use `ToolError`, without changing exception behavior.
 
 ### URL-elicitation client reconstruction
 
@@ -48,6 +46,8 @@ mcp.shared.exceptions.MCPError: URL elicitation required
 ```
 
 Workaround: verify error code `-32042`, then call `UrlElicitationRequiredError.from_error(error.error)`. Suggestion: reconstruct the specialized error automatically, or document this conversion next to the server example.
+
+Retest on the latest available release, `mcp==2.3.0`, reproduced the same type boundary: `MCPError.from_error_data(...)` returned `MCPError` with code `-32042`; manual conversion returned `UrlElicitationRequiredError`. Related upstream issues [#1768](https://github.com/modelcontextprotocol/python-sdk/issues/1768) and [#1788](https://github.com/modelcontextprotocol/python-sdk/issues/1788) are closed and do not exactly cover automatic client-side specialization in 2.3.0.
 
 ## Onboarding experience
 
