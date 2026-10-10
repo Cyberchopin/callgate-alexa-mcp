@@ -14,3 +14,16 @@
 - Full Python result: **253 passed, 3 failed, 3 skipped** in 14.19 seconds. The failures and optional-integration skips exactly match the prior Phase 2 run; no previous pass became a failure.
 - Node result: **3 passed, 0 failed, 0 skipped**.
 - Tracked-key check: no `.pem`, `.key`, `.p12`, or `.pfx` file is tracked on any Amazon work branch.
+
+## BUILD-COMMITMENT-V2-001 — 2026-10-10
+
+- Task: First targeted commitment-v2 run.
+- Result: collection stopped before tests with `ImportError: cannot import name 'PolicyBlocked' from 'integrations.alexa_mcp.server'`.
+- Action: Import the exception from its defining `server.app` module; no production behavior changed for this correction.
+
+## BUILD-COMMITMENT-V2-002 — 2026-10-10
+
+- Task: Targeted v2/core/MCP verification after the import correction.
+- Result: **15 passed, 10 failed** in 103.78 seconds. All 10 failures were existing Phase 1/2 tests whose Uvicorn server did not reach `server.started` within 10 seconds (`RuntimeError: MCP test server did not start`).
+- Second diagnostic: the isolated `test_real_client_connects_lists_tools_and_rejects_missing_proof` failed with the same startup timeout in 12.21 seconds.
+- Action: Stop the v2 task after the same blocking condition repeated. Because a previous MCP pass became a failure, revert this implementation attempt instead of changing unrelated server/test infrastructure.
