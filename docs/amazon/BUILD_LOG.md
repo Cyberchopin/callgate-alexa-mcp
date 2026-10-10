@@ -1,0 +1,32 @@
+# Amazon workstream build log
+
+This log contains only commands and results observed during the Amazon workstream. It does not replace the repository's historical root `BUILD_LOG.md`.
+
+## BUILD-001 — T0 baseline — 2026-10-10 (America/Los_Angeles)
+
+- Git base: `f18eda5` on local branch `feat/amazon-alexa-mcp-phase1`; worktree was clean.
+- Python: `3.12.6` via `py -3.12`.
+- Node.js: `v24.18.0`; npm: `11.16.0`.
+- `python.exe` alias check failed before tests:
+
+```text
+Program 'python.exe' failed to run: An error occurred trying to start process 'C:\Users\wangs\AppData\Local\Microsoft\WindowsApps\python.exe' ... The file cannot be accessed by the system.
+```
+
+- `hypothesis` was initially absent. The first install attempt failed because network access was unavailable:
+
+```text
+ERROR: Could not find a version that satisfies the requirement hypothesis (from versions: none)
+ERROR: No matching distribution found for hypothesis
+```
+
+- After network permission was granted, `hypothesis==6.168.5` and `sortedcontainers==2.4.0` were installed into the project-specific external directory `work/.verification-deps`; global Python was not modified.
+- Python command: `py -3.12 -m pytest --basetemp <workspace>/work/.pytest-baseline -q`, with `work/.verification-deps` on `PYTHONPATH`.
+- Python result: **245 passed, 3 failed, 1 skipped** in 14.54 seconds.
+- Existing failures:
+  - `tests/test_review_process.py::test_two_process_approval_then_unavailable_reviewer` — spawned child ended its pipe in the sandbox.
+  - `tests/test_review_process.py::test_three_process_routing_switch_and_cross_contact_isolation` — spawned child ended its pipe in the sandbox.
+  - `tests/test_v2_inputs.py::test_input_schema_and_manifest` — `ValueError: manifest mismatch: blind/scenarios.jsonl`.
+- Node command: `node --test tests/review_ui.test.cjs`.
+- Node result: **3 passed, 0 failed, 0 skipped**.
+
