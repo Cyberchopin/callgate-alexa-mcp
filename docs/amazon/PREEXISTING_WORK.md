@@ -1,8 +1,9 @@
 # Pre-existing work boundary
 
 - Cutoff: `2026-08-31T10:15:00-07:00`
-- Source HEAD: `f18eda53965a349a46c37cc243a7a86e90151f91`
-- Generated: `2026-10-10T00:40:28-07:00`
+- Date basis: Git author date (`%aI`)
+- Source HEAD: `12a0a3eba40785049b22324460cc78243fc64f15`
+- Generated: `2026-10-10T01:36:48-07:00`
 
 ## Present before cutoff
 
@@ -89,6 +90,9 @@
 | `docs/amazon/CORE_CHANGE_PROPOSAL.md` | `42cda8d8107f84d05817e47f2bf68adcf29916ab` |
 | `docs/amazon/FRICTION_LOG.md` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `docs/amazon/HANDOFF.md` | `4138906734c032aeece72c4b42ea7d54aa829e22` |
+| `docs/amazon/PREEXISTING_WORK.md` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
+| `docs/amazon/PREEXISTING_WORK_LA_HACKS.md` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
+| `docs/amazon/README_DRAFT.md` | `96376131450f81d1ed6b309d06b383f747f6d001` |
 | `docs/amazon/proposals/commitment_v2.patch` | `42cda8d8107f84d05817e47f2bf68adcf29916ab` |
 | `docs/immutable-evidence.json` | `b94c0ae53928dea9732b39bda9ca5f2e33d57dc3` |
 | `docs/upstreams.json` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
@@ -173,16 +177,20 @@
 | `scripts/configure_key.ps1` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `scripts/configure_key.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `scripts/fork_upstreams.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
+| `scripts/friction.py` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
+| `scripts/gen_preexisting.py` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
 | `scripts/live_smoke.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `scripts/offline_demo.py` | `3b4525ff0ce85beab9bd541f377b442f44e7d27c` |
 | `scripts/proof_demo.py` | `b94c0ae53928dea9732b39bda9ca5f2e33d57dc3` |
 | `scripts/start_demo.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `scripts/start_review_demo.py` | `ea8b92fab3b47a338270a9bbe69b71fd15610696` |
 | `scripts/stream_wav.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
+| `scripts/submission_check.py` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
 | `scripts/verify_receipt.py` | `cbc2c2327d46ba1abf918263bc52cc3d5b6c014a` |
 | `scripts/workflow_demo.py` | `a2fbc25f3be8cf049a29a8d2039e695335dee52d` |
 | `tests/alexa_mcp/test_phase1.py` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `tests/alexa_mcp/test_phase2.py` | `c9dd7c32d782299b596b4e7261463af79efb8036` |
+| `tests/alexa_mcp/test_tools.py` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
 | `tests/review_ui.test.cjs` | `cbc2c2327d46ba1abf918263bc52cc3d5b6c014a` |
 | `tests/test_adversarial_policy.py` | `9dc0ae3dc20ea38b6062f1bd46159bfa9bbc362a` |
 | `tests/test_api.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |

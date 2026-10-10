@@ -1,8 +1,9 @@
 # Pre-existing work boundary
 
 - Cutoff: `2026-10-17`
-- Source HEAD: `f18eda53965a349a46c37cc243a7a86e90151f91`
-- Generated: `2026-10-10T00:40:29-07:00`
+- Date basis: Git author date (`%aI`)
+- Source HEAD: `12a0a3eba40785049b22324460cc78243fc64f15`
+- Generated: `2026-10-10T01:36:49-07:00`
 
 ## Present before cutoff
 
@@ -26,7 +27,6 @@
 | `evaluation_checkout` | `5bd682187640b89e5ec0e290df142bc90bb946e4` |
 | `evaluation_v1` | `42f0af8288455dda03f45cafc4d2057d002d7fc9` |
 | `evaluation_v2` | `b94c0ae53928dea9732b39bda9ca5f2e33d57dc3` |
-| `integrations` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `pyproject.toml` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `requirements-integrations-lock.txt` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `requirements-integrations.txt` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
