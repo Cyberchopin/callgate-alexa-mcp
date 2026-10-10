@@ -1,0 +1,54 @@
+"""Fail-closed local submission readiness checklist."""
+
+import argparse
+import re
+import shutil
+import subprocess
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def command(args):
+    return subprocess.run(args, cwd=ROOT, text=True, capture_output=True)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gitleaks", default="gitleaks")
+    args = parser.parse_args()
+    checks = []
+    checks.append(("LICENSE exists", (ROOT / "LICENSE").is_file()))
+    readmes = "\n".join(path.read_text(encoding="utf-8", errors="replace")
+                         for path in [ROOT / "README.md", ROOT / "docs/amazon/README_DRAFT.md"]
+                         if path.exists()).lower()
+    for heading in ("what it is", "run it in one command", "security boundaries"):
+        checks.append((f"README section: {heading}", heading in readmes))
+    tests = command(["py", "-3.12", "-m", "pytest", "-q"])
+    checks.append(("Python tests pass", tests.returncode == 0))
+    scanner = shutil.which(args.gitleaks) or (args.gitleaks if Path(args.gitleaks).is_file() else None)
+    if scanner:
+        scan = command([scanner, "git", "--no-banner", "--redact=100"])
+        checks.append(("full-history secret scan is clean", scan.returncode == 0))
+    else:
+        checks.append(("full-history secret scanner available", False))
+    preexisting = ROOT / "docs" / "amazon" / "PREEXISTING_WORK.md"
+    fresh = False
+    if preexisting.exists():
+        match = re.search(r"Source HEAD: `([0-9a-f]{40})`", preexisting.read_text(encoding="utf-8"))
+        if match:
+            changed = command(["git", "diff", "--name-only", match.group(1), "HEAD"]).stdout.splitlines()
+            fresh = all(path == "docs/amazon/PREEXISTING_WORK.md" for path in changed)
+    checks.append(("PREEXISTING_WORK.md is fresh", fresh))
+    graphics = [path for path in ROOT.rglob("*") if path.suffix.lower() in
+                {".svg", ".png", ".jpg", ".jpeg", ".webp", ".gif"} and any(
+                    mark in path.name.lower() for mark in ("amazon", "alexa", "visa"))]
+    checks.append(("no trademark-named graphic files", not graphics))
+    for label, passed in checks:
+        print(("PASS" if passed else "FAIL") + " | " + label)
+    raise SystemExit(0 if all(passed for _, passed in checks) else 1)
+
+
+if __name__ == "__main__":
+    main()
