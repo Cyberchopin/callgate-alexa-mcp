@@ -65,3 +65,35 @@ fatal: Could not read from remote repository.
 - A review-only design diff and risk note were committed under `docs/amazon/`; the patch explicitly identifies itself as not apply-ready and not tested.
 - No tests were claimed for this proposal. The working branch was restored after the commit.
 
+## BUILD-005 — T5 phase 1 MCP server — 2026-10-10 (America/Los_Angeles)
+
+- Branch/commit: `amazon/mcp-phase1` at `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be`.
+- First MCP run: 3 failed because SDK 2.3.0 hid ordinary exception text behind `UnexpectedToolError`. The integration switched expected failures to SDK `ToolError` and reran once.
+- Targeted result: **3 passed** in 1.75 seconds.
+- Full Python result in the isolated MCP environment: **246 passed, 3 failed, 3 skipped**. The three failures exactly match T0; no previously passing test became a failure. Two additional optional integrations skipped because this isolated environment did not include all global optional packages.
+- Node result: **3 passed, 0 failed, 0 skipped**.
+- The isolated dependency install reported unrelated package-version conflicts involving `pyppeteer`, OpenTelemetry, and `realtime`; no repository dependency file was changed in response.
+
+## BUILD-006 — T6 URL elicitation — 2026-10-10 (America/Los_Angeles)
+
+- Branch/commit: `amazon/mcp-phase2` at `c9dd7c32d782299b596b4e7261463af79efb8036`.
+- Initial phase-2 test result: **6 failed**. The client surfaced server `-32042` as generic `MCPError`, and one nested temporary database directory was absent.
+- After one correction, phase-2 targeted result: **6 passed** in 2.82 seconds.
+- Combined phase-1/phase-2 MCP result: **9 passed** in 3.77 seconds.
+- Full Python result: **252 passed, 3 failed, 3 skipped**. The three failures exactly match T0; no previously passing test became a failure.
+- Node result: **3 passed, 0 failed, 0 skipped**.
+
+## BUILD-007 — T7 support tools — 2026-10-10 (America/Los_Angeles)
+
+- Branch/commit: `amazon/tools` at `c4d80ca80f70a154834c7bcace80a389692d646a`.
+- Targeted tool tests: **2 passed** in 1.55 seconds.
+- Full Python result: **247 passed, 3 failed, 1 skipped**. The three failures exactly match T0; no previously passing test became a failure.
+- Node result: **3 passed, 0 failed, 0 skipped**.
+- Both Git-derived boundary reports were generated: Amazon cutoff `2026-08-31T10:15:00-07:00` and separate LA Hacks cutoff `2026-10-17`.
+
+## BUILD-008 — T8 README draft — 2026-10-10 (America/Los_Angeles)
+
+- Branch/commit: `feat/amazon-alexa-mcp-phase1` at `96376131450f81d1ed6b309d06b383f747f6d001` before the T9 update.
+- Static heading check: **7 of 7 required sections present**.
+- No executable code changed; no test result was claimed for prose.
+
