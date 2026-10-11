@@ -1,6 +1,6 @@
 # MCP adapter binding findings
 
-Review target: `amazon/mcp-phase2`. No core or adapter code was changed because `D5_ADAPTER_BINDING_ALLOWED` was not set to `YES`.
+Review target: `amazon/mcp-phase2`. D5 was later approved.
 
 ## Conclusion
 
@@ -19,5 +19,5 @@ This is **not** the requested complete canonical binding. Unicode NFC is not app
 
 ## Gap and recommendation
 
-If D5 is later approved, the smallest adapter-only change is to canonicalize material arguments before `operation_resource`: NFC strings, integer minor units for money, sorted object keys, and duplicate-key rejection at raw JSON decoding. Keep the existing signed `resource` and gate comparison. This would not solve stable subject binding or explicit versioning; those remain v2 concerns.
+The complete requested adapter-only change is not feasible at the current MCP tool boundary: the SDK parses JSON before the tool function receives arguments, so duplicate raw keys have already been collapsed and cannot be rejected honestly. No partial implementation was applied to RC1. The approved `amazon/commitment-v2-retry` branch instead signs operation type, canonical parameter hash, stable simulated subject, and commitment version, but it remains outside RC1 until its regression gate passes.
 

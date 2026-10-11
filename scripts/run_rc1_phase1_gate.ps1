@@ -10,9 +10,14 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Push-Location $gatePath
 try {
-    py -3.12 -m pytest tests/alexa_mcp/test_phase1.py -q --basetemp=.test-tmp/phase1
+    $venv = Join-Path $gatePath ".venv-rc1-gate"
+    $python = Join-Path $venv "Scripts\python.exe"
+    py -3.12 -m venv $venv
+    & $python -m pip install -r integrations/alexa_mcp/requirements.txt
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    py -3.12 -m pytest -q --basetemp=.test-tmp/full -rs
+    & $python -m pytest tests/alexa_mcp/test_phase1.py -q --basetemp=.test-tmp/phase1
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & $python -m pytest -q --basetemp=.test-tmp/full -rs
     exit $LASTEXITCODE
 } finally {
     Pop-Location
