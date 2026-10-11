@@ -4,7 +4,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$venv = Join-Path $root ".scan-venv"
+$venv = Join-Path $root ".venv-scan"
 $python = Join-Path $venv "Scripts\python.exe"
 
 if (-not (Test-Path $python)) {
