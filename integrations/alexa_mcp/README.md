@@ -38,6 +38,12 @@ Phase 2 is available on the `amazon/mcp-phase2` branch for `send_money` only:
 py -3.12 -m integrations.alexa_mcp.phase2 --replay-db .local/phase2.sqlite3 --contact-token local-demo-contact
 ```
 
+Open `/demo` for the fixed offline **simulated voice assistant** fixture. The
+no-build HTML/CSS/JavaScript interface explains why an action paused, what it
+protected, and what happens next. Review pages fetch their transaction fields
+from server-held pending state by request ID; URL query parameters are ignored.
+The local contact credential is a simulation, not proof of a person.
+
 It serves MCP and the independent simulated-contact review page over local HTTPS
 with a generated, short-lived self-signed certificate. The certificate and private
 key are created below the Git-ignored `.test-tmp/` runtime directory and removed

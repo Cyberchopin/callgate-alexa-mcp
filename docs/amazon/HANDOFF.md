@@ -51,4 +51,15 @@ The read-only R3 finding is in `BINDING_FINDINGS.md`: exact parsed tool/argument
 - Decide whether the local review endpoint should require Origin validation and a CSRF token in addition to its bearer header.
 - Decide whether to add a restrictive `Referrer-Policy` header before any non-local deployment.
 - Commitment v2 remains reverted; this report must not be used as evidence that v2 binding passed.
+## Approved hardening gate
+
+- D2/D3/D4 changes are now integrated into RC1 but require a fresh local regression run.
+- Run `powershell -ExecutionPolicy Bypass -File scripts/run_ui_hardening_gate.ps1` from the repository root.
+
+- Branch: `amazon/ui`.
+- Status: PARTIAL because implementation/tests passed but screenshots could not be captured.
+- Open `/demo` on the local phase-2 server for the fixed offline simulated voice-assistant fixture.
+- Use `python -m scripts.run_ui_preview` only for local screenshots; it clearly serves HTTP and is not security evidence. The protected approval demonstration must use the HTTPS phase-2 command.
+- Owner action: capture the three screenshots listed in `UI_ACCESSIBILITY.md` outside this environment and visually verify contrast with an accessibility tool.
+- No bilingual toggle was added; it was optional and did not displace security or accessibility work.
 
