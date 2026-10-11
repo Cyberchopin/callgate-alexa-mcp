@@ -15,6 +15,16 @@
 - Node result: **3 passed, 0 failed, 0 skipped**.
 - Tracked-key check: no `.pem`, `.key`, `.p12`, or `.pfx` file is tracked on any Amazon work branch.
 
+## BUILD-COMMITMENT-V2-RETRY-001 — 2026-10-10
+
+- Owner decisions D1 through D6 were explicitly approved.
+- The approved v2 implementation was reapplied on `amazon/commitment-v2-retry`; it has not been merged into the release candidate.
+- First gate attempt stopped before collection: `No module named pytest` in the existing verification environment.
+- Second gate attempt stopped during collection: `ModuleNotFoundError: No module named 'mcp'` in the global Python environment.
+- Per the two-failure rule, testing stopped. No v2 pass or regression claim is made.
+- Run `powershell -ExecutionPolicy Bypass -File scripts/run_v2_retry_gate.ps1` from the repository root to create an isolated fixed-dependency environment and execute the core, MCP, and full gates.
+
+
 ## BUILD-COMMITMENT-V2-001 — 2026-10-10
 
 - Task: First targeted commitment-v2 run.
