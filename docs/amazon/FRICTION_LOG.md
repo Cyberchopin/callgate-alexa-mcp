@@ -37,3 +37,19 @@ mcp.server.mcpserver.exceptions.UnexpectedToolError: Error executing tool send_m
 - Severity: medium.
 - Workaround: Subclass `mcp.server.mcpserver.exceptions.ToolError` for expected policy failures.
 - Actionable suggestion: Add a documented policy-denial example that distinguishes `ToolError` from an unexpected exception.
+
+## FRICTION-003 — Client does not specialize URL-elicitation error — 2026-10-10
+
+- Task: T6 URL-mode elicitation integration test.
+- Step: Catch the SDK's `UrlElicitationRequiredError` from a real `ClientSession.call_tool` request after the server raised that exact SDK exception.
+- Expected: Client reconstructs the specialized error type and exposes its `elicitations` property.
+- Actual (raw):
+
+```text
+mcp.shared.exceptions.MCPError: URL elicitation required
+```
+
+- Severity: medium.
+- Workaround: Verify code `-32042`, then call `UrlElicitationRequiredError.from_error(error.error)` before reading the URL-mode fields.
+- Actionable suggestion: Have the Python client dispatcher reconstruct `UrlElicitationRequiredError` automatically when it receives `-32042`, or document the manual conversion next to the server example.
+

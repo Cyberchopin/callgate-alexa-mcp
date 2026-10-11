@@ -29,3 +29,28 @@ version.
 
 Phase 1 does not implement URL elicitation, contact approval pages, durable pending
 requests, a merchant server, AWS services, or UI. Those are separate later phases.
+
+## Phase 2 URL elicitation demo
+
+Phase 2 is available on the `amazon/mcp-phase2` branch for `send_money` only:
+
+```powershell
+py -3.12 -m integrations.alexa_mcp.phase2 --replay-db .local/phase2.sqlite3 --contact-token local-demo-contact
+```
+
+It serves MCP and the independent simulated-contact review page over local HTTPS
+with a generated, short-lived self-signed certificate. The certificate and private
+key are created below the Git-ignored `.test-tmp/` runtime directory and removed
+when the server exits, so an interrupted demo still cannot add them to Git. The MCP endpoint is
+`https://127.0.0.1:8443/mcp`. The approval URL contains only a random elicitation
+ID; the simulated contact credential is sent separately in the
+`X-CallGate-Contact-Token` header. The page displays the full amount, destination,
+and requested saved-contact identity.
+
+The SDK's native `UrlElicitationRequiredError` supplies JSON-RPC code `-32042` and
+the 2025-11-25 URL-mode fields. Approval sends
+`notifications/elicitation/complete` only to the initiating MCP session. The
+server keeps the resulting v1 proof out of the MCP/LLM context and consumes it on
+the exact retry. `subject` is server configuration and is not derived from the MCP
+session. This is a thin compatibility boundary pending owner approval of
+commitment v2; it is not production identity or payment authorization.
