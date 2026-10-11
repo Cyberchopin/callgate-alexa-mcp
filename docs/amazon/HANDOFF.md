@@ -2,10 +2,11 @@
 
 ## Security scan handoff
 
+- > **RELEASE BLOCKER:** the owner-machine audit reported 11 vulnerability entries for `cryptography==46.0.5` in the MCP requirements. Test an upgrade that covers every reported fixed version, then rerun the audit before submission.
 - Status: PARTIAL on `amazon/scan-evidence`.
 - Review `docs/amazon/SECURITY_SCAN.md` before publishing any security statement.
 - Run `powershell -ExecutionPolicy Bypass -File scripts/run_security_scans.ps1` outside the restricted environment. Add `-AllowRemoteAnalysis` only after accepting that simulated MCP tool names and descriptions may be sent to the scanner's analysis service and after starting both local demo servers.
-- Agent Scan and dependency audit remain unverified; Bandit found one accepted medium-severity XML-parsing issue and 20 low-severity items.
+- Agent Scan remote analysis remains unrun by explicit privacy choice. The dependency audit completed with the MCP finding above; the root lock-file command reported no known vulnerabilities. Bandit found one accepted medium-severity XML-parsing issue and 20 low-severity items.
 
 - Branch: `amazon/merchant-injection`.
 - Status: PARTIAL; implementation exists but its first end-to-end test stalled twice in this environment.

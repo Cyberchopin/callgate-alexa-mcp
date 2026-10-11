@@ -172,7 +172,7 @@ Recorded local checks: **184 Python tests and 3 Node logic tests passed**. These
 
 A fixed-version local evidence run used Bandit 1.9.4 over `callgate/`, `integrations/alexa_mcp/`, and `scripts/`. It reported 20 low-severity findings, one medium-severity finding, and no high-severity findings across 3,005 lines. The accepted findings and their limits are listed in [the scan record](docs/amazon/SECURITY_SCAN.md); this is not a certification.
 
-Agent Scan 0.6.8 could not start in the test environment because its Windows runtime could not import `pywintypes`. The dependency audit also did not complete. Neither is presented as a passing result. The fixed-version local reproduction command is `powershell -ExecutionPolicy Bypass -File scripts/run_security_scans.ps1`; remote MCP metadata analysis remains opt-in.
+The owner-machine dependency audit reported 11 vulnerability entries across six unique advisory IDs for `cryptography==46.0.5` in the MCP requirements; the root lock-file audit reported no known vulnerabilities. Agent Scan 0.6.8 started, but remote MCP metadata analysis remained intentionally disabled. None of these results is presented as a certification or a clean MCP audit; see the fixed-version [scan record](docs/amazon/SECURITY_SCAN.md).
 
 ### Safety vs Coverage
 

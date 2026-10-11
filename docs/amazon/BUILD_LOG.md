@@ -7,6 +7,14 @@
 - Bandit 1.9.4 completed: 3,005 lines scanned; 20 low, 1 medium, 0 high; 21 findings had high confidence; 0 files skipped.
 - No source finding was fixed on the evidence-only branch.
 
+## BUILD-SCAN-002 — Owner-machine rerun — 2026-10-11
+
+- pip-audit 2.10.1 completed against both requested manifests.
+- MCP requirements result: `Found 11 known vulnerabilities in 1 package`; all entries concerned `cryptography==46.0.5`, with six unique advisory IDs and reported fixes up to 50.0.0.
+- Root lock-file result: `No known vulnerabilities found`.
+- Bandit 1.9.4 reproduced the prior result: 3,005 lines; 20 low, 1 medium, 0 high; 21 high-confidence findings; 0 files skipped.
+- Agent Scan remote analysis was skipped because `-AllowRemoteAnalysis` was not supplied. No MCP-server scan result is claimed.
+
 ## ApprovalBench build record — 2026-10-10
 
 - First run failed because the Windows sandbox temporary directory could not open or remove the SQLite file (`sqlite3.OperationalError: unable to open database file`; `PermissionError: [WinError 5] Access is denied`).

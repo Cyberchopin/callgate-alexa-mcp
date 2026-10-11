@@ -1,6 +1,6 @@
 # Security scan evidence
 
-Date: 2026-10-10. Scope: the simulated CallGate MCP server, simulated merchant MCP server, Python dependency manifests, and Python source under `callgate/`, `integrations/alexa_mcp/`, and `scripts/`.
+Initial run: 2026-10-10. Owner-machine rerun: 2026-10-11. Scope: the simulated CallGate MCP server, simulated merchant MCP server, Python dependency manifests, and Python source under `callgate/`, `integrations/alexa_mcp/`, and `scripts/`.
 
 This is tool output from a local development run, not a certification or independent audit. No secret values, environment files, approval credentials, or real user data were inspected or submitted.
 
@@ -18,13 +18,13 @@ The current Agent Scan documentation says analysis may send component informatio
 
 Only the non-sensitive, simulated server metadata was in scope. No credential, pending approval, contact record, environment file, or real transaction was supplied. Source consulted: [Snyk Agent Scan](https://github.com/snyk/agent-scan).
 
-The scan did **not** run. Both attempts stopped before server inspection with the same import error:
+The initial restricted-environment scan did **not** run. Both attempts stopped before server inspection with the same import error:
 
 ```text
 ModuleNotFoundError: No module named 'pywintypes'
 ```
 
-This is an environment/tool-startup failure, not a security result. No claim is made about either MCP server. `scripts/run_security_scans.ps1` reproduces the fixed-version setup outside this environment; its remote-analysis step requires an explicit switch and assumes the two local demo servers are already running.
+On the 2026-10-11 owner-machine rerun, Agent Scan started, but remote analysis was intentionally skipped because `-AllowRemoteAnalysis` was not supplied. This is the expected privacy-preserving default. No Agent Scan finding or passing result is claimed for either MCP server.
 
 ## Dependency audit
 
@@ -35,14 +35,19 @@ pip-audit -r integrations/alexa_mcp/requirements.txt --no-deps --disable-pip --t
 pip-audit -r requirements-lock.txt --no-deps --disable-pip --timeout 15 --progress-spinner off
 ```
 
-The first form initially failed while creating a virtual environment:
+The initial restricted-environment run failed while creating a virtual environment:
 
 ```text
 VirtualEnvError: Couldn't execute in a temporary directory
 PermissionError: [WinError 5] Access is denied
 ```
 
-After moving temporary files into the ignored project directory and disabling dependency resolution, two runs produced no vulnerability response and were interrupted after the allowed retry. Therefore the number of dependency vulnerabilities is **unknown**. This is not a clean audit result. The local reproduction script retains the exact fixed versions and manifest scope.
+The 2026-10-11 owner-machine rerun completed both commands:
+
+- `integrations/alexa_mcp/requirements.txt`: **11 vulnerability entries in one package**, `cryptography==46.0.5`. The output contains six unique advisory IDs: `PYSEC-2026-35`, `PYSEC-2026-36`, `PYSEC-2026-3552`, `PYSEC-2026-3553`, `PYSEC-2026-3554`, and `GHSA-537c-gmf6-5ccf`.
+- `requirements-lock.txt`: **no known vulnerabilities found** by this command.
+
+The reported fixed versions range from 46.0.6 through 50.0.0; satisfying every listed entry requires evaluating an upgrade to at least 50.0.0. No dependency was changed on this evidence-only branch. The MCP dependency set must not be described as clean until the upgrade is tested and the audit is rerun.
 
 ## Static analysis
 

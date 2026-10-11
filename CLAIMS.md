@@ -333,13 +333,13 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
   },
   {
     "id": "readme-034",
-    "quote": "Agent Scan 0.6.8 could not start in the test environment because its Windows runtime could not import `pywintypes`. The dependency audit also did not complete. Neither is presented as a passing result. The fixed-version local reproduction command is `powershell -ExecutionPolicy Bypass -File scripts/run_security_scans.ps1`; remote MCP metadata analysis remains opt-in.",
+    "quote": "The owner-machine dependency audit reported 11 vulnerability entries across six unique advisory IDs for `cryptography==46.0.5` in the MCP requirements; the root lock-file audit reported no known vulnerabilities. Agent Scan 0.6.8 started, but remote MCP metadata analysis remained intentionally disabled. None of these results is presented as a certification or a clean MCP audit; see the fixed-version [scan record](docs/amazon/SECURITY_SCAN.md).",
     "evidence": "docs/amazon/SECURITY_SCAN.md",
     "check": "source_literals",
     "sources": [
       {
         "path": "docs/amazon/SECURITY_SCAN.md",
-        "literals": ["snyk-agent-scan==0.6.8", "ModuleNotFoundError: No module named 'pywintypes'", "dependency vulnerabilities is **unknown**"]
+        "literals": ["snyk-agent-scan==0.6.8", "11 vulnerability entries in one package", "six unique advisory IDs", "no known vulnerabilities found", "remote analysis was intentionally skipped"]
       }
     ]
   }
