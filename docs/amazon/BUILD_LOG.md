@@ -1,6 +1,6 @@
 # Amazon phase-2 build log
 
-## Security evidence build record — 2026-10-10
+## BUILD-SCAN-001 — Security evidence — 2026-10-10
 
 - Agent Scan 0.6.8 failed twice before inspection: `ModuleNotFoundError: No module named 'pywintypes'`. No MCP scan result is claimed.
 - pip-audit 2.10.1 first failed with `VirtualEnvError: Couldn't execute in a temporary directory` and `PermissionError: [WinError 5] Access is denied`. After relocating temporary files, two allowed query attempts returned no result before interruption. Dependency vulnerability status is unknown.
