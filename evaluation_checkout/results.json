@@ -1,4 +1,12 @@
 {
+  "assumptions": [
+    "Three author-written legitimate and three unauthorized scenarios are weighted equally.",
+    "OTP relay is a seeded Bernoulli draw at each stated p_relay value.",
+    "A legitimate CallGate action completes only when the contact is available.",
+    "The scripted independent contact rejects every unauthorized CallGate request.",
+    "Contact latency is sampled from the stated synthetic uniform distribution.",
+    "Outputs are sensitivity results, not forecasts or measured human behavior."
+  ],
   "disclosure": "Synthetic author-provided checkout rehearsal. No real payments, no independent labels, no population claim. Contact availability and latency are scripted parameters.",
   "model_parameters": {
     "callgate_p100_fast": "all contacts respond with scripted fast latency",
@@ -6,6 +14,14 @@
     "callgate_p67_slow": "same availability as observed; response latency multiplied by 4",
     "otp_step_up": "coerced victim relays OTP in unauthorized pressure scenarios"
   },
+  "otp_relay_probabilities": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "random_seed": 20261010,
   "rows": [
     {
       "authorized": true,
@@ -387,7 +403,212 @@
     }
   ],
   "scenario_count": 6,
-  "schema_version": "callgate-checkout-utility-v1",
+  "schema_version": "callgate-checkout-utility-v2",
+  "sensitivity": {
+    "callgate": {
+      "contact_p067_slow": {
+        "contact_availability_probability": 0.67,
+        "false_execute": {
+          "denominator": 300,
+          "numerator": 0,
+          "value": 0.0,
+          "wilson95": [
+            0,
+            0.012643429997735661
+          ]
+        },
+        "latency_distribution": {
+          "maximum_ms": 120000,
+          "minimum_ms": 45000,
+          "name": "uniform"
+        },
+        "legitimate_completion": {
+          "denominator": 300,
+          "numerator": 189,
+          "value": 0.63,
+          "wilson95": [
+            0.574043509355098,
+            0.6826691988454907
+          ]
+        },
+        "verification_ms_median": 82509,
+        "verification_ms_p95": 115817
+      },
+      "contact_p067_typical": {
+        "contact_availability_probability": 0.67,
+        "false_execute": {
+          "denominator": 300,
+          "numerator": 0,
+          "value": 0.0,
+          "wilson95": [
+            0,
+            0.012643429997735661
+          ]
+        },
+        "latency_distribution": {
+          "maximum_ms": 40000,
+          "minimum_ms": 12000,
+          "name": "uniform"
+        },
+        "legitimate_completion": {
+          "denominator": 300,
+          "numerator": 207,
+          "value": 0.69,
+          "wilson95": [
+            0.6355381623460284,
+            0.7396573342548319
+          ]
+        },
+        "verification_ms_median": 25786,
+        "verification_ms_p95": 39081
+      },
+      "contact_p100_fast": {
+        "contact_availability_probability": 1.0,
+        "false_execute": {
+          "denominator": 300,
+          "numerator": 0,
+          "value": 0.0,
+          "wilson95": [
+            0,
+            0.012643429997735661
+          ]
+        },
+        "latency_distribution": {
+          "maximum_ms": 20000,
+          "minimum_ms": 8000,
+          "name": "uniform"
+        },
+        "legitimate_completion": {
+          "denominator": 300,
+          "numerator": 300,
+          "value": 1.0,
+          "wilson95": [
+            0.9873565700022643,
+            0.9999999999999999
+          ]
+        },
+        "verification_ms_median": 13996.5,
+        "verification_ms_p95": 19217
+      }
+    },
+    "otp_step_up": {
+      "p_relay_0.00": {
+        "false_execute": {
+          "denominator": 300,
+          "numerator": 0,
+          "value": 0.0,
+          "wilson95": [
+            0,
+            0.012643429997735661
+          ]
+        },
+        "legitimate_completion": {
+          "denominator": 300,
+          "numerator": 300,
+          "value": 1.0,
+          "wilson95": [
+            0.9873565700022643,
+            0.9999999999999999
+          ]
+        },
+        "p_relay": 0.0,
+        "verification_ms_median": 12000,
+        "verification_ms_p95": 12000
+      },
+      "p_relay_0.25": {
+        "false_execute": {
+          "denominator": 300,
+          "numerator": 85,
+          "value": 0.2833333333333333,
+          "wilson95": [
+            0.23533002872803954,
+            0.33681545760431253
+          ]
+        },
+        "legitimate_completion": {
+          "denominator": 300,
+          "numerator": 300,
+          "value": 1.0,
+          "wilson95": [
+            0.9873565700022643,
+            0.9999999999999999
+          ]
+        },
+        "p_relay": 0.25,
+        "verification_ms_median": 12000,
+        "verification_ms_p95": 12000
+      },
+      "p_relay_0.50": {
+        "false_execute": {
+          "denominator": 300,
+          "numerator": 157,
+          "value": 0.5233333333333333,
+          "wilson95": [
+            0.46687729355961566,
+            0.5791993463738232
+          ]
+        },
+        "legitimate_completion": {
+          "denominator": 300,
+          "numerator": 300,
+          "value": 1.0,
+          "wilson95": [
+            0.9873565700022643,
+            0.9999999999999999
+          ]
+        },
+        "p_relay": 0.5,
+        "verification_ms_median": 12000,
+        "verification_ms_p95": 12000
+      },
+      "p_relay_0.75": {
+        "false_execute": {
+          "denominator": 300,
+          "numerator": 226,
+          "value": 0.7533333333333333,
+          "wilson95": [
+            0.7015536959202178,
+            0.7987069662142627
+          ]
+        },
+        "legitimate_completion": {
+          "denominator": 300,
+          "numerator": 300,
+          "value": 1.0,
+          "wilson95": [
+            0.9873565700022643,
+            0.9999999999999999
+          ]
+        },
+        "p_relay": 0.75,
+        "verification_ms_median": 12000,
+        "verification_ms_p95": 12000
+      },
+      "p_relay_1.00": {
+        "false_execute": {
+          "denominator": 300,
+          "numerator": 300,
+          "value": 1.0,
+          "wilson95": [
+            0.9873565700022643,
+            0.9999999999999999
+          ]
+        },
+        "legitimate_completion": {
+          "denominator": 300,
+          "numerator": 300,
+          "value": 1.0,
+          "wilson95": [
+            0.9873565700022643,
+            0.9999999999999999
+          ]
+        },
+        "p_relay": 1.0,
+        "verification_ms_median": 12000,
+        "verification_ms_p95": 12000
+      }
+    }
+  },
   "summary": {
     "callgate_p100_fast": {
       "false_execute": {
@@ -535,5 +756,7 @@
     "callgate_p100_fast",
     "callgate_p67_observed",
     "callgate_p67_slow"
-  ]
+  ],
+  "title": "Checkout safety-utility sensitivity \u2014 simulated, author script, not human study",
+  "trials_per_scenario": 100
 }

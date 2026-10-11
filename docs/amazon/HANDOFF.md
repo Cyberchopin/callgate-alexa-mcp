@@ -30,4 +30,13 @@ The read-only R3 finding is in `BINDING_FINDINGS.md`: exact parsed tool/argument
 - Agent Scan remains postponed and is not claimed as passed.
 - The current Bandit medium is in a local JUnit report parser, not core safety code; it was accepted with the bounded rationale in `BANDIT_TRIAGE.md`. No `nosec` was added.
 - Remaining known conditions: the isolated dependency environment skips two optional `onnxruntime` tests and one optional `pipecat` test; the three pre-existing baseline failures are not caused by this upgrade.
+## Evaluation branch
+
+- Status: DONE with disclosed baseline failures.
+- Branch: `amazon/eval`.
+- Outputs: `evaluation_checkout/results.json`, `REPORT.md`, `safety_utility.svg`, and `sensitivity_scan.svg`.
+- The experiment is explicitly a seeded author simulation, not human research.
+- No decision is required for the evaluation implementation.
+
+- Historical secret-scanner classification remains a prerequisite before any migration, publication, or push.
 

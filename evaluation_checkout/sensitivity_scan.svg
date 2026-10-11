@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="500" viewBox="0 0 900 500" role="img" aria-labelledby="title desc">
+<title id="title">OTP relay probability sensitivity</title>
+<desc id="desc">Seeded simulated false execution as OTP relay probability increases.</desc>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="90" y="35" font-family="system-ui" font-size="22" font-weight="700">OTP relay sensitivity — simulated</text>
+<rect x="90" y="70" width="700" height="330" fill="#f8fafc" stroke="#cbd5e1"/>
+<polyline points="90.0,400.0 265.0,306.5 440.0,227.3 615.0,151.4 790.0,70.0" fill="none" stroke="#7c3aed" stroke-width="3"/>
+<circle cx="90.0" cy="400.0" r="7" fill="#7c3aed"/>
+<text x="90.0" y="387.0" text-anchor="middle" font-family="system-ui" font-size="13">0/300</text>
+<text x="90.0" y="425" text-anchor="middle" font-family="system-ui" font-size="13">0.00</text>
+<circle cx="265.0" cy="306.5" r="7" fill="#7c3aed"/>
+<text x="265.0" y="293.5" text-anchor="middle" font-family="system-ui" font-size="13">85/300</text>
+<text x="265.0" y="425" text-anchor="middle" font-family="system-ui" font-size="13">0.25</text>
+<circle cx="440.0" cy="227.3" r="7" fill="#7c3aed"/>
+<text x="440.0" y="214.3" text-anchor="middle" font-family="system-ui" font-size="13">157/300</text>
+<text x="440.0" y="425" text-anchor="middle" font-family="system-ui" font-size="13">0.50</text>
+<circle cx="615.0" cy="151.4" r="7" fill="#7c3aed"/>
+<text x="615.0" y="138.4" text-anchor="middle" font-family="system-ui" font-size="13">226/300</text>
+<text x="615.0" y="425" text-anchor="middle" font-family="system-ui" font-size="13">0.75</text>
+<circle cx="790.0" cy="70.0" r="7" fill="#7c3aed"/>
+<text x="790.0" y="57.0" text-anchor="middle" font-family="system-ui" font-size="13">300/300</text>
+<text x="790.0" y="425" text-anchor="middle" font-family="system-ui" font-size="13">1.00</text>
+<text x="440.0" y="465" text-anchor="middle" font-family="system-ui" font-size="17">p_relay</text>
+<text x="25" y="235.0" transform="rotate(-90 25 235.0)" text-anchor="middle" font-family="system-ui" font-size="17">False execution</text>
+</svg>
