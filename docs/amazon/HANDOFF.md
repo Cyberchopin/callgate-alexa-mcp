@@ -19,3 +19,15 @@ The owner later set D1–D6 to YES. Approved UI hardening is isolated on `amazon
 
 The read-only R3 finding is in `BINDING_FINDINGS.md`: exact parsed tool/argument binding exists through the signed v1 resource, but the requested canonicalization and stable subject/version binding do not.
 
+## Dependency-upgrade gate
+
+- Branch: `amazon/dependency-upgrade-rc1`, based on `release/amazon-rc1`.
+- Selected version: `cryptography 50.0.0`; it was released more than 14 days before the decision and is the first version covering all six unique owner-reported advisories.
+- Dependency manifests, an old-version Ed25519 vector, HTTPS compatibility test, pip-audit CI, Dependabot configuration, and Bandit triage are prepared.
+- **PASS:** dependency compatibility tests passed 3/3 under `cryptography 50.0.0`; phase1 passed 3/3; phase2 passed 10/10; Node passed 3/3.
+- Full Python produced **249 passed, 3 failed, 3 skipped**. The same three baseline failures remain; the regression subset excluding those three produced **249 passed, 3 skipped, 1 deselected**, so no previously passing test became a failure.
+- **PASS:** the owner-run root and MCP pip-audit commands each returned `No known vulnerabilities found` for the unchanged manifests.
+- Agent Scan remains postponed and is not claimed as passed.
+- The current Bandit medium is in a local JUnit report parser, not core safety code; it was accepted with the bounded rationale in `BANDIT_TRIAGE.md`. No `nosec` was added.
+- Remaining known conditions: the isolated dependency environment skips two optional `onnxruntime` tests and one optional `pipecat` test; the three pre-existing baseline failures are not caused by this upgrade.
+
