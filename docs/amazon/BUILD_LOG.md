@@ -1,5 +1,15 @@
 # Amazon phase-2 build log
 
+## BUILD-UI-HARDENING-001 — 2026-10-10
+
+- D2, D3, and D4 were explicitly approved.
+- Added MCP-layer per-subject challenge issuance windows matching the existing five-per-minute and thirty-per-hour demo limits.
+- Added browser Origin enforcement while preserving bearer-only handling for clients that send no Origin.
+- Added `Referrer-Policy: no-referrer` to UI and approval responses, plus URL/body/log token-redaction assertions.
+- First test attempt stopped during collection because the available tool environment could not import `pywintypes`.
+- Second attempt repaired that path but stopped because the available MCP package lacked `mcp.server.mcpserver`.
+- No passing result is claimed. Run `powershell -ExecutionPolicy Bypass -File scripts/run_ui_hardening_gate.ps1` from the repository root.
+
 ## BUILD-PHASE2-001 — 2026-10-10
 
 - Task: Verify runtime cleanup for the generated local HTTPS private key.

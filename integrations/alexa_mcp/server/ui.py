@@ -29,12 +29,12 @@ async def assistant_page(_request):
 
 async def stylesheet(_request):
     return Response(_asset("style.css"), media_type="text/css",
-                    headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+                    headers=security_headers())
 
 
 async def javascript(_request):
     return Response(_asset("demo.js"), media_type="application/javascript",
-                    headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+                    headers=security_headers())
 
 
 def render_contact_page(item) -> str:

@@ -58,7 +58,7 @@ def build_app(replay_db: Path, approval_base_url: str, contact_token: str, *,
         contacts=contacts, initiator_origin=initiator_origin)
     flow = ApprovalFlow(gateway, coordinator, {"family": reviewer},
                         {"family": contact_token}, approval_base_url=approval_base_url,
-                        subject=subject)
+                        subject=subject, rate_clock=clock or __import__('time').monotonic)
     server = create_server(gateway, flow)
     return add_approval_routes(server.streamable_http_app(streamable_http_path="/mcp"), flow), flow
 
