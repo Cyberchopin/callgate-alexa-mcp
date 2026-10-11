@@ -2,7 +2,7 @@
 
 Implemented 2026-09-09. Install `pip install -e '.[verification]'` or the pinned requirements-verification.txt in the existing environment.
 
-Reuses [pyca cryptography](https://github.com/pyca/cryptography) 46.0.5 Ed25519 signing and verification. No elliptic-curve arithmetic is implemented by CallGate. Retain upstream dependency licensing; cryptography is available under Apache-2.0 OR BSD-3-Clause (see upstream LICENSE).
+Pins [pyca cryptography](https://github.com/pyca/cryptography) 50.0.0 for Ed25519 signing and verification. No elliptic-curve arithmetic is implemented by CallGate. Retain upstream dependency licensing; cryptography is available under Apache-2.0 OR BSD-3-Clause (see upstream LICENSE).
 
 CallGate adds strict credential fields, domain/version separation, deterministic serialization, issuer lookup, session/resource binding, a maximum 300-second lifetime, policy and confirmation prerequisites, and atomic one-time consumption within a single gate instance. The only supported action is simulate_protected_action. No real action is executed. The demo issuer does not perform independent identity verification.
 

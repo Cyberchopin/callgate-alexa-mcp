@@ -50,3 +50,35 @@
 - Per the two-failure rule, no third run was made. No phase-1 or full-suite pass is claimed.
 - The retained gate worktree is `.rc1-phase1-gate`. The script now installs pinned `pytest==9.1.1` for the owner's next local run.
 
+## BUILD-DEPENDENCY-001 — 2026-10-11
+
+- Task: Generate an Ed25519 compatibility vector with the pre-upgrade dependency.
+- First install attempt failed because pip could not write its sandbox temporary directory: `OSError: [Errno 13] Permission denied`.
+- Retry with a project-local temporary directory succeeded with `cryptography 46.0.5`; the committed fixture contains only the public key, message, signature, and generating version. No private key was recorded.
+
+## BUILD-DEPENDENCY-002 — 2026-10-11
+
+- Task: Install the selected `cryptography 50.0.0` environment and run compatibility tests.
+- Attempt 1 ended without completing the environment; inspection showed `cryptography 50.0.2` still installed and `No module named pytest`.
+- Attempt 2 used a project-local target directory but also ended before installing packages; inspection returned `ModuleNotFoundError: No module named 'cryptography'`.
+- Per the two-failure rule, sandbox installation and phase/full regression stopped. No compatibility, phase1, phase2, full Python, or Node comparison is claimed yet.
+
+## BUILD-DEPENDENCY-003 — 2026-10-11
+
+- Task: Run post-upgrade pip-audit.
+- pip-audit 2.10.1 could not create its temporary virtual environment and raised `PermissionError: [WinError 5] Access is denied` followed by `VirtualEnvError: Couldn't execute in a temporary directory`.
+- A project-local `TMP`/`TEMP`/`TMPDIR` retry emitted the `--no-deps` and `pip-compile` warnings but no audit result. No clean audit is claimed.
+
+## BUILD-DEPENDENCY-004 — 2026-10-11
+
+- Task: Re-run static analysis and triage findings.
+- Bandit 1.9.4 scanned 2,738 lines: 0 high, 1 medium, 25 low, all 26 high confidence, 0 `nosec`, 0 skipped files.
+- The owner-provided 1 medium and 20 low are still present; five additional low findings belong to tooling now present in RC1. All 26 are individually dispositioned in `BANDIT_TRIAGE.md`.
+
+## BUILD-DEPENDENCY-005 — 2026-10-11
+
+- Task: Validate the new test logic independently of the blocked 50.0.0 environment.
+- Initial HTTPS test failed with `TypeError: SSLContext.wrap_socket() got an unexpected keyword argument 'certfile'`; the test was corrected to call `load_cert_chain()` before wrapping the socket.
+- Retry under the already installed `cryptography 49.0.0`: **2 passed, 1 deselected** in 2.71 seconds. This validates the old Ed25519 vector and HTTPS test mechanics, but it is not the required 50.0.0 acceptance run.
+- Full Node result: **3 passed, 0 failed, 0 skipped** in 60.3131 ms, matching the previously recorded Node baseline of 3 passed.
+

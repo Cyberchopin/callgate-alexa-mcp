@@ -19,3 +19,13 @@ The owner later set D1–D6 to YES. Approved UI hardening is isolated on `amazon
 
 The read-only R3 finding is in `BINDING_FINDINGS.md`: exact parsed tool/argument binding exists through the signed v1 resource, but the requested canonicalization and stable subject/version binding do not.
 
+## Dependency-upgrade gate
+
+- Branch: `amazon/dependency-upgrade-rc1`, based on `release/amazon-rc1`.
+- Selected version: `cryptography 50.0.0`; it was released more than 14 days before the decision and is the first version covering all six unique owner-reported advisories.
+- Dependency manifests, an old-version Ed25519 vector, HTTPS compatibility test, pip-audit CI, Dependabot configuration, and Bandit triage are prepared.
+- **BLOCKED:** sandbox package installation failed twice, so compatibility, phase1, phase2, full Python, and Node regression totals are not available. Do not merge this branch until the owner runs `powershell -ExecutionPolicy Bypass -File scripts/verify_local.ps1` from the repository root and reviews the output.
+- **BLOCKED:** post-upgrade pip-audit could not create its temporary virtual environment. The branch does not claim that the six findings are closed until the local script returns a clean result or records remaining issues.
+- Agent Scan remains postponed and is not claimed as passed.
+- The current Bandit medium is in a local JUnit report parser, not core safety code; it was accepted with the bounded rationale in `BANDIT_TRIAGE.md`. No `nosec` was added.
+
