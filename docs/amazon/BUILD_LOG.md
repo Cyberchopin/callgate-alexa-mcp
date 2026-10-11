@@ -82,3 +82,27 @@
 - Retry under the already installed `cryptography 49.0.0`: **2 passed, 1 deselected** in 2.71 seconds. This validates the old Ed25519 vector and HTTPS test mechanics, but it is not the required 50.0.0 acceptance run.
 - Full Node result: **3 passed, 0 failed, 0 skipped** in 60.3131 ms, matching the previously recorded Node baseline of 3 passed.
 
+## BUILD-DEPENDENCY-006 — 2026-10-11
+
+- Task: Review the owner's first outside-sandbox run of `scripts/verify_local.ps1`.
+- Confirmed `cryptography 50.0.0`; dependency compatibility result: **3 passed** in 2.66 seconds.
+- Full Python collection stopped with `ModuleNotFoundError: No module named 'hypothesis'`; the script had omitted the existing `requirements-safety.txt` input.
+- Node result: **3 passed, 0 failed, 0 skipped**.
+- Phase1 and phase2 were not run because the script looked for worktrees inside the repository instead of beside it.
+- Both pip-audit invocations returned `No known vulnerabilities found`.
+- Bandit reproduced 0 high, 1 medium, 25 low, all high confidence, 0 `nosec`, and 0 skipped files.
+
+## BUILD-DEPENDENCY-007 — 2026-10-11
+
+- Task: Correct the local verification script and rerun the dependency gate.
+- Script corrections: install `requirements-safety.txt`; find the two retained worktrees beside the repository; stop on native-command failures under Windows PowerShell 5.1; accept only the three recorded baseline failures before running the remaining regression subset.
+- Dependency compatibility: **3 passed** under `cryptography 50.0.0` in 3.06 seconds.
+- Full Python: **249 passed, 3 failed, 3 skipped** in 19.69 seconds. The failures are the same two Windows spawned-process failures and frozen `evaluation_v2` manifest mismatch recorded in the baseline.
+- Previously passing regression subset: **249 passed, 3 skipped, 1 deselected** in 15.85 seconds. No previously passing test became a failure.
+- Skip reasons: two tests require optional `onnxruntime`; one requires optional `pipecat`. The two `onnxruntime` skips match the previously documented isolated MCP dependency behavior.
+- Node: **3 passed, 0 failed, 0 skipped** in 62.1353 ms.
+- Phase1 with `cryptography 50.0.0`: **3 passed** in 2.27 seconds.
+- Phase2 with `cryptography 50.0.0`: **10 passed** in 4.13 seconds.
+- The in-sandbox repeat stalled during pip-audit and was interrupted without a new result; the owner's immediately preceding run already supplied two clean audit results for unchanged manifests.
+- High-severity Bandit gate: exit code 0.
+
