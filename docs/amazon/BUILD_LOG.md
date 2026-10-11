@@ -134,4 +134,12 @@
 - Skips: missing optional `onnxruntime` (two tests) and `pipecat` (one test); none concerns MCP, HTTPS, or elicitation.
 - Node result: `3 passed, 0 failed`.
 - Environment correction: the first command used a repository-local virtual-environment path that does not exist on this branch. The existing environment is one directory above the checkout; rerunning there succeeded.
+# Red-team build record — 2026-10-10
+
+- First collection failed because `PolicyBlocked` is defined in `server.app` but is not exported by the package. The test import was corrected.
+- The next run had one test-authoring error because `anyio.run` does not accept keyword arguments. A local async wrapper corrected it.
+- Targeted result: **7 passed in 1.15s**.
+- Full Python result: **260 passed, 3 failed, 3 skipped in 14.45s**. The failures are the two known Windows spawned-process pipe failures and the frozen `evaluation_v2` manifest mismatch; no frozen file was changed.
+- Skip reasons: missing optional `onnxruntime` (two tests) and `pipecat` (one test); none involves MCP, HTTPS, or elicitation.
+- Node result: **3 passed, 0 failed, 0 skipped**.
 
