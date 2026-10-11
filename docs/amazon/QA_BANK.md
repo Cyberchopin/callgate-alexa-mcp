@@ -12,7 +12,7 @@ Each answer is designed to fit within roughly fifteen seconds when spoken natura
 
 5. **Why is `subject` simulated?**  The prototype has no production identity provider. It tests binding behavior with a stable fictional subject identifier, not proof of a human identity.
 
-6. **Is this integrated with a real Alexa+ runtime?**  No. It is a real self-hosted MCP server plus a simulated voice-assistant experience. We do not claim real Alexa+ client support.
+6. **Is this integrated with a production voice-assistant runtime?**  No. It is a real self-hosted MCP server plus a simulated voice-assistant experience. We do not claim production-client support.
 
 7. **Where does private data go?**  In the prototype, pending request data stays in the local server database. The review URL uses an opaque ID. We do not send payment data to an LLM for authorization.
 
@@ -31,4 +31,10 @@ Each answer is designed to fit within roughly fifteen seconds when spoken natura
 14. **How do you know the result is not cherry-picked?**  Generated figures come from committed JSON with fixed assumptions and seed, and the claims checker binds README parameters to that JSON. It is still an author simulation, not independent validation.
 
 15. **What would production require next?**  Real identity enrollment, secure contact recovery, audited payment integrations, deployment hardening, privacy review, independent user research, and support validation in the target assistant client.
+
+16. **How does this relate to Lies in the Loop?**  It applies that established concern to household agentic shopping. We do not claim priority; our contribution is a protocol-level approval boundary and an author-written comparison benchmark.
+
+17. **Are D1–D4 fair comparisons?**  They are our best-faith reference implementations, documented by assumptions and open to correction. We report utility as well as attacks, and we do not claim they represent every production implementation.
+
+18. **Why can the contact page be trusted more than the confirmation card?**  It fetches the pending request from server state by opaque ID and shows the parameters the gateway will verify. It does not accept amount, destination, cart, or approval credentials from URL parameters.
 

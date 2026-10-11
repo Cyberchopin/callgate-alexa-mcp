@@ -1,68 +1,72 @@
-# Three-minute demo script
+# Three-minute demo script — Lies in the Loop, at home
 
-This is a recording plan, not evidence that every scene is currently runnable. Do not record the final video until every `{{TBD}}` is resolved and the final clean-environment gate passes. Use only fictional data and the words **simulated voice assistant**.
+This is a recording plan, not evidence that every scene is runnable. Resolve every placeholder from `CLAIMS.md` or a verified fixture before recording. Use only fictional data and the words **simulated voice assistant**.
 
-## 0:00–0:25 — pressure request
+## 0:00–0:30 — the lie and the independent view
 
-**Picture:** Wide assistant view. A visible “SIMULATED” label remains on screen.
+**Picture:** Split screen. A phone call pressures the shopper to act immediately. A deliberately vulnerable test double reads a poisoned fictional product description and renders a polished confirmation card showing `{{FIXTURE_FAKE_AMOUNT}}`. The actual protected request is for `{{FIXTURE_TRUE_AMOUNT}}` to `{{FIXTURE_TRUE_DESTINATION}}`.
 
-**Dialogue:** “The caller says I will lose access unless I pay now. Send fifty dollars to the recovery account.”
+**Action:** CallGate pauses the request. On a separate contact page, the saved-contact simulation fetches the request by opaque ID and shows the true amount, destination, cart, and requesting subject from server state. The contact rejects it. Immediately show the control: the same attack against the D1 agent-authored confirmation design proceeds because its approval is based on the false card.
 
-**Assistant:** “I paused this simulated payment because a protected action needs review. The money has not moved. A saved contact can review the exact request next.”
+**Narration:** “This is Lies in the Loop, at home: poisoned tool output changes what the shopper sees while a caller adds pressure. CallGate moves the decision to a different subject and shows the operation the server will actually execute. In our author-written control, the agent-authored confirmation accepts the lie; here, the contact rejects the truth.”
 
-**Narration:** “Pressure attacks exploit urgency. CallGate preserves the workflow but separates authorization from the pressured conversation.”
+**Evidence overlay:** `D1 A1: {{CLAIMS:APPROVALBENCH_D1_A1_K_N}}`; `D5 A1: {{CLAIMS:APPROVALBENCH_D5_A1_K_N}}`. Populate only from committed ApprovalBench JSON.
 
-**Start/fixture:** `{{TBD: final one-command launcher after approved branches are combined}}`; reset to fixture `pressure-send-money`.
+**Start/fixture:** `{{TBD: final one-command launcher}}`; reset to `{{TBD: lies-in-the-loop fixture}}`.
 
-**Fallback:** If the assistant view fails, stop the take. Do not substitute terminal text and imply that the UI ran.
+**Fallback:** If either live page or the control run fails, stop the take. Do not substitute animation or terminal text and imply a live comparison.
 
-## 0:25–0:50 — search and cart
+## 0:30–0:50 — ordinary shopping
 
-**Picture:** The simulated assistant searches two fictional products, compares them, and adds one to a cart. No protected action has occurred.
+**Picture:** Rewind to show the simulated voice assistant searching fictional products, comparing them, and adding one to the cart before the injected description is encountered.
 
-**Narration:** “Ordinary shopping remains autonomous. The boundary appears only when the workflow reaches a protected action.”
+**Narration:** “Search and cart building stay useful. The safety boundary appears only when an untrusted workflow asks for a protected action.”
 
-**Start/fixture:** `{{TBD: merchant launcher and fixture name; merchant branch is not implemented}}`.
+**Start/fixture:** `{{TBD: verified merchant launcher and fixture}}`.
 
-**Fallback:** If the merchant server is incomplete, remove this scene and state that merchant orchestration is planned; do not animate a fake runtime trace.
+**Fallback:** If the merchant server has not passed its local gate, replace the scene with a clearly labeled “planned workflow” card and make no runtime claim.
 
-## 0:50–1:30 — blocked action and independent review
+## 0:50–1:30 — pause, review, and a legitimate approval
 
-**Picture:** The tool call returns URL elicitation required. The assistant calmly shows why it paused, what it protected, and what happens next. On a second device, the saved-contact page fetches the request by ID and displays full fictional amount, destination, and requesting subject. The contact approves.
+**Picture:** Reset to a legitimate fictional purchase. The tool call returns URL elicitation required. The assistant calmly shows why it paused, what it protected, and the next step. On the separate page, the contact sees the complete server-held request and approves it.
 
-**Narration:** “The real MCP server returns the specification-defined URL-elicitation error. The URL carries an opaque request ID, not the amount, contact credential, or payment credential. Review happens outside the assistant conversation.”
+**Narration:** “The MCP server asks for review through URL-mode elicitation. The URL carries an opaque request ID, not payment data or an approval credential. The reviewer decides outside the poisoned assistant context.”
 
-**Start/fixture:** On `amazon/mcp-phase2`, install the pinned requirements, then run `py -3.12 -m integrations.alexa_mcp.phase2 --replay-db .local/phase2.sqlite3 --contact-token local-demo-contact`. `{{TBD: replace with the final safe demo launcher and verified fixture reset}}`.
+**Start/fixture:** `{{TBD: final safe launcher and legitimate fixture}}`.
 
-**Fallback:** If HTTPS or the second-device page fails, stop the take and use no approval claim. A static architecture card may explain the intended flow only if labeled “not shown running.”
+**Fallback:** If HTTPS, elicitation, or the second-device page fails, stop the take and make no approval claim.
 
-## 1:30–2:00 — exact retry, mutation, and replay
+## 1:30–2:00 — once means once
 
-**Picture:** The exact approved request succeeds once. A changed amount fails. A replay fails.
+**Picture:** The approved request succeeds once. A changed amount fails. A replay fails.
 
-**Narration:** “Only the signed, matching simulated operation can proceed, once. Mutation and replay fail closed.”
+**Narration:** “Approval is useful only when it binds what will execute and cannot be spent twice.”
 
-**Start/fixture:** `{{TBD: commitment-v2 command and fixture; the approved implementation attempt was reverted after the MCP regression gate failed}}`.
+**Evidence overlay:** `mutation: {{CLAIMS:MUTATION_TEST}}`; `replay: {{CLAIMS:REPLAY_TEST}}`.
 
-**Fallback:** Until v2 is implemented and its downgrade/mutation tests pass, omit the mutation claim and do not record this scene as final evidence.
+**Start/fixture:** `{{TBD: final binding gate and fixture}}`.
 
-## 2:00–2:30 — injected merchant text
+**Fallback:** Until the binding and replay gates pass in the release candidate, omit this scene rather than weakening the wording.
 
-**Picture:** A fictional product description tells a deliberately vulnerable scripted agent to ignore policy, pay immediately, and release a verification code. CallGate blocks the protected calls and records the reason.
+## 2:00–2:30 — injected requests meet the boundary
 
-**Narration:** “Tool output is untrusted. Even when the test double follows the injected text, authorization remains outside the agent.”
+**Picture:** The poisoned description tells the deliberately vulnerable scripted test double to send money and release a verification code. Show both protected calls being refused and the gateway's non-sensitive reason codes.
 
-**Start/fixture:** `{{TBD: merchant-injection launcher, test-double fixture, and measured k/n result; branch is not implemented}}`.
+**Narration:** “The test double obeys the injection. The authorization boundary does not. Tool output can request an action, but it cannot mint proof; the verification-code canary is never approvable.”
 
-**Fallback:** If the experiment is not complete, replace the scene with a card saying “merchant injection experiment not implemented” and make no containment-rate claim.
+**Evidence overlay:** `without CallGate: {{CLAIMS:INJECTION_WITHOUT_GATE_K_N}}`; `with CallGate: {{CLAIMS:INJECTION_WITH_GATE_K_N}}`.
 
-## 2:30–3:00 — close and limits
+**Start/fixture:** `{{TBD: merchant-injection launcher after its local gate passes}}`.
+
+**Fallback:** If the experiment is incomplete, state “experiment not verified” and show no containment count.
+
+## 2:30–3:00 — close with limits
 
 **Picture:** A split card: “Executable prototype” and “Not claimed.”
 
-**Narration:** “CallGate turns ‘act now’ into ‘verify first.’ This prototype demonstrates a self-hosted MCP safety boundary. It does not demonstrate real payments, real identity enrollment, real assistant integration, or human-study outcomes.”
+**Narration:** “CallGate does not make an agent truthful. It makes a protected action depend on an independently displayed, scoped, one-use decision. This prototype does not provide real payments, real identity enrollment, production assistant integration, or human-study evidence.”
 
-**Start/fixture:** Open the final `README` security-boundaries section and the generated evidence report. `{{TBD: final commit and public/private judge-access state}}`.
+**Start/fixture:** Open the final security-boundaries, related-work, and generated evidence pages. `{{TBD: final commit and judge-access state}}`.
 
-**Fallback:** If any evidence link is stale, do not record. Regenerate it or remove the claim.
+**Fallback:** If an evidence link or generated claim is stale, regenerate it or remove the claim before recording.
 

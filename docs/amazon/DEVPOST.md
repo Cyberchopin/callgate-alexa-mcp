@@ -2,51 +2,56 @@
 
 ## Inspiration
 
-Pressure scams turn speed into a weapon: a caller keeps the victim engaged while asking a digital assistant to move money or complete a purchase. CallGate explores a narrow question: can an assistant remain useful while moving authorization for high-risk actions outside the pressured conversation?
+**Lies in the Loop, at home.** A shopping agent can be shown poisoned product text while a scammer keeps the shopper under pressure on the phone. The agent may render a reassuring confirmation that describes a small purchase even though the protected tool request contains a different amount, destination, or cart. CallGate asks whether authorization can remain trustworthy when the conversational context is not.
 
-The intended audience is households supporting a scam-vulnerable family member who uses voice purchasing. `{{SOURCE_NEEDED: add one current, clickable public-authority statistic about impersonation-scam losses; do not submit this placeholder as a factual claim.}}`
+The intended audience is households supporting a scam-vulnerable family member who uses voice purchasing. `{{SOURCE_NEEDED: add one current, clickable public-authority statistic; do not convert this placeholder into a factual claim without a source.}}`
 
 ## What it does
 
-CallGate exposes simulated high-risk actions as tools on a self-hosted MCP server. A request without valid policy proof fails closed. For a simulated money transfer, the server can require URL-mode elicitation so that a saved-contact simulation reviews the exact request away from the assistant conversation. An approved request may be retried once; replay is rejected by SQLite-backed nonce consumption. A verification-code canary remains blocked even after approval.
+CallGate exposes simulated high-risk actions through a self-hosted MCP server. Requests without valid policy proof fail closed. For a simulated transfer, URL-mode elicitation moves review to a saved-contact simulation outside the assistant conversation. That page fetches the true amount, destination, cart, and requesting subject from server state rather than trusting display text or URL parameters. A verification-code canary remains blocked even after approval.
+
+ApprovalBench compares CallGate with author-written reference implementations of common approval designs, including agent-authored confirmation, relayed codes, same-principal approval, and approval not bound to parameters. Submission metrics must be inserted only from `CLAIMS.md`: `{{CLAIMS:APPROVALBENCH_HEADLINE}}`.
 
 ## How we built it
 
-The server uses Streamable HTTP and the pinned Python MCP SDK. The MCP adapter delegates policy, signature verification, contact selection, and replay decisions to the existing CallGate gateway instead of copying that logic. The URL-elicitation path follows the MCP 2025-11-25 error shape and completion notification. Local development uses an HTTPS review page and generated development certificates.
+The server uses Streamable HTTP and a pinned Python MCP SDK. The adapter delegates policy, signature verification, contact selection, and replay decisions to the existing CallGate gateway instead of copying them. The review path uses the MCP 2025-11-25 URL-elicitation error and completion notification. A separate simulated merchant server supplies a poisoned product fixture, and a deterministic deliberately vulnerable test double follows it so the authorization boundary can be tested without pretending to evaluate a production assistant.
 
 ## Challenges
 
-The SDK exposed two concrete integration gaps during development: a renamed FastMCP import disrupted an older quick-start path, and a client surfaced the server's URL-elicitation error as a generic MCP error that had to be reconstructed from its code and data. We preserved the original errors and workarounds in the friction log. Windows process startup also blocked some full-suite runs; that is recorded separately as a build-environment problem, not product friction.
+The SDK exposed concrete integration gaps: a renamed FastMCP import disrupted an older quick-start path, and a client surfaced a URL-elicitation error as a generic MCP error that had to be reconstructed from its code and data. The original errors and workarounds remain in the friction log. Environment-only process failures are recorded separately and are not presented as product friction.
+
+The hardest product question was fairness: a deny-all system would look safe but be useless. ApprovalBench therefore records legitimate completion and delay alongside attack success, uses fixed assumptions and a fixed seed, and labels every result as an author-written simulation rather than human research.
 
 ## Accomplishments
 
-- A real MCP client can discover and call the self-hosted tools on the isolated phase branches.
-- Protected actions fail closed without policy proof.
-- The verification-code canary cannot be approved into existence.
-- Consumed proof nonces survive a server restart in SQLite.
-- The repository includes an evidence ledger, reproducible synthetic evaluation, and an honest pre-existing-work report.
+- A self-hosted MCP path delegates protected actions to the existing gateway.
+- Missing proof fails closed, and the verification-code canary has no approval path.
+- The demonstration distinguishes what the agent says from what the server will execute.
+- Reference designs and attacks are reproducible from generated JSON rather than hand-filled charts.
+- The repository preserves blocked tests, friction, limitations, and pre-existing work instead of hiding them.
 
-The final submission must not claim commitment-v2 binding, merchant-injection containment, cross-session resume, or a finished UI unless their blocked branches are completed and retested.
+Final quantitative claims: `{{CLAIMS:APPROVALBENCH_SECURITY}}`; `{{CLAIMS:APPROVALBENCH_UTILITY}}`; `{{CLAIMS:INJECTION_COMPARISON}}`.
 
 ## What we learned
 
-MCP is not only a transport for adding more agent capabilities. Its elicitation boundary can also keep sensitive review steps out of the model-mediated conversation. We also learned that a secure design needs two kinds of evidence: adversarial tests for authorization invariants and utility measurements that expose the cost of unavailable reviewers. A deny-all result is not a useful safety product.
+Prompt-injection defenses and authorization are different jobs. A model can remain vulnerable to poisoned context while a deterministic gateway still refuses to act. We also learned that reviewer independence is not enough by itself: the review must show server-held parameters, bind the permitted operation, and consume approval once.
 
 ## What's next
 
-The next engineering gate is an approved, regression-clean commitment-v2 implementation that binds the operation type, normalized material parameters, stable simulated subject, and version inside the signed payload. After that, the plan is to finish the independent merchant server, injection-control experiment, accessible review UI, cross-session resume threat model, and red-team report. Real identity enrollment, payment integration, and production assistant support remain outside this prototype.
+Production work would require real identity enrollment, secure reviewer recovery, audited payment integrations, tenant isolation, privacy review, independent user research, and validation in the intended assistant client. The prototype deliberately stops before those claims.
 
 ## What is simulated
 
-The voice assistant, payments, orders, merchants, contacts, identities, approval credential, coercion scenarios, reviewer availability, and timing study are simulated. The project is not connected to a real assistant runtime, bank, payment network, SMS provider, or merchant. The MCP server, transport, client calls, policy-gateway delegation, URL-elicitation wire behavior, and SQLite replay store are executable software on their isolated branches.
+The voice assistant, phone pressure, payments, orders, merchants, contacts, identities, approval credentials, reviewer availability, and timing study are simulated. The vulnerable agent is a deterministic test double, not a real assistant. No LLM participates in authorization. The project is not connected to a bank, payment network, SMS provider, real merchant, or production assistant runtime.
 
 ## We will not claim
 
-- Integration with a real voice-assistant runtime.
-- Real payments, purchases, verification-code delivery, or identity proofing.
-- That an LLM decides authorization.
-- That the author-written simulation predicts fraud or human behavior.
+- That CallGate makes an agent immune to prompt injection.
+- Discovery of a new vulnerability class or priority over prior Lies-in-the-Loop and tool-poisoning work.
+- Integration with a production voice-assistant runtime.
+- Real payments, purchases, code delivery, identity proofing, or independently enrolled contacts.
+- Human-study or population-level outcomes from an author-written simulation.
 - That URL elicitation is supported by every MCP client.
-- That an unavailable or compromised saved contact is solved.
+- That a compromised or unavailable saved contact is solved.
 - That a blocked, reverted, skipped, or unrun test passed.
 
