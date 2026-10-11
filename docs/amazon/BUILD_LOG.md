@@ -1,5 +1,16 @@
 # Amazon build log
 
+## BUILD-RC1-INTEGRATION-002 — 2026-10-11
+
+- Integrated phase 1, phase 2, dependency upgrade, evaluation, red-team, and UI work into `release/amazon-rc1` in the requested order.
+- Phase 1 required reapplying the previously reverted merge because Git correctly considered the original source branch already merged; commit `07a18fe` reverses only that earlier revert.
+- Evaluation targeted result: **7 passed in 0.91 seconds**.
+- Red-team targeted run completed two tests, then hung twice at `test_approval_page_ignores_query_forgery_and_get_does_not_mutate`; no suite pass is claimed.
+- UI targeted run produced no result before the 30-second sandbox limit; no pass is claimed.
+- Node result after all merges: **3 passed, 0 failed, 0 skipped** in 59.7216 milliseconds.
+- Phase 1 and phase 2 currently fail to start their local MCP test server in this sandbox. The stabilization branch owns that test-harness repair; local verification remains required.
+- Dependency pins agree on `cryptography==50.0.0`; the MCP requirements pin `mcp==2.3.0`.
+
 ## BUILD-001 — 2026-10-10
 
 - Task: Correct the pre-existing-work cutoff to use Git author dates.

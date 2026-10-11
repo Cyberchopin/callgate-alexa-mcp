@@ -32,7 +32,7 @@ requests, a merchant server, AWS services, or UI. Those are separate later phase
 
 ## Phase 2 URL elicitation demo
 
-Phase 2 is available on the `amazon/mcp-phase2` branch for `send_money` only:
+Phase 2 is integrated into `release/amazon-rc1` for `send_money` only:
 
 ```powershell
 py -3.12 -m integrations.alexa_mcp.phase2 --replay-db .local/phase2.sqlite3 --contact-token local-demo-contact

@@ -1,5 +1,12 @@
 # Amazon RC1 handoff
 
+## Current RC1 status — 2026-10-11
+
+- `release/amazon-rc1` now contains the requested phase 1, phase 2, dependency, evaluation, red-team, and UI changes.
+- `main` remains unchanged at `f18eda5`.
+- Run `powershell -ExecutionPolicy Bypass -File scripts/verify_local.ps1` from the repository root. It tests phase 1, phase 2, full Python, and Node directly in RC1.
+- The current sandbox did not clear the real-client startup gate: phase 1 and phase 2 timed out starting their test server, and UI/TestClient tests hung. Do not claim the RC1 acceptance gate passed until the local command completes.
+
 ## Integration status
 
 - `release/amazon-rc1` contains `amazon/tools` only.
