@@ -42,3 +42,11 @@
 - Phase-1 targeted run failed twice. The second run reported `RuntimeError: MCP test server did not start` and `1 failed in 12.58s`.
 - Because the phase-1 test had passed on its source branch, merge commit `30064b1` was reverted by `47ec401`. Dependent phase-2 and later merges were not attempted.
 
+## BUILD-RC1-RETRY-001 — 2026-10-10
+
+- D1 through D6 were explicitly approved and the phase-1 gate was retried without changing `main`.
+- First self-contained attempt failed before tests because Windows `venv` could not complete `ensurepip`; the incomplete environment reported `No module named pip`.
+- The retry moved temporary files into the retained worktree. MCP 2.3.0 and its dependencies installed successfully, but the phase-1 requirements file did not include pytest; execution stopped with `No module named pytest`.
+- Per the two-failure rule, no third run was made. No phase-1 or full-suite pass is claimed.
+- The retained gate worktree is `.rc1-phase1-gate`. The script now installs pinned `pytest==9.1.1` for the owner's next local run.
+

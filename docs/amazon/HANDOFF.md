@@ -11,6 +11,8 @@
 
 Run `powershell -ExecutionPolicy Bypass -File scripts/run_rc1_phase1_gate.ps1` from the repository root. It now creates an isolated environment with the pinned MCP requirements. No push or branch deletion is required.
 
+The latest automated retry did not reach pytest: the first environment failed `ensurepip`; the second installed MCP dependencies but revealed that the phase-1 requirements omit pytest. The script now installs pinned pytest, but was not run a third time because of the two-failure stop rule.
+
 ## Decisions
 
 The owner later set D1–D6 to YES. Approved UI hardening is isolated on `amazon/ui`; the approved v2 retry is isolated on `amazon/commitment-v2-retry`. Neither is merged into RC1 before its own regression gate passes.
