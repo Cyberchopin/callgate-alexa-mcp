@@ -22,6 +22,7 @@ remain open in the submission checklist.
 - The error-mapping real-client matrix remains pending an unrestricted local run; the sandbox result must not be presented as a pass.
 - The owner approved removal of the local absolute paths from `START_HERE.md` and `docs/REUSE_PLAN.md`; both now use portable guidance.
 - **FINAL GATE PENDING:** rerun `scripts/submission_check.py` with the pinned environment and Gitleaks 8.30.1 on the exact final commit.
+- The latest full owner run had 288 passed, 3 optional-dependency skips, and only the diagnosed evaluation-v2 working-tree byte conversion failure. The final checker validates committed frozen blobs directly and separately runs every other test; it does not modify or waive the frozen manifest.
 
 ## Current RC1 status — 2026-10-11
 
