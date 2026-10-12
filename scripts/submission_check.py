@@ -34,6 +34,10 @@ def main():
         checks.append((f"README section: {heading}", heading in readmes))
     tests = command([sys.executable, "-m", "pytest", "-q"])
     checks.append(("Python tests pass", tests.returncode == 0))
+    if tests.returncode:
+        print("Python test failure output:")
+        print(tests.stdout)
+        print(tests.stderr)
     scanner = shutil.which(args.gitleaks) or (args.gitleaks if Path(args.gitleaks).is_file() else None)
     if scanner:
         scan = command([scanner, "git", "--no-banner", "--redact=100",
@@ -68,6 +72,10 @@ def main():
         if local_path_pattern.search(path.read_text(encoding="utf-8", errors="replace")):
             local_paths.append(path)
     checks.append(("no local absolute paths or usernames", not local_paths))
+    if local_paths:
+        print("Tracked files containing local absolute paths:")
+        for path in local_paths:
+            print(path.relative_to(ROOT))
     friction = ROOT / "docs" / "amazon" / "FRICTION_LOG.md"
     friction_text = friction.read_text(encoding="utf-8") if friction.exists() else ""
     entries = re.split(r"(?m)^## ", friction_text)[1:]

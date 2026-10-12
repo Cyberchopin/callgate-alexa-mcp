@@ -235,4 +235,7 @@
 - Stable MCP error mapping: 5 passed in 6.41 seconds.
 - Merchant suite reached application behavior and returned `403 BLOCKED: CG_PROOF_REPLAYED`; the sole failure was a stale assertion for the old `already consumed` text. The assertion now targets the stable reason code.
 - The standalone merchant gate used the global interpreter and failed collection with `ModuleNotFoundError: No module named 'mcp'`. The script now uses the same pinned environment as `verify_local.ps1`.
+- Corrected merchant gate rerun: 3 passed in 0.76 seconds.
+- Offline comparison remained unguarded 2/2 and CallGate 0/2; claim registry remained `registered=34 unresolved_or_inconsistent=0`.
+- Submission check passed 10 checks and failed 2: full Python tests and local absolute paths. The checker now prints the captured pytest failure and only the relative filenames containing local paths.
 

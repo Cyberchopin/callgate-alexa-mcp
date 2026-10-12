@@ -10,6 +10,10 @@ the stable `CG_PROOF_REPLAYED` reason. The test still expected the superseded
 interpreter. Both test-layer issues are corrected; rerun the gate on the latest
 `amazon/final-gate` commit.
 
+The corrected owner rerun passed all 3 merchant tests in 0.76 seconds. The merchant
+gate is now complete; only the full Python suite and local-path repository check
+remain open in the submission checklist.
+
 ## Final local decisions and gates
 
 - D7, D8, and D9 were recorded as YES. The frozen evaluation files were not changed.
