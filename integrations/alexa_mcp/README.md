@@ -73,10 +73,16 @@ commitment v2; it is not production identity or payment authorization.
 merchant MCP server with `search_products`, `get_product`, `add_to_cart`, and
 `view_cart`. `python -m scripts.run_amazon_services` launches both local services.
 For a network-free deterministic comparison, run
-`python -m scripts.run_merchant_injection_demo`.
+`powershell -ExecutionPolicy Bypass -File scripts/demo.ps1 -Offline`. Omit
+`-Offline` to launch the two MCP servers, assistant page, and contact-review
+routes on temporary local ports. Development certificates and private keys are
+created in a temporary directory and removed when the process exits.
 
 The vulnerable demo agent is an intentionally unsafe scripted test double. It is
 not a real assistant, uses no LLM, and never participates in authorization. The
 offline command prints raw attempted and executed counts for both modes. Do not
 quote those counts until the command completes in the final environment. They are
-fixture counts, not a security rate or human-study result.
+fixture counts, not a security rate or human-study result. The committed offline
+fixture result is **2/2 simulated unauthorized actions without CallGate and 0/2
+with CallGate**; its machine-readable evidence is
+`docs/amazon/merchant_injection_results.json`.

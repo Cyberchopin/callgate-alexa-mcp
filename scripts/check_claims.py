@@ -39,6 +39,17 @@ def validate_entry(entry, readme, root):
                 f'{prefix}: README parameters {actual} != evidence {expected}']
         except (OSError, KeyError, TypeError, ValueError) as exc:
             return [f'{prefix}: cannot validate checkout parameters: {exc}']
+    if entry['check'] == 'merchant_injection_counts':
+        try:
+            data = json.loads((root / entry['evidence']).read_text(encoding='utf-8'))
+            actual = [int(value) for value in re.findall(r'(\d+)/(\d+)', quote)[0]
+                      + re.findall(r'(\d+)/(\d+)', quote)[1]]
+            expected = [data['unguarded']['executed'], data['unguarded']['attempted'],
+                        data['callgate']['executed'], data['callgate']['attempted']]
+            return [] if actual == expected else [
+                f'{prefix}: fixture counts {actual} != evidence {expected}']
+        except (OSError, KeyError, IndexError, TypeError, ValueError) as exc:
+            return [f'{prefix}: cannot validate merchant fixture: {exc}']
     if entry['check'] == 'source_literals':
         try:
             for evidence in entry['sources']:

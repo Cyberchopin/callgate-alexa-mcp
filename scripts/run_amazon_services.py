@@ -1,6 +1,7 @@
 """One command to launch both local simulated MCP services."""
 import argparse
 import secrets
+import socket
 import threading
 from pathlib import Path
 
@@ -10,12 +11,20 @@ from integrations.alexa_mcp.merchant import create_merchant_server
 from integrations.alexa_mcp.phase2 import build_app, temporary_development_certificate, ensure_development_certificate
 
 
+def available_port():
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        return listener.getsockname()[1]
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--replay-db", type=Path, default=Path(".test-tmp/all-services.sqlite3"))
-    parser.add_argument("--merchant-port", type=int, default=8001)
-    parser.add_argument("--gateway-port", type=int, default=8443)
+    parser.add_argument("--merchant-port", type=int, default=0)
+    parser.add_argument("--gateway-port", type=int, default=0)
     args = parser.parse_args()
+    args.merchant_port = args.merchant_port or available_port()
+    args.gateway_port = args.gateway_port or available_port()
     contact_credential = secrets.token_urlsafe(24)
     merchant_app = create_merchant_server().streamable_http_app(streamable_http_path="/mcp")
     gateway_app, _ = build_app(args.replay_db, f"https://127.0.0.1:{args.gateway_port}",
@@ -29,6 +38,9 @@ def main():
             ssl_keyfile=str(private_key)))
         thread = threading.Thread(target=merchant.run, daemon=True)
         thread.start()
+        print(f"Merchant MCP: http://127.0.0.1:{args.merchant_port}/mcp")
+        print(f"Gateway MCP: https://127.0.0.1:{args.gateway_port}/mcp")
+        print(f"Assistant page: https://127.0.0.1:{args.gateway_port}/demo")
         try:
             gateway.run()
         finally:

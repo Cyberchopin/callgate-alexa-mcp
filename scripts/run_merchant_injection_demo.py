@@ -22,10 +22,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--database", type=Path,
                         default=Path(".test-tmp/merchant-injection-replay.sqlite3"))
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     args.database.parent.mkdir(parents=True, exist_ok=True)
     result = run(args.database)
-    print(json.dumps(result, sort_keys=True))
+    rendered = json.dumps(result, indent=2, sort_keys=True)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered + "\n", encoding="utf-8")
+    print(rendered)
 
 
 if __name__ == "__main__":

@@ -167,6 +167,8 @@ Recorded local checks: **184 Python tests and 3 Node logic tests passed**. These
 
 ## Security boundaries
 
+In the deterministic, offline injected-product fixture, the deliberately vulnerable test double executed **2/2 simulated unauthorized actions without CallGate and 0/2 with CallGate**. These are fixture counts from `docs/amazon/merchant_injection_results.json`, not a human study or production security rate.
+
 ### Safety vs Coverage
 
 Authorization safety and warning coverage are different axes. The frozen pilot's recall is low: many scams receive no warning. The action gate still requires separately signed, scoped confirmation; neither transcript content nor a model's confidence grants permission. This safety claim applies only to the controlled simulator, not to a bank app or another device.

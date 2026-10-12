@@ -1,5 +1,9 @@
 # Amazon RC1 handoff
 
+## RC2 merchant gate pending
+
+Run `powershell -ExecutionPolicy Bypass -File scripts/run_merchant_gate.ps1` from the repository root. The offline injected-product comparison and two isolated tests pass in the restricted environment, but the complete merchant approval test did not finish within the sandbox command window. Do not claim the networked end-to-end gate passed until this command completes locally.
+
 ## Current RC1 status — 2026-10-11
 
 - `release/amazon-rc1` now contains the requested phase 1, phase 2, dependency, evaluation, red-team, and UI changes.

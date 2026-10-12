@@ -199,3 +199,11 @@
 - Node result: **3 passed, 0 failed, 0 skipped**.
 - Screenshot attempt: the Codex in-app browser could not reach the loopback preview and returned `net::ERR_CONNECTION_TIMED_OUT`. No screenshot was generated or claimed. Session control cleanup was denied by the current permission policy, and Windows CIM process inspection then failed because the CIM resource was unavailable.
 
+## Merchant injection refresh — 2026-10-11
+
+- Existing `amazon/merchant-injection` history was retained and updated by merging RC2; no branch was deleted or rewritten.
+- Offline comparison command completed: unguarded `2/2`, CallGate `0/2` simulated unauthorized actions.
+- `scripts/check_claims.py`: `registered=33 unresolved_or_inconsistent=0`.
+- Two network-free merchant tests passed in 1.35 seconds.
+- The complete merchant test file produced no output before the 30-second sandbox command boundary. It is not claimed as passed and remains in the local verification gate.
+

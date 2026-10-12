@@ -318,6 +318,12 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
     "quote": "The generated sensitivity sweep uses **5 OTP relay settings** and **100 deterministic trials per scenario**, with seed **20261010**; the report and both figures are regenerated from the JSON output. This is synthetic",
     "evidence": "evaluation_checkout/results.json",
     "check": "checkout_parameters"
+  },
+  {
+    "id": "readme-033",
+    "quote": "In the deterministic, offline injected-product fixture, the deliberately vulnerable test double executed **2/2 simulated unauthorized actions without CallGate and 0/2 with CallGate**. These are fixture counts from `docs/amazon/merchant_injection_results.json`, not a human study or production security rate.",
+    "evidence": "docs/amazon/merchant_injection_results.json",
+    "check": "merchant_injection_counts"
   }
 ]
 ```
