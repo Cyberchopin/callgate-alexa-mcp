@@ -2,8 +2,8 @@
 
 - Cutoff: `2026-08-31T10:15:00-07:00`
 - Date basis: Git author date (`%aI`)
-- Source HEAD: `12a0a3eba40785049b22324460cc78243fc64f15`
-- Generated: `2026-10-10T01:36:48-07:00`
+- Source HEAD: `2c04a02f27e26b9bf65ecd887f0db92c5bafd054`
+- Generated: `2026-10-11T18:39:05-07:00`
 
 ## Present before cutoff
 
@@ -14,9 +14,14 @@
 
 | File | First post-cutoff commit |
 |---|---|
+| `.gitattributes` | `16f52c9ffd5a005ee54601dec5586d70033b82dc` |
 | `.github/ISSUE_TEMPLATE/security-capability.md` | `16c469ae78f22f06df757595b8b36edd9359086e` |
+| `.github/dependabot.yml` | `0628a0e584094a194a97420f6b228dcd19ab4c08` |
+| `.github/workflows/amazon-rc1.yml` | `264625517236c3b67bcfd48aad93c2c65e9934c6` |
+| `.github/workflows/pip-audit.yml` | `0628a0e584094a194a97420f6b228dcd19ab4c08` |
 | `.github/workflows/test.yml` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `.gitignore` | `16c469ae78f22f06df757595b8b36edd9359086e` |
+| `.gitleaksignore` | `2c04a02f27e26b9bf65ecd887f0db92c5bafd054` |
 | `BACKLOG.md` | `16c469ae78f22f06df757595b8b36edd9359086e` |
 | `BUILD_LOG.md` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `CLAIMS.md` | `b94c0ae53928dea9732b39bda9ca5f2e33d57dc3` |
@@ -32,6 +37,7 @@
 | `callgate/api.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `callgate/assemblyai.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `callgate/bench.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
+| `callgate/commitment.py` | `e4cc3f748f800b3567759586f3fa28aab71ef00e` |
 | `callgate/confirmation.py` | `3b4525ff0ce85beab9bd541f377b442f44e7d27c` |
 | `callgate/contacts.py` | `ec6bb5e8b2c5690af5a6a3672ff5c25691bba165` |
 | `callgate/dataset.py` | `c3145e53513d4c55345afe4533715bd50ce8af1b` |
@@ -86,21 +92,49 @@
 | `docs/V2_PHASE1.md` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `docs/V2_RESEARCH.md` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `docs/VERIFICATION_DEMO.md` | `3b4525ff0ce85beab9bd541f377b442f44e7d27c` |
+| `docs/amazon/BANDIT_TRIAGE.md` | `0628a0e584094a194a97420f6b228dcd19ab4c08` |
+| `docs/amazon/BASELINE_FAILURES.md` | `94ac3c1b1f7221957324846adc741f5b07551650` |
+| `docs/amazon/BINDING_FINDINGS.md` | `0e0d783f126eb39c7aaa488e56528ea84aef7d52` |
 | `docs/amazon/BUILD_LOG.md` | `f6d3f18f9cbd644ff44613f0b9d16817bae71964` |
+| `docs/amazon/CI.md` | `264625517236c3b67bcfd48aad93c2c65e9934c6` |
 | `docs/amazon/CORE_CHANGE_PROPOSAL.md` | `42cda8d8107f84d05817e47f2bf68adcf29916ab` |
+| `docs/amazon/DEMO_SCRIPT.md` | `b45b161a9d209d86869c99fe46fa22c538104ac1` |
+| `docs/amazon/DEMO_SCRIPT_DRAFT.md` | `7724375b59c7bfe75bd58bbe20b3655856ac5cb7` |
+| `docs/amazon/DEPENDENCY_FINDINGS.md` | `73ccb08e4e0f2e8ef96b91bc22f788aa45faae33` |
+| `docs/amazon/DEVPOST.md` | `b45b161a9d209d86869c99fe46fa22c538104ac1` |
+| `docs/amazon/ERROR_MATRIX.md` | `ac54d4329e3f05741d7aff6daf0a1740d0b71b7c` |
+| `docs/amazon/FINAL_GATE.md` | `2c04a02f27e26b9bf65ecd887f0db92c5bafd054` |
 | `docs/amazon/FRICTION_LOG.md` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `docs/amazon/HANDOFF.md` | `4138906734c032aeece72c4b42ea7d54aa829e22` |
+| `docs/amazon/MCP_SDK_ISSUE_DRAFT.md` | `ac54d4329e3f05741d7aff6daf0a1740d0b71b7c` |
 | `docs/amazon/PREEXISTING_WORK.md` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
 | `docs/amazon/PREEXISTING_WORK_LA_HACKS.md` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
+| `docs/amazon/PRODUCT_FEEDBACK_DRAFT.md` | `23a4e2f263a887d0d9de440c8504333f497ca046` |
+| `docs/amazon/QA_BANK.md` | `b45b161a9d209d86869c99fe46fa22c538104ac1` |
 | `docs/amazon/README_DRAFT.md` | `96376131450f81d1ed6b309d06b383f747f6d001` |
+| `docs/amazon/REDTEAM_REPORT.md` | `7c14e3536298528e1b0cbc38c5f1de69b6b49c35` |
+| `docs/amazon/RELATED_WORK.md` | `a631ede999670623f151b3a24e0285ce3bcafdcc` |
+| `docs/amazon/SECURITY_SCAN.md` | `7dd423c99ebbf4a178d679daeb6aa2c8b39398dd` |
+| `docs/amazon/SUBMISSION_SCORECARD.md` | `97d3ad0ca8af90c62d2def44a4b32e73fa8b9f7d` |
+| `docs/amazon/UI_ACCESSIBILITY.md` | `21ae2867eaafa276db0135d8060d9ec5a2f8dae3` |
+| `docs/amazon/WE_WILL_NOT_CLAIM.md` | `b45b161a9d209d86869c99fe46fa22c538104ac1` |
+| `docs/amazon/merchant_injection_results.json` | `2fa58f27d11091c4c29c69d26b6fd4ea71356b61` |
 | `docs/amazon/proposals/commitment_v2.patch` | `42cda8d8107f84d05817e47f2bf68adcf29916ab` |
 | `docs/immutable-evidence.json` | `b94c0ae53928dea9732b39bda9ca5f2e33d57dc3` |
 | `docs/upstreams.json` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `evaluation_checkout/REPORT.md` | `5bd682187640b89e5ec0e290df142bc90bb946e4` |
 | `evaluation_checkout/__init__.py` | `5bd682187640b89e5ec0e290df142bc90bb946e4` |
+| `evaluation_checkout/approvalbench/README.md` | `e880b7f79ccf8099ca61fa6001db3b362b2870a3` |
+| `evaluation_checkout/approvalbench/REPORT.md` | `e880b7f79ccf8099ca61fa6001db3b362b2870a3` |
+| `evaluation_checkout/approvalbench/__init__.py` | `e880b7f79ccf8099ca61fa6001db3b362b2870a3` |
+| `evaluation_checkout/approvalbench/matrix.svg` | `e880b7f79ccf8099ca61fa6001db3b362b2870a3` |
+| `evaluation_checkout/approvalbench/relay_sensitivity.svg` | `e880b7f79ccf8099ca61fa6001db3b362b2870a3` |
+| `evaluation_checkout/approvalbench/results.json` | `e880b7f79ccf8099ca61fa6001db3b362b2870a3` |
+| `evaluation_checkout/approvalbench/run.py` | `e880b7f79ccf8099ca61fa6001db3b362b2870a3` |
 | `evaluation_checkout/results.json` | `5bd682187640b89e5ec0e290df142bc90bb946e4` |
 | `evaluation_checkout/run.py` | `5bd682187640b89e5ec0e290df142bc90bb946e4` |
 | `evaluation_checkout/safety_utility.svg` | `c7ae09a6dc4229acd8661496271350c67798a837` |
+| `evaluation_checkout/sensitivity_scan.svg` | `7727eae1e9d069195a4e2217cd87292b58942e62` |
 | `evaluation_v1/.gitattributes` | `42f0af8288455dda03f45cafc4d2057d002d7fc9` |
 | `evaluation_v1/DESIGN.md` | `42f0af8288455dda03f45cafc4d2057d002d7fc9` |
 | `evaluation_v1/DEV_SANITY.json` | `42f0af8288455dda03f45cafc4d2057d002d7fc9` |
@@ -143,12 +177,19 @@
 | `integrations/__init__.py` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `integrations/alexa_mcp/README.md` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `integrations/alexa_mcp/__init__.py` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
+| `integrations/alexa_mcp/merchant.py` | `86b16b409c3bf6a847cea29df1cfed8379a05199` |
 | `integrations/alexa_mcp/phase2.py` | `c9dd7c32d782299b596b4e7261463af79efb8036` |
 | `integrations/alexa_mcp/requirements.txt` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `integrations/alexa_mcp/server/__init__.py` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `integrations/alexa_mcp/server/__main__.py` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `integrations/alexa_mcp/server/app.py` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `integrations/alexa_mcp/server/approval.py` | `c9dd7c32d782299b596b4e7261463af79efb8036` |
+| `integrations/alexa_mcp/server/ui.py` | `21ae2867eaafa276db0135d8060d9ec5a2f8dae3` |
+| `integrations/alexa_mcp/ui/assistant.html` | `21ae2867eaafa276db0135d8060d9ec5a2f8dae3` |
+| `integrations/alexa_mcp/ui/contact.html` | `21ae2867eaafa276db0135d8060d9ec5a2f8dae3` |
+| `integrations/alexa_mcp/ui/demo.js` | `21ae2867eaafa276db0135d8060d9ec5a2f8dae3` |
+| `integrations/alexa_mcp/ui/style.css` | `21ae2867eaafa276db0135d8060d9ec5a2f8dae3` |
+| `integrations/alexa_mcp/vulnerable_demo_agent.py` | `86b16b409c3bf6a847cea29df1cfed8379a05199` |
 | `pyproject.toml` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `requirements-integrations-lock.txt` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `requirements-integrations.txt` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
@@ -176,30 +217,50 @@
 | `scripts/check_scambench_split.py` | `c3145e53513d4c55345afe4533715bd50ce8af1b` |
 | `scripts/configure_key.ps1` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `scripts/configure_key.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
+| `scripts/demo.ps1` | `2fa58f27d11091c4c29c69d26b6fd4ea71356b61` |
 | `scripts/fork_upstreams.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `scripts/friction.py` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
 | `scripts/gen_preexisting.py` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
 | `scripts/live_smoke.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
+| `scripts/mcp_test_process.py` | `94ac3c1b1f7221957324846adc741f5b07551650` |
 | `scripts/offline_demo.py` | `3b4525ff0ce85beab9bd541f377b442f44e7d27c` |
 | `scripts/proof_demo.py` | `b94c0ae53928dea9732b39bda9ca5f2e33d57dc3` |
+| `scripts/run_amazon_services.py` | `86b16b409c3bf6a847cea29df1cfed8379a05199` |
+| `scripts/run_merchant_gate.ps1` | `86b16b409c3bf6a847cea29df1cfed8379a05199` |
+| `scripts/run_merchant_injection_demo.py` | `86b16b409c3bf6a847cea29df1cfed8379a05199` |
+| `scripts/run_rc1_phase1_gate.ps1` | `8c0c868d78724ebba793751aea84bdcc92b34caf` |
+| `scripts/run_security_scans.ps1` | `7dd423c99ebbf4a178d679daeb6aa2c8b39398dd` |
+| `scripts/run_ui_hardening_gate.ps1` | `c73a1751b2f1e37155af398ef330ee33aa780b59` |
+| `scripts/run_ui_preview.py` | `21ae2867eaafa276db0135d8060d9ec5a2f8dae3` |
+| `scripts/run_v2_retry_gate.ps1` | `b6cfe91e40e69de1b5c152703d79742f537f86b2` |
 | `scripts/start_demo.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `scripts/start_review_demo.py` | `ea8b92fab3b47a338270a9bbe69b71fd15610696` |
 | `scripts/stream_wav.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `scripts/submission_check.py` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
+| `scripts/verify_local.ps1` | `0628a0e584094a194a97420f6b228dcd19ab4c08` |
 | `scripts/verify_receipt.py` | `cbc2c2327d46ba1abf918263bc52cc3d5b6c014a` |
 | `scripts/workflow_demo.py` | `a2fbc25f3be8cf049a29a8d2039e695335dee52d` |
+| `tests/alexa_mcp/test_approvalbench.py` | `e880b7f79ccf8099ca61fa6001db3b362b2870a3` |
+| `tests/alexa_mcp/test_commitment_v2.py` | `e4cc3f748f800b3567759586f3fa28aab71ef00e` |
+| `tests/alexa_mcp/test_error_mapping.py` | `ac54d4329e3f05741d7aff6daf0a1740d0b71b7c` |
+| `tests/alexa_mcp/test_merchant_injection.py` | `86b16b409c3bf6a847cea29df1cfed8379a05199` |
 | `tests/alexa_mcp/test_phase1.py` | `4b48feb4aa8544844cf13b58cccaa5dd2f7cd4be` |
 | `tests/alexa_mcp/test_phase2.py` | `c9dd7c32d782299b596b4e7261463af79efb8036` |
+| `tests/alexa_mcp/test_redteam.py` | `7c14e3536298528e1b0cbc38c5f1de69b6b49c35` |
 | `tests/alexa_mcp/test_tools.py` | `c4d80ca80f70a154834c7bcace80a389692d646a` |
+| `tests/alexa_mcp/test_ui.py` | `21ae2867eaafa276db0135d8060d9ec5a2f8dae3` |
+| `tests/fixtures/ed25519_cryptography_46_0_5.json` | `0628a0e584094a194a97420f6b228dcd19ab4c08` |
 | `tests/review_ui.test.cjs` | `cbc2c2327d46ba1abf918263bc52cc3d5b6c014a` |
 | `tests/test_adversarial_policy.py` | `9dc0ae3dc20ea38b6062f1bd46159bfa9bbc362a` |
 | `tests/test_api.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
+| `tests/test_approvalbench_lite.py` | `80f68890dba9b9ef8ee202727fecc3e7f14e78ee` |
 | `tests/test_assemblyai.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `tests/test_bench.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
 | `tests/test_checkout_evaluation.py` | `5bd682187640b89e5ec0e290df142bc90bb946e4` |
 | `tests/test_claims_guard.py` | `b94c0ae53928dea9732b39bda9ca5f2e33d57dc3` |
 | `tests/test_confirmation.py` | `3b4525ff0ce85beab9bd541f377b442f44e7d27c` |
 | `tests/test_contact_binding.py` | `ec6bb5e8b2c5690af5a6a3672ff5c25691bba165` |
+| `tests/test_cryptography_upgrade.py` | `0628a0e584094a194a97420f6b228dcd19ab4c08` |
 | `tests/test_dataset.py` | `c3145e53513d4c55345afe4533715bd50ce8af1b` |
 | `tests/test_denial_latch.py` | `b94c0ae53928dea9732b39bda9ca5f2e33d57dc3` |
 | `tests/test_engine.py` | `d8d14ee2dccac73e7bb5ed4ce402dee84b504890` |
