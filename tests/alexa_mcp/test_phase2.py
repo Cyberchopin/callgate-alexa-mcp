@@ -95,7 +95,12 @@ async def authorize_then_mutate(base_url, mutation):
                     result = await session.call_tool("send_money", {**original, **mutation})
                     assert result.is_error is True
                 except MCPError as error:
-                    assert error.code == -32042
+                    if "claimed_identity" in mutation:
+                        # The SDK currently surfaces unknown-contact rejection as a closed SSE request.
+                        assert error.code == -32000
+                        assert "SSE stream ended without a response" in error.message
+                    else:
+                        assert error.code == -32042
 
 
 @pytest.mark.parametrize("mutation", [

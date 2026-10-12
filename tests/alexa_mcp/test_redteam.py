@@ -14,6 +14,7 @@ from mcp.shared.exceptions import UrlElicitationRequiredError
 from starlette.applications import Starlette
 
 from callgate.verification import issue_for_demo
+from callgate.workflow import ChallengeRateLimited
 from integrations.alexa_mcp.phase2 import build_app
 from integrations.alexa_mcp.server import CapabilityGateway, operation_resource
 from integrations.alexa_mcp.server.app import PolicyBlocked
@@ -147,24 +148,26 @@ def test_elicitation_url_is_opaque_one_time_and_has_referrer_policy(tmp_path):
     assert session.completed == [elicitation.elicitation_id]
 
 
-def test_challenge_issuance_has_capacity_cap_but_no_per_subject_rate_limit(tmp_path):
+def test_challenge_issuance_is_limited_per_subject(tmp_path):
+    clock = [1000.0]
     _, flow = build_app(tmp_path / "replay.sqlite3", "https://review.example",
-                        "family-token")
+                        "family-token", clock=lambda: clock[0])
 
     async def fill():
-        for index in range(1000):
+        for index in range(5):
             with pytest.raises(UrlElicitationRequiredError):
                 await flow.authorize({
                     "destination": f"wallet-{index}", "amount_cents": 1,
                     "claimed_identity": "saved-family",
                 }, session_id="same-subject-session", claimed_identity="saved-family",
                     mcp_session=Session())
-        with pytest.raises(ValueError, match="capacity reached"):
+        with pytest.raises(ChallengeRateLimited) as limited:
             await flow.authorize({
-                "destination": "one-too-many", "amount_cents": 1,
+                "destination": "rate-limited", "amount_cents": 1,
                 "claimed_identity": "saved-family",
             }, session_id="same-subject-session", claimed_identity="saved-family",
                 mcp_session=Session())
+        assert limited.value.retry_after == 60
 
     anyio.run(fill)
 

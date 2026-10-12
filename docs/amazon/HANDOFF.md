@@ -13,8 +13,10 @@
 - This sandbox denied loopback access with WinError 10013, so the real-client gate remains **pending local execution**; no pass is claimed.
 - The three historical failures were reproduced individually and classified in `BASELINE_FAILURES.md`. The two review-process failures occur in Windows spawn bootstrap before application logic. The evaluation-v2 mismatch is caused by working-tree line-ending conversion: the committed blob still matches the frozen manifest.
 - Red-team and UI HTTP tests also hung twice in this sandbox. Their test-layer ASGI client update requires local confirmation; core code was not changed.
+- Owner rerun confirmed the two spawned-process tests pass outside the sandbox. It also exposed two integration-test issues now corrected on this branch: the red-team suite still expected no subject rate limit, and unknown-contact rejection is surfaced by MCP SDK 2.3.0 as `-32000`/closed SSE rather than `-32042`.
+- The generic `-32000` result is still a protocol-quality gap. The test records it as a rejection, not as successful URL elicitation; changing adapter behavior is outside this test-only stabilization branch.
 
-## Integration status
+## Historical integration attempt (superseded by Current RC1 status above)
 
 - `release/amazon-rc1` contains `amazon/tools` only.
 - Phase 1 was merged, failed its runtime gate twice, and was reverted.

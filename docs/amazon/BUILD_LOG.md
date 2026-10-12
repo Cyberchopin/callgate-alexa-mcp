@@ -1,5 +1,14 @@
 # Amazon build log
 
+## BUILD-STABILIZE-OWNER-001 — 2026-10-11
+
+- The owner ran `scripts/verify_local.ps1` outside the sandbox on both RC1 and `amazon/stabilize` under `cryptography 50.0.0`; compatibility tests passed **3/3** in 2.76 and 2.72 seconds respectively.
+- RC1 full Python: **274 passed, 4 failed, 3 skipped**. Three failures were stale red-team expectations that contradicted the approved Origin, Referrer-Policy, and per-subject rate-limit hardening; the fourth was the known evaluation-v2 working-tree line-ending mismatch.
+- RC1 regression subset: **272 passed, 3 failed, 3 skipped, 1 deselected**. The script correctly stopped before Node and dedicated phase tests.
+- Stabilize full Python: **275 passed, 3 failed, 3 skipped**. Failures were the evaluation-v2 line-ending mismatch, one stale rate-limit characterization test, and the cross-contact mutation being rejected through MCP SDK `-32000` (`SSE stream ended without a response`) rather than `-32042`.
+- Stabilize regression subset: **273 passed, 2 failed, 3 skipped, 1 deselected**. The script again stopped before Node and dedicated phase tests.
+- Both former Windows spawned-process baseline failures passed in the owner's environment. No core security or frozen evaluation file was changed in response.
+
 ## BUILD-RC1-INTEGRATION-002 — 2026-10-11
 
 - Integrated phase 1, phase 2, dependency upgrade, evaluation, red-team, and UI work into `release/amazon-rc1` in the requested order.
