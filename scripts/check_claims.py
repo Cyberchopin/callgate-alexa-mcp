@@ -50,6 +50,17 @@ def validate_entry(entry, readme, root):
                 f'{prefix}: fixture counts {actual} != evidence {expected}']
         except (OSError, KeyError, IndexError, TypeError, ValueError) as exc:
             return [f'{prefix}: cannot validate merchant fixture: {exc}']
+    if entry['check'] == 'approvalbench_d5':
+        try:
+            data = json.loads((root / entry['evidence']).read_text(encoding='utf-8'))
+            items = data['matrix']['D5_callgate'].values()
+            expected = [sum(item['successes'] for item in items),
+                        sum(item['trials'] for item in data['matrix']['D5_callgate'].values())]
+            actual = [int(value) for value in re.findall(r'\*\*(\d+)/(\d+)', quote)[0]]
+            return [] if actual == expected else [
+                f'{prefix}: ApprovalBench counts {actual} != evidence {expected}']
+        except (OSError, KeyError, IndexError, TypeError, ValueError) as exc:
+            return [f'{prefix}: cannot validate ApprovalBench result: {exc}']
     if entry['check'] == 'source_literals':
         try:
             for evidence in entry['sources']:

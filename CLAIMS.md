@@ -324,6 +324,12 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
     "quote": "In the deterministic, offline injected-product fixture, the deliberately vulnerable test double executed **2/2 simulated unauthorized actions without CallGate and 0/2 with CallGate**. These are fixture counts from `docs/amazon/merchant_injection_results.json`, not a human study or production security rate.",
     "evidence": "docs/amazon/merchant_injection_results.json",
     "check": "merchant_injection_counts"
+  },
+  {
+    "id": "readme-034",
+    "quote": "ApprovalBench Lite reports **0/300 scripted attack successes for D5** across its three simulated attack cells. This author-scripted result is traceable to `evaluation_checkout/approvalbench/results.json`; it is not a real-user study or a claim about production deployment.",
+    "evidence": "evaluation_checkout/approvalbench/results.json",
+    "check": "approvalbench_d5"
   }
 ]
 ```

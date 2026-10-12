@@ -207,3 +207,9 @@
 - Two network-free merchant tests passed in 1.35 seconds.
 - The complete merchant test file produced no output before the 30-second sandbox command boundary. It is not claimed as passed and remains in the local verification gate.
 
+## ApprovalBench Lite — 2026-10-11
+
+- Generator output: `wrote 3x3 matrix; D5 attack successes=0/300`.
+- Focused tests: `3 passed in 0.52s`.
+- The benchmark is a fixed-seed author simulation. Latency and legitimate-completion values are explicit simulation parameters, not human observations.
+
