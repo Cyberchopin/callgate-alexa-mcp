@@ -36,6 +36,25 @@ Write-Host "=== MCP combined ==="
     --basetemp (Join-Path $temp "mcp-combined")
 if ($LASTEXITCODE -ne 0) { throw "combined MCP tests failed with exit code $LASTEXITCODE" }
 
+Write-Host "=== MCP stable error mapping ==="
+& $python -m pytest tests/alexa_mcp/test_error_mapping.py -q -rs `
+    --basetemp (Join-Path $temp "error-mapping")
+if ($LASTEXITCODE -ne 0) { throw "error-mapping tests failed with exit code $LASTEXITCODE" }
+
+Write-Host "=== merchant injection chain ==="
+& $python -m pytest tests/alexa_mcp/test_merchant_injection.py -q -rs `
+    --basetemp (Join-Path $temp "merchant")
+if ($LASTEXITCODE -ne 0) { throw "merchant tests failed with exit code $LASTEXITCODE" }
+
+Write-Host "=== ApprovalBench Lite ==="
+& $python -m evaluation_checkout.approvalbench.run
+if ($LASTEXITCODE -ne 0) { throw "ApprovalBench generation failed with exit code $LASTEXITCODE" }
+& $python -m pytest tests/test_approvalbench_lite.py -q `
+    --basetemp (Join-Path $temp "approvalbench")
+if ($LASTEXITCODE -ne 0) { throw "ApprovalBench tests failed with exit code $LASTEXITCODE" }
+& $python scripts/check_claims.py
+if ($LASTEXITCODE -ne 0) { throw "claim registry check failed with exit code $LASTEXITCODE" }
+
 Write-Host "=== full Python suite ==="
 & $python -m pytest -q -rs --basetemp (Join-Path $temp "full")
 if ($LASTEXITCODE -ne 0) {
