@@ -62,4 +62,4 @@ def test_sqlite_replay_rejected_after_server_restart(tmp_path):
     with running_test_server("phase1", database, public_key=public_key, clock=1001) as base_url:
         _, _, replay = anyio.run(mcp_call, base_url + "/mcp", "send_money", payload)
     assert replay.is_error is True
-    assert "already consumed" in str(replay.content)
+    assert "CG_PROOF_REPLAYED" in str(replay.content)

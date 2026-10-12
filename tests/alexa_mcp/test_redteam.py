@@ -48,12 +48,12 @@ def test_cross_tool_replay_and_parameter_mutation_are_rejected(tmp_path):
                            resource=operation_resource("send_money", send), now=1000)
     gateway = CapabilityGateway(tmp_path / "replay.sqlite3", {"issuer": key.public_key()},
                                 clock=lambda: 1001)
-    with pytest.raises(PolicyBlocked, match="scope mismatch"):
+    with pytest.raises(PolicyBlocked, match="CG_PROOF_SCOPE_MISMATCH"):
         gateway.authorize("place_order", {
             "merchant": "fictional-shop", "cart": [{"sku": "one", "quantity": 1}],
             "total_amount_cents": 5000,
         }, session_id="session-a", proof=proof.model_dump())
-    with pytest.raises(PolicyBlocked, match="scope mismatch"):
+    with pytest.raises(PolicyBlocked, match="CG_PROOF_SCOPE_MISMATCH"):
         gateway.authorize("send_money", {**send, "amount_cents": 5001},
                           session_id="session-a", proof=proof.model_dump())
 

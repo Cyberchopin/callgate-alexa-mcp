@@ -96,9 +96,7 @@ async def authorize_then_mutate(base_url, mutation):
                     assert result.is_error is True
                 except MCPError as error:
                     if "claimed_identity" in mutation:
-                        # The SDK currently surfaces unknown-contact rejection as a closed SSE request.
-                        assert error.code == -32000
-                        assert "SSE stream ended without a response" in error.message
+                        raise AssertionError("expected a stable tool error, not MCP transport failure") from error
                     else:
                         assert error.code == -32042
 
