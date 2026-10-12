@@ -7,6 +7,13 @@
 - Run `powershell -ExecutionPolicy Bypass -File scripts/verify_local.ps1` from the repository root. It tests phase 1, phase 2, full Python, and Node directly in RC1.
 - The current sandbox did not clear the real-client startup gate: phase 1 and phase 2 timed out starting their test server, and UI/TestClient tests hung. Do not claim the RC1 acceptance gate passed until the local command completes.
 
+## Stabilization status — 2026-10-11
+
+- `amazon/stabilize` replaces the MCP tests' in-thread Uvicorn launch with a test-only subprocess, an operating-system-assigned temporary port, `/health` polling for up to 60 seconds, and failure output containing stdout, stderr, and exit code.
+- This sandbox denied loopback access with WinError 10013, so the real-client gate remains **pending local execution**; no pass is claimed.
+- The three historical failures were reproduced individually and classified in `BASELINE_FAILURES.md`. The two review-process failures occur in Windows spawn bootstrap before application logic. The evaluation-v2 mismatch is caused by working-tree line-ending conversion: the committed blob still matches the frozen manifest.
+- Red-team and UI HTTP tests also hung twice in this sandbox. Their test-layer ASGI client update requires local confirmation; core code was not changed.
+
 ## Integration status
 
 - `release/amazon-rc1` contains `amazon/tools` only.

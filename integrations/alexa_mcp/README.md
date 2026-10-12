@@ -16,6 +16,11 @@ The server uses MCP Python SDK **2.3.0** and advertises the SDK's
 **2026-07-28** protocol version, which is newer than the required 2025-11-25
 version.
 
+RC1 verification is not claimed from the restricted development sandbox. Run
+`powershell -ExecutionPolicy Bypass -File scripts/verify_local.ps1` locally; the
+real-client checks must list all three tools and observe JSON-RPC `-32042` before
+recording a passing submission result.
+
 ## Phase 1 scope
 
 - `send_money` and `place_order` require a signed CallGate proof. Without one,
