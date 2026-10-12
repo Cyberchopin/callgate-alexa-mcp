@@ -14,6 +14,12 @@
 - The three historical failures were reproduced individually and classified in `BASELINE_FAILURES.md`. The two review-process failures occur in Windows spawn bootstrap before application logic. The evaluation-v2 mismatch is caused by working-tree line-ending conversion: the committed blob still matches the frozen manifest.
 - Red-team and UI HTTP tests also hung twice in this sandbox. Their test-layer ASGI client update requires local confirmation; core code was not changed.
 
+## CI status — 2026-10-11
+
+- `amazon/ci` adds an Ubuntu/Windows Python 3.12 matrix for full Python, Node, and both pip-audit manifests.
+- Full-history Gitleaks runs separately with a version-and-digest-pinned image and `--redact`.
+- The workflow has not run because no push was performed. Follow `CI.md` after pushing RC1 to the private repository.
+
 ## Integration status
 
 - `release/amazon-rc1` contains `amazon/tools` only.
