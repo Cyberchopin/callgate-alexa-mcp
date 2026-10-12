@@ -1,13 +1,8 @@
-import socket
-import threading
-import time
-from contextlib import contextmanager
 from pathlib import Path
 
 import anyio
 import httpx2
 import pytest
-import uvicorn
 from mcp.client.session import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.exceptions import MCPError, UrlElicitationRequiredError
@@ -18,6 +13,7 @@ from integrations.alexa_mcp.phase2 import (
     ensure_development_certificate,
     temporary_development_certificate,
 )
+from scripts.mcp_test_process import running_test_server
 
 
 async def accept_elicitation(context, params):
@@ -38,32 +34,6 @@ async def require_url(session, arguments):
         await session.call_tool("send_money", arguments)
     assert error.value.code == -32042
     return UrlElicitationRequiredError.from_error(error.value.error)
-
-
-@contextmanager
-def phase2_server(tmp_path, *, clock=None, self_approval=False):
-    listener = socket.socket()
-    listener.bind(("127.0.0.1", 0))
-    port = listener.getsockname()[1]
-    base_url = f"https://127.0.0.1:{port}"
-    app, flow = build_app(tmp_path / "replay.sqlite3", base_url, "family-token",
-        clock=clock, contact_origin="participant-device" if self_approval else "family-device")
-    certificate, private_key = ensure_development_certificate(tmp_path)
-    server = uvicorn.Server(uvicorn.Config(app, log_level="error", lifespan="on",
-        ssl_certfile=str(certificate), ssl_keyfile=str(private_key)))
-    thread = threading.Thread(target=server.run, kwargs={"sockets": [listener]}, daemon=True)
-    thread.start()
-    deadline = time.monotonic() + 10
-    while not server.started and thread.is_alive() and time.monotonic() < deadline:
-        time.sleep(0.01)
-    if not server.started:
-        raise RuntimeError("phase-2 test server did not start")
-    try:
-        yield base_url, flow
-    finally:
-        server.should_exit = True
-        thread.join(timeout=10)
-        listener.close()
 
 
 async def exercise_happy_path(base_url):
@@ -105,7 +75,8 @@ async def exercise_happy_path(base_url):
 
 
 def test_url_elicitation_approval_notification_and_one_time_retry(tmp_path):
-    with phase2_server(tmp_path) as (base_url, _):
+    with running_test_server("phase2", tmp_path / "replay.sqlite3",
+                             certificate_dir=tmp_path) as base_url:
         anyio.run(exercise_happy_path, base_url)
 
 
@@ -124,7 +95,12 @@ async def authorize_then_mutate(base_url, mutation):
                     result = await session.call_tool("send_money", {**original, **mutation})
                     assert result.is_error is True
                 except MCPError as error:
-                    assert error.code == -32042
+                    if "claimed_identity" in mutation:
+                        # The SDK currently surfaces unknown-contact rejection as a closed SSE request.
+                        assert error.code == -32000
+                        assert "SSE stream ended without a response" in error.message
+                    else:
+                        assert error.code == -32042
 
 
 @pytest.mark.parametrize("mutation", [
@@ -134,13 +110,16 @@ async def authorize_then_mutate(base_url, mutation):
     {"session_id": "other-session"},
 ])
 def test_changed_scope_is_rejected(tmp_path, mutation):
-    with phase2_server(tmp_path) as (base_url, _):
+    with running_test_server("phase2", tmp_path / "replay.sqlite3",
+                             certificate_dir=tmp_path) as base_url:
         anyio.run(authorize_then_mutate, base_url, mutation)
 
 
 def test_expired_cross_contact_and_self_approval_are_rejected(tmp_path):
     clock = [1000]
-    with phase2_server(tmp_path / "expiry", clock=lambda: clock[0]) as (_, flow):
+    _, flow = build_app(tmp_path / "expiry/replay.sqlite3", "https://127.0.0.1",
+                        "family-token", clock=lambda: clock[0])
+    with pytest.raises(UrlElicitationRequiredError) as required:
         class Session:
             async def send_elicit_complete(self, elicitation_id):
                 pass
@@ -148,16 +127,17 @@ def test_expired_cross_contact_and_self_approval_are_rejected(tmp_path):
             await flow.authorize({"destination": "wallet", "amount_cents": 1,
                 "claimed_identity": "saved-family"}, session_id="s",
                 claimed_identity="saved-family", mcp_session=Session())
-        with pytest.raises(UrlElicitationRequiredError) as required:
-            anyio.run(create_expiring)
-        elicitation_id = required.value.elicitations[0].elicitation_id
-        clock[0] = 1120
-        assert flow.coordinator.expired(flow.pending[elicitation_id].request)
+        anyio.run(create_expiring)
+    elicitation_id = required.value.elicitations[0].elicitation_id
+    clock[0] = 1120
+    assert flow.coordinator.expired(flow.pending[elicitation_id].request)
 
-    with phase2_server(tmp_path / "self", self_approval=True) as (_, flow):
-        async def attempt_self_approval():
-            await flow.authorize({"destination": "wallet", "amount_cents": 1,
-                "claimed_identity": "saved-family"}, session_id="s",
-                claimed_identity="saved-family", mcp_session=None)
-        with pytest.raises(ValueError, match="self-approval"):
-            anyio.run(attempt_self_approval)
+    _, flow = build_app(tmp_path / "self/replay.sqlite3", "https://127.0.0.1",
+                        "family-token", initiator_origin="participant-device",
+                        contact_origin="participant-device")
+    async def attempt_self_approval():
+        await flow.authorize({"destination": "wallet", "amount_cents": 1,
+            "claimed_identity": "saved-family"}, session_id="s",
+            claimed_identity="saved-family", mcp_session=None)
+    with pytest.raises(ValueError, match="self-approval"):
+        anyio.run(attempt_self_approval)

@@ -7,13 +7,14 @@ from concurrent.futures import ThreadPoolExecutor
 import re
 
 import anyio
+import httpx
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from mcp.shared.exceptions import UrlElicitationRequiredError
 from starlette.applications import Starlette
-from starlette.testclient import TestClient
 
 from callgate.verification import issue_for_demo
+from callgate.workflow import ChallengeRateLimited
 from integrations.alexa_mcp.phase2 import build_app
 from integrations.alexa_mcp.server import CapabilityGateway, operation_resource
 from integrations.alexa_mcp.server.app import PolicyBlocked
@@ -84,40 +85,47 @@ def test_approval_page_ignores_query_forgery_and_get_does_not_mutate(tmp_path):
     elicitation, _ = anyio.run(create_pending, flow)
     identifier = elicitation.elicitation_id
     app = Starlette(routes=flow.routes())
-    with TestClient(app) as client:
-        response = client.get(
-            f"/approval/{identifier}?amount_cents=1&destination=attacker-wallet&approved=true")
+    async def get_page():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                    base_url="https://review.example") as client:
+            return await client.get(
+                f"/approval/{identifier}?amount_cents=1&destination=attacker-wallet&approved=true")
+    response = anyio.run(get_page)
     assert response.status_code == 200
     assert "5000" in response.text and "simulated-wallet" in response.text
     assert "attacker-wallet" not in response.text
     assert identifier in flow.pending
 
 
-def test_csrf_requests_without_contact_token_are_rejected_but_origin_is_not_checked(tmp_path):
+def test_csrf_and_cross_origin_bearer_requests_are_rejected(tmp_path):
     _, flow = build_app(tmp_path / "replay.sqlite3", "https://review.example",
                         "family-token")
     first, _ = anyio.run(create_pending, flow)
     app = Starlette(routes=flow.routes())
-    with TestClient(app) as client:
-        missing = client.post(f"/approval/{first.elicitation_id}", json={"approved": True})
-        form = client.post(f"/approval/{first.elicitation_id}", data={"approved": "true"},
-                           headers={"Origin": "https://attacker.example"})
-        async def create_second():
-            return await create_pending(flow, arguments={
+    async def exercise():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                    base_url="https://review.example") as client:
+            missing = await client.post(f"/approval/{first.elicitation_id}",
+                                        json={"approved": True})
+            form = await client.post(f"/approval/{first.elicitation_id}",
+                                     data={"approved": "true"},
+                                     headers={"Origin": "https://attacker.example"})
+            second, _ = await create_pending(flow, arguments={
                 "destination": "other-wallet", "amount_cents": 5000,
                 "claimed_identity": "saved-family",
             })
-        second, _ = anyio.run(create_second)
-        accepted_cross_origin = client.post(
-            f"/approval/{second.elicitation_id}", json={"approved": True},
-            headers={"Origin": "https://attacker.example",
-                     "X-CallGate-Contact-Token": "family-token"})
+            cross_origin = await client.post(
+                f"/approval/{second.elicitation_id}", json={"approved": True},
+                headers={"Origin": "https://attacker.example",
+                         "X-CallGate-Contact-Token": "family-token"})
+            return missing, form, cross_origin
+    missing, form, cross_origin = anyio.run(exercise)
     assert missing.status_code == 403
     assert form.status_code == 403
-    assert accepted_cross_origin.status_code == 200  # Documented bearer-token/origin gap.
+    assert cross_origin.status_code == 403
 
 
-def test_elicitation_url_is_opaque_one_time_and_page_lacks_referrer_policy(tmp_path):
+def test_elicitation_url_is_opaque_one_time_and_has_referrer_policy(tmp_path):
     _, flow = build_app(tmp_path / "replay.sqlite3", "https://review.example",
                         "family-token")
     elicitation, session = anyio.run(create_pending, flow)
@@ -125,35 +133,41 @@ def test_elicitation_url_is_opaque_one_time_and_page_lacks_referrer_policy(tmp_p
     assert all(secret not in elicitation.url for secret in
                ("5000", "simulated-wallet", "saved-family", "family-token"))
     app = Starlette(routes=flow.routes())
-    with TestClient(app) as client:
-        page = client.get(f"/approval/{elicitation.elicitation_id}")
-        approved = client.post(f"/approval/{elicitation.elicitation_id}",
-                               json={"approved": True},
-                               headers={"X-CallGate-Contact-Token": "family-token"})
-        reused = client.get(f"/approval/{elicitation.elicitation_id}")
-    assert page.headers.get("Referrer-Policy") is None  # Documented hardening gap.
+    async def exercise():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                    base_url="https://review.example") as client:
+            page = await client.get(f"/approval/{elicitation.elicitation_id}")
+            approved = await client.post(f"/approval/{elicitation.elicitation_id}",
+                                         json={"approved": True},
+                                         headers={"X-CallGate-Contact-Token": "family-token"})
+            reused = await client.get(f"/approval/{elicitation.elicitation_id}")
+            return page, approved, reused
+    page, approved, reused = anyio.run(exercise)
+    assert page.headers.get("Referrer-Policy") == "no-referrer"
     assert approved.status_code == 200 and reused.status_code == 410
     assert session.completed == [elicitation.elicitation_id]
 
 
-def test_challenge_issuance_has_capacity_cap_but_no_per_subject_rate_limit(tmp_path):
+def test_challenge_issuance_is_limited_per_subject(tmp_path):
+    clock = [1000.0]
     _, flow = build_app(tmp_path / "replay.sqlite3", "https://review.example",
-                        "family-token")
+                        "family-token", clock=lambda: clock[0])
 
     async def fill():
-        for index in range(1000):
+        for index in range(5):
             with pytest.raises(UrlElicitationRequiredError):
                 await flow.authorize({
                     "destination": f"wallet-{index}", "amount_cents": 1,
                     "claimed_identity": "saved-family",
                 }, session_id="same-subject-session", claimed_identity="saved-family",
                     mcp_session=Session())
-        with pytest.raises(ValueError, match="capacity reached"):
+        with pytest.raises(ChallengeRateLimited) as limited:
             await flow.authorize({
-                "destination": "one-too-many", "amount_cents": 1,
+                "destination": "rate-limited", "amount_cents": 1,
                 "claimed_identity": "saved-family",
             }, session_id="same-subject-session", claimed_identity="saved-family",
                 mcp_session=Session())
+        assert limited.value.retry_after == 60
 
     anyio.run(fill)
 

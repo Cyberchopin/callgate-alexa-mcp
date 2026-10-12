@@ -1,5 +1,32 @@
 # Amazon build log
 
+## BUILD-STABILIZE-OWNER-003 — 2026-10-11
+
+- Owner reran the final MCP gate on `amazon/stabilize` commit `2804f8a`.
+- Combined phase 1 and phase 2 real-client result: **10 passed in 20.66 seconds**.
+- Targeted Bandit result for `scripts/mcp_test_process.py`: **0 high, 0 medium, 2 low**, both high confidence; **0 `nosec`** and 0 skipped files.
+- The two low findings are the explicit `subprocess` import and `Popen` invocation used to satisfy the required independent test-server process. The command is an argument list built from the current Python interpreter and test-owned values, with no shell invocation or untrusted command string.
+
+## BUILD-STABILIZE-OWNER-002 — 2026-10-11
+
+- Owner compatibility result: **3 passed in 2.76 seconds** under `cryptography 50.0.0`.
+- Full Python: **277 passed, 1 failed, 3 skipped** in 34.62 seconds. The only failure was the documented evaluation-v2 working-tree line-ending mismatch.
+- Regression subset excluding that frozen-input check: **275 passed, 3 skipped, 1 deselected** in 31.06 seconds; no previously passing test failed.
+- Node: **3 passed, 0 failed, 0 skipped**.
+- Phase 1 real-client integration: **3 passed** in 5.37 seconds.
+- Phase 2 URL-elicitation integration: **7 passed** in 16.64 seconds.
+- Root and MCP pip-audit each reported `No known vulnerabilities found`.
+- Bandit scanned 2,879 lines: 0 high, 3 medium, 27 low. Two new medium findings belonged to the test-only MCP health probe (`ssl._create_unverified_context` and generic `urlopen`); they were removed by trusting the generated local certificate and using fixed HTTP/HTTPS connection classes. The pre-existing XML parser medium remains governed by `BANDIT_TRIAGE.md`.
+
+## BUILD-STABILIZE-OWNER-001 — 2026-10-11
+
+- The owner ran `scripts/verify_local.ps1` outside the sandbox on both RC1 and `amazon/stabilize` under `cryptography 50.0.0`; compatibility tests passed **3/3** in 2.76 and 2.72 seconds respectively.
+- RC1 full Python: **274 passed, 4 failed, 3 skipped**. Three failures were stale red-team expectations that contradicted the approved Origin, Referrer-Policy, and per-subject rate-limit hardening; the fourth was the known evaluation-v2 working-tree line-ending mismatch.
+- RC1 regression subset: **272 passed, 3 failed, 3 skipped, 1 deselected**. The script correctly stopped before Node and dedicated phase tests.
+- Stabilize full Python: **275 passed, 3 failed, 3 skipped**. Failures were the evaluation-v2 line-ending mismatch, one stale rate-limit characterization test, and the cross-contact mutation being rejected through MCP SDK `-32000` (`SSE stream ended without a response`) rather than `-32042`.
+- Stabilize regression subset: **273 passed, 2 failed, 3 skipped, 1 deselected**. The script again stopped before Node and dedicated phase tests.
+- Both former Windows spawned-process baseline failures passed in the owner's environment. No core security or frozen evaluation file was changed in response.
+
 ## BUILD-RC1-INTEGRATION-002 — 2026-10-11
 
 - Integrated phase 1, phase 2, dependency upgrade, evaluation, red-team, and UI work into `release/amazon-rc1` in the requested order.
