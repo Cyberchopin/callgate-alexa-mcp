@@ -17,6 +17,7 @@
 - The generic `-32000` result is still a protocol-quality gap. The test records it as a rejection, not as successful URL elicitation; changing adapter behavior is outside this test-only stabilization branch.
 - Owner acceptance run passed the regression subset, Node, phase 1, phase 2, and both pip-audit manifests. The only full-suite failure was the already diagnosed evaluation-v2 checkout conversion.
 - Two Bandit medium findings introduced by the test health probe were removed without suppressions; one pre-existing accepted XML-parser medium remains.
+- Final owner-side MCP gate on commit `2804f8a`: **10 passed in 20.66 seconds**. The test launcher has **0 medium/high Bandit findings**, 2 accepted subprocess-related low findings, and no suppressions.
 
 ## Historical integration attempt (superseded by Current RC1 status above)
 

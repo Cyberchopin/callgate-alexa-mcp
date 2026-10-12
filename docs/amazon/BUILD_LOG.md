@@ -1,5 +1,12 @@
 # Amazon build log
 
+## BUILD-STABILIZE-OWNER-003 — 2026-10-11
+
+- Owner reran the final MCP gate on `amazon/stabilize` commit `2804f8a`.
+- Combined phase 1 and phase 2 real-client result: **10 passed in 20.66 seconds**.
+- Targeted Bandit result for `scripts/mcp_test_process.py`: **0 high, 0 medium, 2 low**, both high confidence; **0 `nosec`** and 0 skipped files.
+- The two low findings are the explicit `subprocess` import and `Popen` invocation used to satisfy the required independent test-server process. The command is an argument list built from the current Python interpreter and test-owned values, with no shell invocation or untrusted command string.
+
 ## BUILD-STABILIZE-OWNER-002 — 2026-10-11
 
 - Owner compatibility result: **3 passed in 2.76 seconds** under `cryptography 50.0.0`.
