@@ -213,3 +213,12 @@
 - Focused tests: `3 passed in 0.52s`.
 - The benchmark is a fixed-seed author simulation. Latency and legitimate-completion values are explicit simulation parameters, not human observations.
 
+## Final-gate secret scan — 2026-10-11
+
+- Docker was unavailable: `failed to connect to the docker API ... The system cannot find the file specified.`
+- Downloaded Gitleaks 8.30.1 from its GitHub release and verified the release archive against the published SHA-256 checksum.
+- First full-history redacted scan: 100 commits, 3 owner-classified `generic-api-key` findings in `scambench/local-check.json` at commit `3b4525ff0ce85beab9bd541f377b442f44e7d27c`. No matched values were printed or recorded.
+- Added the three exact fingerprints to `.gitleaksignore` with the owner-classification rationale.
+- Second full-history redacted scan: 100 commits, 0 remaining findings, exit code 0.
+
+

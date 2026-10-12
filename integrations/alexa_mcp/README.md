@@ -3,6 +3,12 @@
 This is a **simulated voice-assistant path**. It is not connected to Alexa+, Amazon,
 any payment provider, or any real account. Every reported completion is simulated.
 
+## What it is
+
+A self-hosted Streamable HTTP MCP demonstration that routes simulated protected
+actions through CallGate and compares guarded behavior with a deliberately
+vulnerable scripted test double.
+
 ## Run it in one command
 
 From the repository root, after installing `integrations/alexa_mcp/requirements.txt`:

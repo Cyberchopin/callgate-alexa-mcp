@@ -4,6 +4,13 @@
 
 Run `powershell -ExecutionPolicy Bypass -File scripts/run_merchant_gate.ps1` from the repository root. The offline injected-product comparison and two isolated tests pass in the restricted environment, but the complete merchant approval test did not finish within the sandbox command window. Do not claim the networked end-to-end gate passed until this command completes locally.
 
+## Final local decisions and gates
+
+- D7, D8, and D9 were recorded as YES. The frozen evaluation files were not changed.
+- The three historical scanner findings are ignored only by exact fingerprint and owner-classified reason; no broad rule suppression was added.
+- Run `scripts/verify_local.ps1`, then `scripts/run_merchant_gate.ps1`, before recording a demo or merging to the submission branch.
+- The error-mapping real-client matrix remains pending an unrestricted local run; the sandbox result must not be presented as a pass.
+
 ## Current RC1 status — 2026-10-11
 
 - `release/amazon-rc1` now contains the requested phase 1, phase 2, dependency, evaluation, red-team, and UI changes.
