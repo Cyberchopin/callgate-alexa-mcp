@@ -4,6 +4,7 @@ import argparse
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -31,7 +32,7 @@ def main():
                          if path.exists()).lower()
     for heading in ("what it is", "run it in one command", "security boundaries"):
         checks.append((f"README section: {heading}", heading in readmes))
-    tests = command(["py", "-3.12", "-m", "pytest", "-q"])
+    tests = command([sys.executable, "-m", "pytest", "-q"])
     checks.append(("Python tests pass", tests.returncode == 0))
     scanner = shutil.which(args.gitleaks) or (args.gitleaks if Path(args.gitleaks).is_file() else None)
     if scanner:
@@ -61,6 +62,8 @@ def main():
     local_paths = []
     for path in tracked:
         if path.suffix.lower() not in text_suffixes:
+            continue
+        if path == Path(__file__).resolve():
             continue
         if local_path_pattern.search(path.read_text(encoding="utf-8", errors="replace")):
             local_paths.append(path)

@@ -221,4 +221,10 @@
 - Added the three exact fingerprints to `.gitleaksignore` with the owner-classification rationale.
 - Second full-history redacted scan: 100 commits, 0 remaining findings, exit code 0.
 
+## Final submission checklist — 2026-10-11
+
+- Passed: LICENSE, required README sections, full-history redacted scan, pre-existing-work freshness, no tracked private-key files, no trademark-named graphics, friction raw-error fields, and run instructions.
+- Python test check initially failed before execution because the checklist used the global Python, which lacks `httpx2`; the checklist now uses its own interpreter. The exact error was `ModuleNotFoundError: No module named 'httpx2'`.
+- Repository path check found pre-existing local paths in `START_HERE.md` and `docs/REUSE_PLAN.md`. They are outside the task's allowed edit paths, so the final gate remains failed pending owner-approved cleanup.
+- The full suite under the pinned environment did not finish within the restricted command window; no final-branch all-tests pass is claimed.
 
