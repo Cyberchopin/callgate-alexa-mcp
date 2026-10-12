@@ -1,12 +1,12 @@
 """Subprocess launcher used only by MCP integration tests."""
 
 import argparse
+import http.client
 import socket
 import ssl
 import subprocess
 import sys
 import time
-import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -61,16 +61,28 @@ def running_test_server(mode, replay_db, *, public_key=None, clock=None,
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                text=True)
     scheme = "https" if mode == "phase2" else "http"
-    health_url = f"{scheme}://127.0.0.1:{port}/health"
-    context = ssl._create_unverified_context() if mode == "phase2" else None
     deadline = time.monotonic() + timeout
     try:
         while time.monotonic() < deadline and process.poll() is None:
             try:
-                with urllib.request.urlopen(health_url, timeout=1, context=context) as response:
-                    if response.status == 200:
-                        yield f"{scheme}://127.0.0.1:{port}"
-                        return
+                if mode == "phase2":
+                    certificate = Path(certificate_dir) / "localhost-cert.pem"
+                    if not certificate.exists():
+                        time.sleep(0.1)
+                        continue
+                    context = ssl.create_default_context(cafile=str(certificate))
+                    connection = http.client.HTTPSConnection(
+                        "127.0.0.1", port, timeout=1, context=context)
+                else:
+                    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=1)
+                try:
+                    connection.request("GET", "/health")
+                    response = connection.getresponse()
+                finally:
+                    connection.close()
+                if response.status == 200:
+                    yield f"{scheme}://127.0.0.1:{port}"
+                    return
             except OSError:
                 time.sleep(0.1)
         raise RuntimeError(_failure(process, timeout))

@@ -15,6 +15,8 @@
 - Red-team and UI HTTP tests also hung twice in this sandbox. Their test-layer ASGI client update requires local confirmation; core code was not changed.
 - Owner rerun confirmed the two spawned-process tests pass outside the sandbox. It also exposed two integration-test issues now corrected on this branch: the red-team suite still expected no subject rate limit, and unknown-contact rejection is surfaced by MCP SDK 2.3.0 as `-32000`/closed SSE rather than `-32042`.
 - The generic `-32000` result is still a protocol-quality gap. The test records it as a rejection, not as successful URL elicitation; changing adapter behavior is outside this test-only stabilization branch.
+- Owner acceptance run passed the regression subset, Node, phase 1, phase 2, and both pip-audit manifests. The only full-suite failure was the already diagnosed evaluation-v2 checkout conversion.
+- Two Bandit medium findings introduced by the test health probe were removed without suppressions; one pre-existing accepted XML-parser medium remains.
 
 ## Historical integration attempt (superseded by Current RC1 status above)
 

@@ -1,5 +1,16 @@
 # Amazon build log
 
+## BUILD-STABILIZE-OWNER-002 — 2026-10-11
+
+- Owner compatibility result: **3 passed in 2.76 seconds** under `cryptography 50.0.0`.
+- Full Python: **277 passed, 1 failed, 3 skipped** in 34.62 seconds. The only failure was the documented evaluation-v2 working-tree line-ending mismatch.
+- Regression subset excluding that frozen-input check: **275 passed, 3 skipped, 1 deselected** in 31.06 seconds; no previously passing test failed.
+- Node: **3 passed, 0 failed, 0 skipped**.
+- Phase 1 real-client integration: **3 passed** in 5.37 seconds.
+- Phase 2 URL-elicitation integration: **7 passed** in 16.64 seconds.
+- Root and MCP pip-audit each reported `No known vulnerabilities found`.
+- Bandit scanned 2,879 lines: 0 high, 3 medium, 27 low. Two new medium findings belonged to the test-only MCP health probe (`ssl._create_unverified_context` and generic `urlopen`); they were removed by trusting the generated local certificate and using fixed HTTP/HTTPS connection classes. The pre-existing XML parser medium remains governed by `BANDIT_TRIAGE.md`.
+
 ## BUILD-STABILIZE-OWNER-001 — 2026-10-11
 
 - The owner ran `scripts/verify_local.ps1` outside the sandbox on both RC1 and `amazon/stabilize` under `cryptography 50.0.0`; compatibility tests passed **3/3** in 2.76 and 2.72 seconds respectively.
