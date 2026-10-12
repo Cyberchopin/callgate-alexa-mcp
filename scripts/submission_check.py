@@ -32,7 +32,10 @@ def main():
                          if path.exists()).lower()
     for heading in ("what it is", "run it in one command", "security boundaries"):
         checks.append((f"README section: {heading}", heading in readmes))
-    tests = command([sys.executable, "-m", "pytest", "-q"])
+    test_temp = ROOT / ".test-tmp" / "submission-check"
+    test_temp.mkdir(parents=True, exist_ok=True)
+    tests = command([sys.executable, "-m", "pytest", "-q", "-rs",
+                     "--basetemp", str(test_temp)])
     checks.append(("Python tests pass", tests.returncode == 0))
     if tests.returncode:
         print("Python test failure output:")

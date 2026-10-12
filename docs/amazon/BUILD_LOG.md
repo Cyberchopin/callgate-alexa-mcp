@@ -238,4 +238,5 @@
 - Corrected merchant gate rerun: 3 passed in 0.76 seconds.
 - Offline comparison remained unguarded 2/2 and CallGate 0/2; claim registry remained `registered=34 unresolved_or_inconsistent=0`.
 - Submission check passed 10 checks and failed 2: full Python tests and local absolute paths. The checker now prints the captured pytest failure and only the relative filenames containing local paths.
+- The next owner run showed widespread pytest setup errors because the submission checker omitted the required project-local `--basetemp`. The checker now uses `.test-tmp/submission-check`, matching the established Windows verification rule; these setup errors are not classified as product regressions.
 
