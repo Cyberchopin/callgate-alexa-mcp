@@ -11,6 +11,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 
 from callgate.replay_store import SQLiteReplayStore
 from callgate.verification import DemoVerificationGate
+from callgate.workflow import ChallengeRateLimited
 
 
 class PolicyProofRequired(ToolError):
@@ -19,6 +20,35 @@ class PolicyProofRequired(ToolError):
 
 class PolicyBlocked(ToolError):
     pass
+
+
+PROOF_REJECTION_CODES = {
+    "unknown issuer": "CG_PROOF_ISSUER_UNKNOWN",
+    "invalid signature": "CG_PROOF_SIGNATURE_INVALID",
+    "scope mismatch": "CG_PROOF_SCOPE_MISMATCH",
+    "confirmation and policy approval required": "CG_POLICY_APPROVAL_REQUIRED",
+    "credential not currently valid": "CG_PROOF_EXPIRED_OR_NOT_YET_VALID",
+    "credential already consumed": "CG_PROOF_REPLAYED",
+    "gate capacity reached": "CG_GATE_CAPACITY_REACHED",
+    "replay storage unavailable": "CG_REPLAY_STORE_UNAVAILABLE",
+}
+
+
+APPROVAL_REJECTION_CODES = {
+    "unknown saved identity; no fallback reviewer": "CG_CONTACT_NOT_REGISTERED",
+    "self-approval credential origin rejected": "CG_SELF_APPROVAL_REJECTED",
+    "confirmation capacity reached": "CG_APPROVAL_CAPACITY_REACHED",
+}
+
+
+def _proof_rejection(error: ValueError) -> str:
+    return PROOF_REJECTION_CODES.get(str(error), "CG_PROOF_INVALID")
+
+
+def _approval_rejection(error: ValueError) -> str:
+    if isinstance(error, ChallengeRateLimited):
+        return "CG_CHALLENGE_RATE_LIMITED"
+    return APPROVAL_REJECTION_CODES.get(str(error), "CG_APPROVAL_REJECTED")
 
 
 def operation_resource(tool_name: str, arguments: dict[str, Any]) -> str:
@@ -54,7 +84,7 @@ class CapabilityGateway:
             return self.gate.execute(proof, session_id=session_id, resource=resource,
                                      human_confirmed=True, policy_allows=True)
         except ValueError as error:
-            raise PolicyBlocked(f"403 BLOCKED: {error}") from None
+            raise PolicyBlocked(f"403 BLOCKED: {_proof_rejection(error)}") from None
 
 
 def create_server(gateway: CapabilityGateway, approval_flow=None) -> MCPServer:
@@ -69,8 +99,11 @@ def create_server(gateway: CapabilityGateway, approval_flow=None) -> MCPServer:
         if claimed_identity is not None:
             arguments["claimed_identity"] = claimed_identity
         if approval_flow is not None and proof is None:
-            authorization = await approval_flow.authorize(arguments, session_id=session_id,
-                claimed_identity=claimed_identity, mcp_session=ctx.session)
+            try:
+                authorization = await approval_flow.authorize(arguments, session_id=session_id,
+                    claimed_identity=claimed_identity, mcp_session=ctx.session)
+            except ValueError as error:
+                raise PolicyBlocked(f"403 BLOCKED: {_approval_rejection(error)}") from None
         else:
             authorization = gateway.authorize("send_money", arguments,
                                               session_id=session_id, proof=proof)

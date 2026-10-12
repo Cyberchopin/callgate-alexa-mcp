@@ -1,8 +1,11 @@
 # Competition-tool friction log
 
-Only real issues involving MCP SDK/specification, Alexa+ documentation, Devpost,
-or other competition tooling belong here. Local machine and sandbox issues belong
-in `BUILD_LOG.md`.
+Use `py -3.12 scripts/friction.py add ...` at the time a real competition-tool
+problem occurs. Do not backfill hypothetical issues. Local machine and sandbox
+problems belong in `docs/amazon/BUILD_LOG.md`.
+
+Only real issues involving MCP SDK/specification, voice-assistant track documentation,
+Devpost, or other competition tooling belong here.
 
 ## FRICTION-001 — MCP Python SDK 2.x server rename — 2026-10-10
 
@@ -50,3 +53,19 @@ mcp.shared.exceptions.MCPError: URL elicitation required
 - Workaround: Verify code `-32042`, then call `UrlElicitationRequiredError.from_error(error.error)` before reading the URL-mode fields.
 - Actionable suggestion: Have the Python client dispatcher reconstruct `UrlElicitationRequiredError` automatically when it receives `-32042`, or document the manual conversion next to the server example.
 
+
+
+## 2026-10-11T18:29:57-07:00 — MCP SDK expected rejection transport
+
+- Step: Call send_money with a changed claimed_identity after approval using ClientSession.call_tool on MCP Python SDK 2.3.0
+- Expected: A deliberate ToolError result with a stable rejection reason, without terminating the stream.
+- Actual (raw):
+
+```text
+mcp.shared.exceptions.MCPError: SSE stream ended without a response
+client code: -32000; expected URL-elicitation code assertion: -32042
+```
+
+- Severity: medium
+- Workaround: Catch expected approval ValueError subclasses at the MCP adapter boundary and raise SDK ToolError with a stable reason code.
+- Actionable suggestion: Document how tool authors should map expected domain rejections during URL-elicitation retry; add an SDK regression test that an expected rejection never closes the SSE stream.

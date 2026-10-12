@@ -1,9 +1,13 @@
 """URL-elicitation approval adapter for the simulated send_money tool."""
 
-import html
 import secrets
+import math
+import threading
+import time
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlsplit
 
 from mcp.shared.exceptions import UrlElicitationRequiredError
 from mcp.types import ElicitRequestURLParams
@@ -12,8 +16,10 @@ from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Route
 
 from callgate.confirmation import ConfirmationCoordinator, ReviewerDecision, decision_bytes
+from callgate.workflow import ChallengeRateLimited
 
 from .app import CapabilityGateway, operation_resource
+from .ui import render_contact_page, security_headers, ui_routes
 
 
 @dataclass
@@ -27,7 +33,7 @@ class PendingApproval:
 class ApprovalFlow:
     def __init__(self, gateway: CapabilityGateway, coordinator: ConfirmationCoordinator,
                  reviewer_keys: dict[str, Any], contact_tokens: dict[str, str], *,
-                 approval_base_url: str, subject: str):
+                 approval_base_url: str, subject: str, rate_clock=time.monotonic):
         if not approval_base_url.startswith("https://"):
             raise ValueError("approval URL must use HTTPS")
         self.gateway = gateway
@@ -35,12 +41,33 @@ class ApprovalFlow:
         self.reviewer_keys = dict(reviewer_keys)
         self.contact_tokens = dict(contact_tokens)
         self.approval_base_url = approval_base_url.rstrip("/")
+        parsed = urlsplit(self.approval_base_url)
+        self.allowed_origins = {f"{parsed.scheme}://{parsed.netloc}"}
         self.subject = subject
+        self.rate_clock = rate_clock
+        self._issued = defaultdict(deque)
+        self._rate_lock = threading.Lock()
         self.pending: dict[str, PendingApproval] = {}
         self.approved: dict[str, Any] = {}
 
     def _key(self, arguments):
         return f"{self.subject}:{operation_resource('send_money', arguments)}"
+
+    def _record_issue(self):
+        now = self.rate_clock()
+        with self._rate_lock:
+            issued = self._issued[self.subject]
+            while issued and issued[0] <= now - 3600:
+                issued.popleft()
+            recent = [stamp for stamp in issued if stamp > now - 60]
+            waits = []
+            if len(recent) >= 5:
+                waits.append(recent[0] + 60 - now)
+            if len(issued) >= 30:
+                waits.append(issued[0] + 3600 - now)
+            if waits:
+                raise ChallengeRateLimited(max(1, math.ceil(max(waits))))
+            issued.append(now)
 
     async def authorize(self, arguments, *, session_id, claimed_identity, mcp_session):
         key = self._key(arguments)
@@ -48,6 +75,7 @@ class ApprovalFlow:
         if credential is not None:
             return self.gateway.authorize("send_money", arguments, session_id=session_id,
                                           proof=credential.model_dump())
+        self._record_issue()
         confirmation = self.coordinator.create(session_id=session_id,
             resource=operation_resource("send_money", arguments), claimed_identity=claimed_identity)
         elicitation_id = secrets.token_hex(16)
@@ -61,25 +89,26 @@ class ApprovalFlow:
     async def view(self, request: Request):
         item = self.pending.get(request.path_params["elicitation_id"])
         if item is None or self.coordinator.expired(item.request):
-            return JSONResponse({"error": "approval unavailable"}, status_code=410)
-        operation = item.arguments
-        body = ("<h1>Simulated contact review</h1>"
-                f"<p>Amount: {int(operation['amount_cents'])} cents</p>"
-                f"<p>Destination: {html.escape(operation['destination'])}</p>"
-                f"<p>Requested identity: {html.escape(item.request.claimed_identity or '')}</p>"
-                "<p>No real payment will occur.</p>")
-        return HTMLResponse(body)
+            return JSONResponse({"error": "approval unavailable"}, status_code=410,
+                                headers=security_headers())
+        return HTMLResponse(render_contact_page(item), headers=security_headers())
 
     async def decide(self, request: Request):
         elicitation_id = request.path_params["elicitation_id"]
         item = self.pending.get(elicitation_id)
         if item is None or self.coordinator.expired(item.request):
             self.pending.pop(elicitation_id, None)
-            return JSONResponse({"error": "approval unavailable"}, status_code=410)
+            return JSONResponse({"error": "approval unavailable"}, status_code=410,
+                                headers=security_headers())
+        origin = request.headers.get("origin")
+        if origin is not None and origin not in self.allowed_origins:
+            return JSONResponse({"error": "origin not allowed"}, status_code=403,
+                                headers=security_headers())
         reviewer = item.request.reviewer
         supplied = request.headers.get("x-callgate-contact-token", "")
         if not secrets.compare_digest(supplied, self.contact_tokens.get(reviewer, "")):
-            return JSONResponse({"error": "wrong saved contact"}, status_code=403)
+            return JSONResponse({"error": "wrong saved contact"}, status_code=403,
+                                headers=security_headers())
         approved = (await request.json()).get("approved") is True
         reviewer_key = self.reviewer_keys[reviewer]
         decision = ReviewerDecision(request=item.request, approved=approved,
@@ -87,13 +116,15 @@ class ApprovalFlow:
         credential = self.coordinator.decide(decision)
         self.pending.pop(elicitation_id, None)
         if credential is None:
-            return JSONResponse({"status": "denied"})
+            return JSONResponse({"status": "denied"}, headers=security_headers())
         self.approved[self._key(item.arguments)] = credential
         await item.mcp_session.send_elicit_complete(elicitation_id)
-        return JSONResponse({"status": "approved", "simulated": True})
+        return JSONResponse({"status": "approved", "simulated": True},
+                            headers=security_headers())
 
     def routes(self):
         return [
+            *ui_routes(),
             Route("/approval/{elicitation_id}", self.view, methods=["GET"]),
             Route("/approval/{elicitation_id}", self.decide, methods=["POST"]),
         ]

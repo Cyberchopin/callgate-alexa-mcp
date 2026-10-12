@@ -16,6 +16,12 @@ The server uses MCP Python SDK **2.3.0** and advertises the SDK's
 **2026-07-28** protocol version, which is newer than the required 2025-11-25
 version.
 
+The restricted development sandbox could not verify loopback networking. An
+owner-side run on `amazon/stabilize` commit `2804f8a` completed the combined
+phase 1 and phase 2 real-client suite with **10 passing tests in 20.66 seconds**.
+Run `powershell -ExecutionPolicy Bypass -File scripts/verify_local.ps1` again
+after subsequent changes; do not carry this result forward to changed code.
+
 ## Phase 1 scope
 
 - `send_money` and `place_order` require a signed CallGate proof. Without one,
@@ -32,11 +38,17 @@ requests, a merchant server, AWS services, or UI. Those are separate later phase
 
 ## Phase 2 URL elicitation demo
 
-Phase 2 is available on the `amazon/mcp-phase2` branch for `send_money` only:
+Phase 2 is integrated into `release/amazon-rc1` for `send_money` only:
 
 ```powershell
 py -3.12 -m integrations.alexa_mcp.phase2 --replay-db .local/phase2.sqlite3 --contact-token local-demo-contact
 ```
+
+Open `/demo` for the fixed offline **simulated voice assistant** fixture. The
+no-build HTML/CSS/JavaScript interface explains why an action paused, what it
+protected, and what happens next. Review pages fetch their transaction fields
+from server-held pending state by request ID; URL query parameters are ignored.
+The local contact credential is a simulation, not proof of a person.
 
 It serves MCP and the independent simulated-contact review page over local HTTPS
 with a generated, short-lived self-signed certificate. The certificate and private

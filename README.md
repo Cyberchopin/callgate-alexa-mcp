@@ -128,7 +128,8 @@ OTP step-up baseline under live coercion, and CallGate variants with contact
 availability and delay parameters, with raw counts in
 `evaluation_checkout/results.json` and a short table in
 `evaluation_checkout/REPORT.md`. The same command also writes
-`evaluation_checkout/safety_utility.svg` for a pitch slide. This is synthetic
+`evaluation_checkout/safety_utility.svg` and `evaluation_checkout/sensitivity_scan.svg`.
+The generated sensitivity sweep uses **5 OTP relay settings** and **100 deterministic trials per scenario**, with seed **20261010**; the report and both figures are regenerated from the JSON output. This is synthetic
 and author-provided; it is not a real shopping metric or independent
 evaluation.
 
@@ -232,3 +233,9 @@ CallGate contributes revision-aware evidence handling, cross-turn risk rules, sc
 ## License
 
 [MIT](LICENSE). Reused libraries and models retain their respective licenses and attribution.
+Canonical tool-and-parameter binding is not yet implemented on the release candidate.
+The isolated MCP phase uses an exact cryptographic resource binding over parsed tool
+arguments, but it does not normalize Unicode, reject duplicate raw JSON keys, sign a
+stable subject, or carry an explicit commitment version. See
+[`docs/amazon/BINDING_FINDINGS.md`](docs/amazon/BINDING_FINDINGS.md).
+
