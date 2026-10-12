@@ -53,7 +53,7 @@ def test_simulated_merchant_search_cart_checkout_approval_and_replay(tmp_path):
 
     result = anyio.run(retry)
     assert result["status"] == "simulated_action_completed"
-    with pytest.raises(PolicyBlocked, match="already consumed"):
+    with pytest.raises(PolicyBlocked, match="CG_PROOF_REPLAYED"):
         flow.gateway.authorize("send_money", arguments, session_id="shopping-session",
                                proof=credential.model_dump())
 

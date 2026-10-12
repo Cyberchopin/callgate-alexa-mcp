@@ -20,7 +20,8 @@ Before each merge, record the review branch SHA. If a merge gate fails, use
 ## Known pending evidence
 
 - Real-client error mapping and the complete merchant approval chain require the
-  unrestricted owner-side run.
+  unrestricted owner-side run. The error-mapping suite passed 5 tests in the first
+  owner run; the merchant gate must be repeated after its stale assertion fix.
 - GitHub Actions is configuration only until the private repository is pushed;
   no remote CI pass is claimed.
 - ApprovalBench Lite is an author-scripted simulation, not human-subject research.

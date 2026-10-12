@@ -228,3 +228,11 @@
 - Repository path check found pre-existing local paths in `START_HERE.md` and `docs/REUSE_PLAN.md`. They are outside the task's allowed edit paths, so the final gate remains failed pending owner-approved cleanup.
 - The full suite under the pinned environment did not finish within the restricted command window; no final-branch all-tests pass is claimed.
 
+## Owner final-gate rerun — 2026-10-11
+
+- `cryptography 50.0.0`; compatibility: 3 passed in 2.73 seconds.
+- MCP phase 1: 3 passed in 5.69 seconds; phase 2: 7 passed in 4.58 seconds; combined: 10 passed in 9.76 seconds.
+- Stable MCP error mapping: 5 passed in 6.41 seconds.
+- Merchant suite reached application behavior and returned `403 BLOCKED: CG_PROOF_REPLAYED`; the sole failure was a stale assertion for the old `already consumed` text. The assertion now targets the stable reason code.
+- The standalone merchant gate used the global interpreter and failed collection with `ModuleNotFoundError: No module named 'mcp'`. The script now uses the same pinned environment as `verify_local.ps1`.
+

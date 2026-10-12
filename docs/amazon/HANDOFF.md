@@ -4,6 +4,12 @@
 
 Run `powershell -ExecutionPolicy Bypass -File scripts/run_merchant_gate.ps1` from the repository root. The offline injected-product comparison and two isolated tests pass in the restricted environment, but the complete merchant approval test did not finish within the sandbox command window. Do not claim the networked end-to-end gate passed until this command completes locally.
 
+The first owner run reached the replay assertion and confirmed the gateway returned
+the stable `CG_PROOF_REPLAYED` reason. The test still expected the superseded
+`already consumed` text, and the standalone script used an unpinned global
+interpreter. Both test-layer issues are corrected; rerun the gate on the latest
+`amazon/final-gate` commit.
+
 ## Final local decisions and gates
 
 - D7, D8, and D9 were recorded as YES. The frozen evaluation files were not changed.
