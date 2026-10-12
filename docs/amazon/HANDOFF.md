@@ -19,6 +19,12 @@
 - Two Bandit medium findings introduced by the test health probe were removed without suppressions; one pre-existing accepted XML-parser medium remains.
 - Final owner-side MCP gate on commit `2804f8a`: **10 passed in 20.66 seconds**. The test launcher has **0 medium/high Bandit findings**, 2 accepted subprocess-related low findings, and no suppressions.
 
+## CI status — 2026-10-11
+
+- `amazon/ci` adds an Ubuntu/Windows Python 3.12 matrix for full Python, Node, and both pip-audit manifests.
+- Full-history Gitleaks runs separately with a version-and-digest-pinned image and `--redact`.
+- The workflow has not run because no push was performed. Follow `CI.md` after pushing RC1 to the private repository.
+
 ## Historical integration attempt (superseded by Current RC1 status above)
 
 - `release/amazon-rc1` contains `amazon/tools` only.
