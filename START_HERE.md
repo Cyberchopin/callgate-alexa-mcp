@@ -37,7 +37,7 @@ Participant 页面会显示本地风险引擎耗时、音频时长和“语音�
 .\Check-CallGate.ps1 -PythonPath 'C:/你的环境/Scripts/python.exe'
 ```
 
-若系统限制脚本运行，可在已有集成环境中直接运行 `python -m scripts.check_local`。本机已验证的解释器为 `C:/Users/wangs/Documents/Codex/work/cg-int/Scripts/python.exe`。
+若系统限制脚本运行，可在已有集成环境中直接运行 `python -m scripts.check_local`。Windows 虚拟环境可使用仓库内的 `.venv/Scripts/python.exe`。
 
 结果看 [本地报告](scambench/LOCAL_RESULTS.md)。输出 passed 表示本次测试、案例和离线演示通过；失败或缺依赖时退出码非零。不要把旧报告视为新一次检查成功。
 

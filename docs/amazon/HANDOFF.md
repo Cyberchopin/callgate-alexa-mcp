@@ -20,7 +20,7 @@ remain open in the submission checklist.
 - The three historical scanner findings are ignored only by exact fingerprint and owner-classified reason; no broad rule suppression was added.
 - Run `scripts/verify_local.ps1`, then `scripts/run_merchant_gate.ps1`, before recording a demo or merging to the submission branch.
 - The error-mapping real-client matrix remains pending an unrestricted local run; the sandbox result must not be presented as a pass.
-- **FINAL GATE FAIL:** remove the local absolute paths from `START_HERE.md` and `docs/REUSE_PLAN.md` after approving edits outside the current Amazon-only path scope.
+- The owner approved removal of the local absolute paths from `START_HERE.md` and `docs/REUSE_PLAN.md`; both now use portable guidance.
 - **FINAL GATE PENDING:** rerun `scripts/submission_check.py` with the pinned environment and Gitleaks 8.30.1 on the exact final commit.
 
 ## Current RC1 status — 2026-10-11

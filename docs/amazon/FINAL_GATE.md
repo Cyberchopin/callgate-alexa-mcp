@@ -25,6 +25,5 @@ Before each merge, record the review branch SHA. If a merge gate fails, use
 - GitHub Actions is configuration only until the private repository is pushed;
   no remote CI pass is claimed.
 - ApprovalBench Lite is an author-scripted simulation, not human-subject research.
-- The repository still contains two pre-existing local absolute paths in
-  `START_HERE.md` and `docs/REUSE_PLAN.md`. They must be removed before public
-  submission, but they were outside this task's allowed edit paths.
+- Owner-approved cleanup replaced the two pre-existing local absolute paths in
+  `START_HERE.md` and `docs/REUSE_PLAN.md` with portable guidance.
