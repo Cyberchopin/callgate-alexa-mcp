@@ -2,8 +2,8 @@
 
 - Cutoff: `2026-08-31T10:15:00-07:00`
 - Date basis: Git author date (`%aI`)
-- Source HEAD: `9a8474834e99fb4996ad68d96eaea10d61f37999`
-- Generated: `2026-10-11T18:55:46-07:00`
+- Source HEAD: `93f19aa40a983617a01c67f7f7f37edca31b5bbb`
+- Generated: `2026-10-11T18:57:31-07:00`
 
 ## Present before cutoff
 
