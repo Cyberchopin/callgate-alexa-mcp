@@ -90,7 +90,33 @@ def test_committed_checkout_results_match_regenerated_report():
     svg_path = Path("evaluation_checkout/safety_utility.svg")
     sensitivity_path = Path("evaluation_checkout/sensitivity_scan.svg")
     if report_path.exists() and markdown_path.exists() and svg_path.exists() and sensitivity_path.exists():
-        assert "callgate-checkout-utility-v2" in report_path.read_text()
-        assert markdown_path.read_text() == render_markdown(run())
-        assert svg_path.read_text() == render_svg(run())
-        assert sensitivity_path.read_text() == render_sensitivity_svg(run())
+        assert "callgate-checkout-utility-v2" in report_path.read_text(encoding="utf-8")
+        assert markdown_path.read_text(encoding="utf-8") == render_markdown(run())
+        assert svg_path.read_text(encoding="utf-8") == render_svg(run())
+        assert sensitivity_path.read_text(encoding="utf-8") == render_sensitivity_svg(run())
+
+
+def test_checkout_artifact_writer_uses_explicit_utf8_and_lf(tmp_path, monkeypatch):
+    import importlib
+    import json
+
+    module = importlib.import_module("evaluation_checkout.run")
+    original_write = Path.write_text
+    written = []
+
+    def checked_write(path, data, *args, **kwargs):
+        assert kwargs.get("encoding") == "utf-8"
+        assert kwargs.get("newline") == "\n"
+        written.append(path.name)
+        return original_write(path, data, *args, **kwargs)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(Path, "write_text", checked_write)
+    assert module.main() == 0
+    report = module.run()
+    assert json.loads((tmp_path / "results.json").read_text(encoding="utf-8")) == report
+    for name, render in (("REPORT.md", module.render_markdown),
+                         ("safety_utility.svg", module.render_svg),
+                         ("sensitivity_scan.svg", module.render_sensitivity_svg)):
+        assert (tmp_path / name).read_bytes() == render(report).encode("utf-8")
+    assert set(written) == {"results.json", "REPORT.md", "safety_utility.svg", "sensitivity_scan.svg"}

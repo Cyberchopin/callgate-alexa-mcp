@@ -1,5 +1,45 @@
 # Amazon build log
 
+## BUILD-CI-REPAIR-001 — 2026-10-13 UTC
+
+- Created an isolated local clone at readme-final `5a0e629` and local branch
+  `amazon/ci-repair`; the original checkout was not changed.
+- The first clone attempt was sandbox-blocked:
+  `fatal error - NtCreateDirectoryObject(\BaseNamedObjects\msys-2.0S5-1888ae32e00d56aa): 0xC0000022`.
+  Retrying with approved host execution succeeded.
+- An initial sandbox pytest attempt produced setup errors and was interrupted;
+  it has no complete test count and is not a valid baseline.
+- The host baseline exposed a command-preparation error: the `.test-tmp` parent
+  had not been created in the fresh clone. Raw error with the machine-specific
+  path replaced: `FileNotFoundError: [WinError 3] The system cannot find the path specified: '<repo>/.test-tmp/ci-baseline-host'`.
+  Actual result: `1 failed, 241 passed, 3 skipped, 1 warning, 47 errors in 8.88s`.
+  This run is not used as a clean product baseline. The failure also reproduced
+  `UnicodeDecodeError: 'utf-8' codec can't decode byte 0x97 in position 38: invalid start byte`.
+- Created the temporary parent directory before post-repair verification. The
+  new reproduction script also creates it before pytest. No skip or xfail added.
+- Checkout encoding tests: `8 passed in 0.97s`.
+- Full regression command: `python -X utf8 -m pytest -q -rs --basetemp .test-tmp/ci-fixed`.
+  Output: `290 passed, 3 skipped, 1 warning in 34.75s`.
+- Cryptography compatibility plus MCP phase1/phase2:
+  `13 passed in 14.35s`.
+- Node: `tests 3`, `pass 3`, `fail 0` before and after repair.
+- Claims: `registered=39 unresolved_or_inconsistent=0`.
+- Local Gitleaks 8.30.1 with `--redact=100 --log-opts=--all` and the existing
+  exact ignore file: `111 commits scanned`, `no leaks found`, exit 0.
+- The Actions scanner failure was an image-launch failure, not a leak finding:
+  `docker: unsupported media type application/vnd.in-toto+json`, exit 125.
+  The replacement Linux release archive SHA-256 was verified against official
+  release metadata; its Linux installation has not yet run in CI.
+- Remote main was read-only checked at `1d1069169e4fd10b5ac887bdcdc827b77b195b92`;
+  PR #20 is still conflicted. No push, merge, or remote rerun was performed.
+- More details and limitations: [CI_REPAIR_REPORT.md](CI_REPAIR_REPORT.md).
+- End-to-end `scripts/verify_ci_repair.ps1` execution completed with exit 0:
+  `21 passed in 14.14s` focused; `290 passed, 3 skipped, 1 warning in 33.54s`
+  full Python; Node 3/3; claims 39/0; Gitleaks 111 commits, no remaining findings.
+  Gitleaks printed `Unknown SCM platform` because this clone's origin is local;
+  it still completed the history scan. No GitHub scan completion is claimed.
+
+
 ## BUILD-STABILIZE-OWNER-003 — 2026-10-11
 
 - Owner reran the final MCP gate on `amazon/stabilize` commit `2804f8a`.

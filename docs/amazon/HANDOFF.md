@@ -1,5 +1,20 @@
 # Amazon RC1 handoff
 
+## Local CI repair — 2026-10-13 UTC
+
+Local branch `amazon/ci-repair` in an isolated clone fixes missing MCP CI
+dependencies, platform-dependent checkout-report encoding, and the unusable
+Gitleaks container reference. See [CI_REPAIR_REPORT.md](CI_REPAIR_REPORT.md)
+for actual commands/results and remaining limits. Full local Python regression:
+290 passed, 3 existing optional skips. Node: 3 passed. No core/frozen files changed.
+
+**OWNER DECISION / NOT READY TO MERGE:** approve a separate conflict-resolution
+plan against current remote main and, later, publication of the repair commit.
+Only PR #20 is open; the other unmerged PRs were closed with owner authorization
+and all branches retained. No push or merge has been performed in this repair.
+Linux workflow execution and remote history scanning remain pending publication.
+
+
 ## RC2 merchant gate pending
 
 Run `powershell -ExecutionPolicy Bypass -File scripts/run_merchant_gate.ps1` from the repository root. The offline injected-product comparison and two isolated tests pass in the restricted environment, but the complete merchant approval test did not finish within the sandbox command window. Do not claim the networked end-to-end gate passed until this command completes locally.

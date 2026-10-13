@@ -433,10 +433,10 @@ def render_svg(report: dict) -> str:
 def main() -> int:
     report = run()
     ROOT.mkdir(exist_ok=True)
-    (ROOT / "results.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
-    (ROOT / "REPORT.md").write_text(render_markdown(report))
-    (ROOT / "safety_utility.svg").write_text(render_svg(report))
-    (ROOT / "sensitivity_scan.svg").write_text(render_sensitivity_svg(report))
+    (ROOT / "results.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    (ROOT / "REPORT.md").write_text(render_markdown(report), encoding="utf-8", newline="\n")
+    (ROOT / "safety_utility.svg").write_text(render_svg(report), encoding="utf-8", newline="\n")
+    (ROOT / "sensitivity_scan.svg").write_text(render_sensitivity_svg(report), encoding="utf-8", newline="\n")
     print(json.dumps({"scenario_count": report["scenario_count"],
                       "systems": report["systems"],
                       "results": {k: {
