@@ -1,5 +1,24 @@
 # Amazon build log
 
+## BUILD-PR20-CONFLICT-001 — 2026-10-13 UTC
+
+- Read-only fetch first failed under the sandbox:
+  `fatal: unable to access '<repository-url>': getaddrinfo() thread failed to start`.
+  Approved host execution succeeded on retry. Remote main was fetched as
+  `1d1069169e4fd10b5ac887bdcdc827b77b195b92`; no branch was moved.
+- `git merge-tree --write-tree HEAD FETCH_HEAD` produced a trial tree, not a
+  merge commit, and reported content conflict in `docs/REUSE_PLAN.md` and
+  add/add conflicts in `docs/amazon/BUILD_LOG.md` and `docs/amazon/HANDOFF.md`.
+  Working tree and index were not merged. The resulting tree differs only in
+  documentation; no frozen or core-security changes are proposed.
+- Added a resolution plan and owner decision in HANDOFF; actual merge remains
+  outside the earlier release-branch-only permission.
+- Full regression: `python -X utf8 -m pytest -q -rs --basetemp .test-tmp/conflict-plan`:
+  `290 passed, 3 skipped, 1 warning in 31.62s`. Same pass/skip counts as the
+  previous local repair run. Node: 3 passed, 0 failed. Diff whitespace check
+  passed. No code changed in this task.
+
+
 ## BUILD-CI-REPAIR-001 — 2026-10-13 UTC
 
 - Created an isolated local clone at readme-final `5a0e629` and local branch

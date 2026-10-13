@@ -1,5 +1,15 @@
 # Amazon RC1 handoff
 
+## PR #20 conflict decision — 2026-10-13 UTC
+
+Read-only merge-tree analysis found exactly three document conflicts:
+`docs/REUSE_PLAN.md`, `docs/amazon/BUILD_LOG.md`, and this handoff.
+No merge was started. See [PR20_CONFLICT_PLAN.md](PR20_CONFLICT_PLAN.md).
+The owner must explicitly extend the earlier release-only merge permission to
+allow merging inspected main `1d10691` into the local `amazon/ci-repair` branch.
+Do not push, merge the PR, or modify main under this proposed authorization.
+
+
 ## Local CI repair — 2026-10-13 UTC
 
 Local branch `amazon/ci-repair` in an isolated clone fixes missing MCP CI
