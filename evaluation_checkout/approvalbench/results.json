@@ -1,0 +1,181 @@
+{
+  "title": "ApprovalBench Lite \u2014 simulated, author-scripted, not human research",
+  "seed": 20261011,
+  "trials_per_cell": 100,
+  "disclosure": "D1 and D2 are our reference implementations; corrections are welcome.",
+  "designs": {
+    "D1_untrusted_confirmation": "A realistic confirmation flow whose display copy comes from untrusted agent/tool context; execution still binds the approved request.",
+    "D2_otp": "A realistic service-issued one-time code; the code authenticates possession but is not treated as parameter authorization.",
+    "D5_callgate": "The project gateway model: separate contact, parameter-bound proof, one-time use."
+  },
+  "matrix": {
+    "D1_untrusted_confirmation": {
+      "A1_injected_confirmation": {
+        "successes": 100,
+        "trials": 100,
+        "rate": 1.0,
+        "wilson95": [
+          0.9630051925239981,
+          0.9999999999999999
+        ]
+      },
+      "A2_parameter_swap": {
+        "successes": 0,
+        "trials": 100,
+        "rate": 0.0,
+        "wilson95": [
+          0,
+          0.03699480747600191
+        ]
+      },
+      "A4_otp_relay": {
+        "successes": 0,
+        "trials": 100,
+        "rate": 0.0,
+        "wilson95": [
+          0,
+          0.03699480747600191
+        ]
+      }
+    },
+    "D2_otp": {
+      "A1_injected_confirmation": {
+        "successes": 0,
+        "trials": 100,
+        "rate": 0.0,
+        "wilson95": [
+          0,
+          0.03699480747600191
+        ]
+      },
+      "A2_parameter_swap": {
+        "successes": 0,
+        "trials": 100,
+        "rate": 0.0,
+        "wilson95": [
+          0,
+          0.03699480747600191
+        ]
+      },
+      "A4_otp_relay": {
+        "successes": 54,
+        "trials": 100,
+        "rate": 0.54,
+        "wilson95": [
+          0.44264685393523856,
+          0.6343935614666815
+        ]
+      }
+    },
+    "D5_callgate": {
+      "A1_injected_confirmation": {
+        "successes": 0,
+        "trials": 100,
+        "rate": 0.0,
+        "wilson95": [
+          0,
+          0.03699480747600191
+        ]
+      },
+      "A2_parameter_swap": {
+        "successes": 0,
+        "trials": 100,
+        "rate": 0.0,
+        "wilson95": [
+          0,
+          0.03699480747600191
+        ]
+      },
+      "A4_otp_relay": {
+        "successes": 0,
+        "trials": 100,
+        "rate": 0.0,
+        "wilson95": [
+          0,
+          0.03699480747600191
+        ]
+      }
+    }
+  },
+  "d2_relay_sensitivity": {
+    "0": {
+      "successes": 0,
+      "trials": 100,
+      "rate": 0.0,
+      "wilson95": [
+        0,
+        0.03699480747600191
+      ]
+    },
+    "0.5": {
+      "successes": 54,
+      "trials": 100,
+      "rate": 0.54,
+      "wilson95": [
+        0.44264685393523856,
+        0.6343935614666815
+      ]
+    },
+    "1": {
+      "successes": 100,
+      "trials": 100,
+      "rate": 1.0,
+      "wilson95": [
+        0.9630051925239981,
+        0.9999999999999999
+      ]
+    }
+  },
+  "utility": {
+    "D1_untrusted_confirmation": {
+      "legitimate_completion": {
+        "successes": 100,
+        "trials": 100,
+        "rate": 1.0,
+        "wilson95": [
+          0.9630051925239981,
+          0.9999999999999999
+        ]
+      },
+      "verification_ms": {
+        "median": 800,
+        "p95": 1200
+      }
+    },
+    "D2_otp": {
+      "legitimate_completion": {
+        "successes": 95,
+        "trials": 100,
+        "rate": 0.95,
+        "wilson95": [
+          0.8882480347279118,
+          0.9784566385436864
+        ]
+      },
+      "verification_ms": {
+        "median": 12000,
+        "p95": 24000
+      }
+    },
+    "D5_callgate": {
+      "legitimate_completion": {
+        "successes": 90,
+        "trials": 100,
+        "rate": 0.9,
+        "wilson95": [
+          0.8256326956323347,
+          0.9447714583868639
+        ]
+      },
+      "verification_ms": {
+        "median": 18000,
+        "p95": 45000
+      }
+    }
+  },
+  "assumptions": [
+    "All actions and identities are simulated.",
+    "Latency and legitimate completion are author-selected parameters, not observations.",
+    "A1 changes displayed confirmation copy; A2 changes execution parameters after approval; A4 models coerced OTP relay."
+  ]
+}

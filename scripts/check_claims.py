@@ -29,6 +29,38 @@ def validate_entry(entry, readme, root):
         return [f'{prefix}: original README sentence changed or missing']
     if entry['check'] == 'pending':
         return [f'{prefix}: UNVERIFIED; {entry.get("reason", "needs an executable evidence binding")}']
+    if entry['check'] == 'checkout_parameters':
+        try:
+            data = json.loads((root / entry['evidence']).read_text(encoding='utf-8'))
+            actual = [int(value) for value in re.findall(r'\*\*(\d+)', quote)]
+            expected = [len(data['otp_relay_probabilities']), data['trials_per_scenario'],
+                        data['random_seed']]
+            return [] if actual == expected else [
+                f'{prefix}: README parameters {actual} != evidence {expected}']
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            return [f'{prefix}: cannot validate checkout parameters: {exc}']
+    if entry['check'] == 'merchant_injection_counts':
+        try:
+            data = json.loads((root / entry['evidence']).read_text(encoding='utf-8'))
+            actual = [int(value) for value in re.findall(r'(\d+)/(\d+)', quote)[0]
+                      + re.findall(r'(\d+)/(\d+)', quote)[1]]
+            expected = [data['unguarded']['executed'], data['unguarded']['attempted'],
+                        data['callgate']['executed'], data['callgate']['attempted']]
+            return [] if actual == expected else [
+                f'{prefix}: fixture counts {actual} != evidence {expected}']
+        except (OSError, KeyError, IndexError, TypeError, ValueError) as exc:
+            return [f'{prefix}: cannot validate merchant fixture: {exc}']
+    if entry['check'] == 'approvalbench_d5':
+        try:
+            data = json.loads((root / entry['evidence']).read_text(encoding='utf-8'))
+            items = data['matrix']['D5_callgate'].values()
+            expected = [sum(item['successes'] for item in items),
+                        sum(item['trials'] for item in data['matrix']['D5_callgate'].values())]
+            actual = [int(value) for value in re.findall(r'\*\*(\d+)/(\d+)', quote)[0]]
+            return [] if actual == expected else [
+                f'{prefix}: ApprovalBench counts {actual} != evidence {expected}']
+        except (OSError, KeyError, IndexError, TypeError, ValueError) as exc:
+            return [f'{prefix}: cannot validate ApprovalBench result: {exc}']
     if entry['check'] == 'source_literals':
         try:
             for evidence in entry['sources']:

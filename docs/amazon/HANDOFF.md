@@ -1,3 +1,188 @@
+# Amazon handoff — local PR #20 integration
+
+## Current status — 2026-10-13
+
+The owner explicitly approved merging inspected main `1d1069169e4fd10b5ac887bdcdc827b77b195b92`
+into local `amazon/ci-repair`, with documentation-only conflict resolution and
+regression tests. This does not authorize a push, a GitHub PR merge, a main
+update, core-security changes, or frozen-data edits.
+
+- The three document conflicts are resolved locally. Fresh post-resolution
+  verification: 21 focused tests passed; full Python 290 passed, 3 skipped,
+  1 warning; Node 3 passed; claims registered=39 unresolved_or_inconsistent=0.
+  These match the pre-merge regression counts; no skip or xfail was added.
+- Local merge commit: `9b79a5c`, parents `6133361` and `1d10691`. The inspected
+  main is an ancestor of the local repair branch. Post-merge Gitleaks reported
+  113 commits scanned with no remaining findings under existing exact ignores.
+- Preserve the current portable environment guidance in REUSE_PLAN.
+- Preserve both branches' build logs; incoming historical handoff is retained
+  below, not treated as current deployment instructions.
+- v2 is not implemented by importing its proposal. Do not apply that patch.
+- Existing exact secret-scan ignore entries are unchanged. Historical warnings
+  below describe prior stages; publication remains a separate owner decision.
+- Incoming pitch/story documents remain drafts, not proof that every described
+  scene runs. Their placeholders and capability claims require final review.
+- Linux CI and the replacement Linux Gitleaks installation remain unverified
+  after local repair. Remote PR #20 is unchanged until an authorized publication.
+
+## Decisions still required
+
+Choose how to publish the verified local merge to the existing PR branch, then
+run and inspect GitHub CI. No push or remote merge is authorized by this task.
+Keep main unchanged. See [PR20_CONFLICT_PLAN.md](PR20_CONFLICT_PLAN.md) for the
+original plan and [CI_REPAIR_REPORT.md](CI_REPAIR_REPORT.md) for CI repair evidence.
+
+## Historical repair-branch handoff (superseded where noted above)
+
+Source: `6133361`. Statements below such as "no merge started", old main hashes,
+pending tests, and unrun workflows describe earlier stages, not current status.
+Security limitations remain relevant unless explicitly resolved with evidence.
+
+# Amazon RC1 handoff
+
+## PR #20 conflict decision — 2026-10-13 UTC
+
+Read-only merge-tree analysis found exactly three document conflicts:
+`docs/REUSE_PLAN.md`, `docs/amazon/BUILD_LOG.md`, and this handoff.
+No merge was started. See [PR20_CONFLICT_PLAN.md](PR20_CONFLICT_PLAN.md).
+The owner must explicitly extend the earlier release-only merge permission to
+allow merging inspected main `1d10691` into the local `amazon/ci-repair` branch.
+Do not push, merge the PR, or modify main under this proposed authorization.
+
+
+## Local CI repair — 2026-10-13 UTC
+
+Local branch `amazon/ci-repair` in an isolated clone fixes missing MCP CI
+dependencies, platform-dependent checkout-report encoding, and the unusable
+Gitleaks container reference. See [CI_REPAIR_REPORT.md](CI_REPAIR_REPORT.md)
+for actual commands/results and remaining limits. Full local Python regression:
+290 passed, 3 existing optional skips. Node: 3 passed. No core/frozen files changed.
+
+**OWNER DECISION / NOT READY TO MERGE:** approve a separate conflict-resolution
+plan against current remote main and, later, publication of the repair commit.
+Only PR #20 is open; the other unmerged PRs were closed with owner authorization
+and all branches retained. No push or merge has been performed in this repair.
+Linux workflow execution and remote history scanning remain pending publication.
+
+
+## RC2 merchant gate pending
+
+Run `powershell -ExecutionPolicy Bypass -File scripts/run_merchant_gate.ps1` from the repository root. The offline injected-product comparison and two isolated tests pass in the restricted environment, but the complete merchant approval test did not finish within the sandbox command window. Do not claim the networked end-to-end gate passed until this command completes locally.
+
+The first owner run reached the replay assertion and confirmed the gateway returned
+the stable `CG_PROOF_REPLAYED` reason. The test still expected the superseded
+`already consumed` text, and the standalone script used an unpinned global
+interpreter. Both test-layer issues are corrected; rerun the gate on the latest
+`amazon/final-gate` commit.
+
+The corrected owner rerun passed all 3 merchant tests in 0.76 seconds. The merchant
+gate is now complete; only the full Python suite and local-path repository check
+remain open in the submission checklist.
+
+## Final local decisions and gates
+
+- D7, D8, and D9 were recorded as YES. The frozen evaluation files were not changed.
+- The three historical scanner findings are ignored only by exact fingerprint and owner-classified reason; no broad rule suppression was added.
+- Run `scripts/verify_local.ps1`, then `scripts/run_merchant_gate.ps1`, before recording a demo or merging to the submission branch.
+- The error-mapping real-client matrix remains pending an unrestricted local run; the sandbox result must not be presented as a pass.
+- The owner approved removal of the local absolute paths from `START_HERE.md` and `docs/REUSE_PLAN.md`; both now use portable guidance.
+- **FINAL GATE PENDING:** rerun `scripts/submission_check.py` with the pinned environment and Gitleaks 8.30.1 on the exact final commit.
+- The latest full owner run had 288 passed, 3 optional-dependency skips, and only the diagnosed evaluation-v2 working-tree byte conversion failure. The final checker validates committed frozen blobs directly and separately runs every other test; it does not modify or waive the frozen manifest.
+
+## Current RC1 status — 2026-10-11
+
+- `release/amazon-rc1` now contains the requested phase 1, phase 2, dependency, evaluation, red-team, and UI changes.
+- `main` remains unchanged at `f18eda5`.
+- Run `powershell -ExecutionPolicy Bypass -File scripts/verify_local.ps1` from the repository root. It tests phase 1, phase 2, full Python, and Node directly in RC1.
+- The current sandbox did not clear the real-client startup gate: phase 1 and phase 2 timed out starting their test server, and UI/TestClient tests hung. Do not claim the RC1 acceptance gate passed until the local command completes.
+
+## Stabilization status — 2026-10-11
+
+- `amazon/stabilize` replaces the MCP tests' in-thread Uvicorn launch with a test-only subprocess, an operating-system-assigned temporary port, `/health` polling for up to 60 seconds, and failure output containing stdout, stderr, and exit code.
+- This sandbox denied loopback access with WinError 10013, so the real-client gate remains **pending local execution**; no pass is claimed.
+- The three historical failures were reproduced individually and classified in `BASELINE_FAILURES.md`. The two review-process failures occur in Windows spawn bootstrap before application logic. The evaluation-v2 mismatch is caused by working-tree line-ending conversion: the committed blob still matches the frozen manifest.
+- Red-team and UI HTTP tests also hung twice in this sandbox. Their test-layer ASGI client update requires local confirmation; core code was not changed.
+- Owner rerun confirmed the two spawned-process tests pass outside the sandbox. It also exposed two integration-test issues now corrected on this branch: the red-team suite still expected no subject rate limit, and unknown-contact rejection is surfaced by MCP SDK 2.3.0 as `-32000`/closed SSE rather than `-32042`.
+- The generic `-32000` result is still a protocol-quality gap. The test records it as a rejection, not as successful URL elicitation; changing adapter behavior is outside this test-only stabilization branch.
+- Owner acceptance run passed the regression subset, Node, phase 1, phase 2, and both pip-audit manifests. The only full-suite failure was the already diagnosed evaluation-v2 checkout conversion.
+- Two Bandit medium findings introduced by the test health probe were removed without suppressions; one pre-existing accepted XML-parser medium remains.
+- Final owner-side MCP gate on commit `2804f8a`: **10 passed in 20.66 seconds**. The test launcher has **0 medium/high Bandit findings**, 2 accepted subprocess-related low findings, and no suppressions.
+
+## CI status — 2026-10-11
+
+- `amazon/ci` adds an Ubuntu/Windows Python 3.12 matrix for full Python, Node, and both pip-audit manifests.
+- Full-history Gitleaks runs separately with a version-and-digest-pinned image and `--redact`.
+- The workflow has not run because no push was performed. Follow `CI.md` after pushing RC1 to the private repository.
+
+## Historical integration attempt (superseded by Current RC1 status above)
+
+- `release/amazon-rc1` contains `amazon/tools` only.
+- Phase 1 was merged, failed its runtime gate twice, and was reverted.
+- Phase 2, evaluation, red-team, UI, and pitch were not merged because they depend on the failed phase-1 gate or occur later in the required sequence.
+- `main` remains at `f18eda5`.
+
+## Owner action
+
+Run `powershell -ExecutionPolicy Bypass -File scripts/run_rc1_phase1_gate.ps1` from the repository root. It now creates an isolated environment with the pinned MCP requirements. No push or branch deletion is required.
+
+The latest automated retry did not reach pytest: the first environment failed `ensurepip`; the second installed MCP dependencies but revealed that the phase-1 requirements omit pytest. The script now installs pinned pytest, but was not run a third time because of the two-failure stop rule.
+
+## Decisions
+
+The owner later set D1–D6 to YES. Approved UI hardening is isolated on `amazon/ui`; the approved v2 retry is isolated on `amazon/commitment-v2-retry`. Neither is merged into RC1 before its own regression gate passes.
+
+The read-only R3 finding is in `BINDING_FINDINGS.md`: exact parsed tool/argument binding exists through the signed v1 resource, but the requested canonicalization and stable subject/version binding do not.
+
+## Dependency-upgrade gate
+
+- Branch: `amazon/dependency-upgrade-rc1`, based on `release/amazon-rc1`.
+- Selected version: `cryptography 50.0.0`; it was released more than 14 days before the decision and is the first version covering all six unique owner-reported advisories.
+- Dependency manifests, an old-version Ed25519 vector, HTTPS compatibility test, pip-audit CI, Dependabot configuration, and Bandit triage are prepared.
+- **PASS:** dependency compatibility tests passed 3/3 under `cryptography 50.0.0`; phase1 passed 3/3; phase2 passed 10/10; Node passed 3/3.
+- Full Python produced **249 passed, 3 failed, 3 skipped**. The same three baseline failures remain; the regression subset excluding those three produced **249 passed, 3 skipped, 1 deselected**, so no previously passing test became a failure.
+- **PASS:** the owner-run root and MCP pip-audit commands each returned `No known vulnerabilities found` for the unchanged manifests.
+- Agent Scan remains postponed and is not claimed as passed.
+- The current Bandit medium is in a local JUnit report parser, not core safety code; it was accepted with the bounded rationale in `BANDIT_TRIAGE.md`. No `nosec` was added.
+- Remaining known conditions: the isolated dependency environment skips two optional `onnxruntime` tests and one optional `pipecat` test; the three pre-existing baseline failures are not caused by this upgrade.
+## Evaluation branch
+
+- Status: DONE with disclosed baseline failures.
+- Branch: `amazon/eval`.
+- Outputs: `evaluation_checkout/results.json`, `REPORT.md`, `safety_utility.svg`, and `sensitivity_scan.svg`.
+- The experiment is explicitly a seeded author simulation, not human research.
+- No decision is required for the evaluation implementation.
+
+- Historical secret-scanner classification remains a prerequisite before any migration, publication, or push.
+## Red-team status
+
+- Branch: `amazon/redteam`.
+- Red-team task: DONE for the current phase-2/v1 prototype, with explicit untestable boundaries.
+- Core security code changed: no.
+
+## Red-team decisions subsequently approved by the owner
+
+- Decide whether the MCP adapter may reuse the existing trusted challenge-rate limiter; the current path has only a global pending-capacity bound.
+- Decide whether the local review endpoint should require Origin validation and a CSRF token in addition to its bearer header.
+- Decide whether to add a restrictive `Referrer-Policy` header before any non-local deployment.
+- Commitment v2 remains reverted; this report must not be used as evidence that v2 binding passed.
+## Approved hardening gate
+
+- D2/D3/D4 changes are now integrated into RC1 but require a fresh local regression run.
+- Run `powershell -ExecutionPolicy Bypass -File scripts/run_ui_hardening_gate.ps1` from the repository root.
+
+- Branch: `amazon/ui`.
+- Status: PARTIAL because implementation/tests passed but screenshots could not be captured.
+- Open `/demo` on the local phase-2 server for the fixed offline simulated voice-assistant fixture.
+- Use `python -m scripts.run_ui_preview` only for local screenshots; it clearly serves HTTP and is not security evidence. The protected approval demonstration must use the HTTPS phase-2 command.
+- Owner action: capture the three screenshots listed in `UI_ACCESSIBILITY.md` outside this environment and visually verify contrast with an accessibility tool.
+- No bilingual toggle was added; it was optional and did not displace security or accessibility work.
+
+## Historical main handoff (not current instructions)
+
+Source: `1d1069169e4fd10b5ac887bdcdc827b77b195b92`. Preserved for audit, including original warnings
+and decisions. Do not treat old branch hashes, test counts, or pending statuses
+as current. The local integration and publication boundary above takes priority.
+
 # Amazon unattended batch handoff
 
 > 🔴 **禁止公开或迁移历史：T2 在完整 Git 历史中发现 3 个 `generic-api-key` 命中。不要 push、公开或迁移历史，直到人工确认并完成合规处置。**

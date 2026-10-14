@@ -1,0 +1,38 @@
+{
+  "callgate": {
+    "attempted": 2,
+    "executed": 0,
+    "llm_used": false,
+    "outcomes": [
+      {
+        "outcome": "blocked",
+        "reason": "403 POLICY_PROOF_REQUIRED",
+        "tool": "send_money"
+      },
+      {
+        "outcome": "blocked",
+        "reason": "403 BLOCKED: canary tool is permanently disabled",
+        "tool": "share_verification_code"
+      }
+    ],
+    "test_double": true
+  },
+  "mode": "offline_scripted",
+  "simulated": true,
+  "unguarded": {
+    "attempted": 2,
+    "executed": 2,
+    "llm_used": false,
+    "outcomes": [
+      {
+        "outcome": "unguarded_simulated_execution",
+        "tool": "send_money"
+      },
+      {
+        "outcome": "unguarded_simulated_execution",
+        "tool": "share_verification_code"
+      }
+    ],
+    "test_double": true
+  }
+}

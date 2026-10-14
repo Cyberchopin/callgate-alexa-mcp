@@ -8,7 +8,10 @@ counts as real-world accuracy or fraud prevalence.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
+import math
+import random
 import statistics
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -23,6 +26,14 @@ from callgate.workflow import DemoWorkflow
 
 
 ROOT = Path(__file__).resolve().parent
+RANDOM_SEED = 20261010
+TRIALS_PER_SCENARIO = 100
+OTP_RELAY_PROBABILITIES = (0.0, 0.25, 0.5, 0.75, 1.0)
+CONTACT_SENSITIVITY = {
+    "contact_p100_fast": (1.0, 8000, 20000),
+    "contact_p067_typical": (0.67, 12000, 40000),
+    "contact_p067_slow": (0.67, 45000, 120000),
+}
 
 
 @dataclass(frozen=True)
@@ -61,6 +72,57 @@ def _proportion(successes: int, total: int) -> dict:
     return {"numerator": successes, "denominator": total,
             "value": None if total == 0 else successes / total,
             "wilson95": wilson(successes, total)}
+
+
+def _stable_rng(*parts: object) -> random.Random:
+    material = ":".join(str(part) for part in (RANDOM_SEED, *parts)).encode("utf-8")
+    seed = int.from_bytes(hashlib.sha256(material).digest()[:8], "big")
+    return random.Random(seed)
+
+
+def _p95(values: list[int]) -> int | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    return ordered[max(0, math.ceil(0.95 * len(ordered)) - 1)]
+
+
+def _sensitivity_results() -> dict:
+    unauthorized_trials = sum(not item.authorized for item in SCENARIOS) * TRIALS_PER_SCENARIO
+    legitimate_trials = sum(item.authorized for item in SCENARIOS) * TRIALS_PER_SCENARIO
+    otp = {}
+    for probability in OTP_RELAY_PROBABILITIES:
+        executed = sum(
+            _stable_rng("otp", probability, index).random() < probability
+            for index in range(unauthorized_trials)
+        )
+        otp[f"p_relay_{probability:.2f}"] = {
+            "p_relay": probability,
+            "false_execute": _proportion(executed, unauthorized_trials),
+            "legitimate_completion": _proportion(legitimate_trials, legitimate_trials),
+            "verification_ms_median": 12000,
+            "verification_ms_p95": 12000,
+        }
+    contact = {}
+    for name, (availability, minimum, maximum) in CONTACT_SENSITIVITY.items():
+        latencies = []
+        for index in range(legitimate_trials):
+            rng = _stable_rng("contact", name, index)
+            if rng.random() < availability:
+                latencies.append(rng.randint(minimum, maximum))
+        contact[name] = {
+            "contact_availability_probability": availability,
+            "latency_distribution": {
+                "name": "uniform",
+                "minimum_ms": minimum,
+                "maximum_ms": maximum,
+            },
+            "false_execute": _proportion(0, unauthorized_trials),
+            "legitimate_completion": _proportion(len(latencies), legitimate_trials),
+            "verification_ms_median": None if not latencies else statistics.median(latencies),
+            "verification_ms_p95": _p95(latencies),
+        }
+    return {"otp_step_up": otp, "callgate": contact}
 
 
 def _workflow_result(scenario: Scenario, policy: dict) -> dict:
@@ -154,15 +216,28 @@ def _summaries(rows: list[dict]) -> dict:
 def run() -> dict:
     rows = _system_rows()
     return {
-        "schema_version": "callgate-checkout-utility-v1",
+        "schema_version": "callgate-checkout-utility-v2",
+        "title": "Checkout safety-utility sensitivity — simulated, author script, not human study",
         "disclosure": ("Synthetic author-provided checkout rehearsal. No real payments, "
                        "no independent labels, no population claim. Contact availability "
                        "and latency are scripted parameters."),
+        "assumptions": [
+            "Three author-written legitimate and three unauthorized scenarios are weighted equally.",
+            "OTP relay is a seeded Bernoulli draw at each stated p_relay value.",
+            "A legitimate CallGate action completes only when the contact is available.",
+            "The scripted independent contact rejects every unauthorized CallGate request.",
+            "Contact latency is sampled from the stated synthetic uniform distribution.",
+            "Outputs are sensitivity results, not forecasts or measured human behavior.",
+        ],
+        "random_seed": RANDOM_SEED,
+        "trials_per_scenario": TRIALS_PER_SCENARIO,
+        "otp_relay_probabilities": list(OTP_RELAY_PROBABILITIES),
         "scenario_count": len(SCENARIOS),
         "systems": ["deny_all", "unguarded_checkout", "otp_step_up",
                     "callgate_p100_fast", "callgate_p67_observed", "callgate_p67_slow"],
         "rows": rows,
         "summary": _summaries(rows),
+        "sensitivity": _sensitivity_results(),
         "model_parameters": {
             "otp_step_up": "coerced victim relays OTP in unauthorized pressure scenarios",
             "callgate_p100_fast": "all contacts respond with scripted fast latency",
@@ -174,9 +249,15 @@ def run() -> dict:
 
 def render_markdown(report: dict) -> str:
     lines = [
-        "# Checkout safety-utility rehearsal",
+        f"# {report['title']}",
+        "",
+        "## Assumptions",
+        "",
+        *[f"- {item}" for item in report["assumptions"]],
         "",
         report["disclosure"],
+        "",
+        "## Scripted scenario rehearsal",
         "",
         "| System | False execute | Legitimate completion | Median verify ms | P95 verify ms |",
         "|---|---:|---:|---:|---:|",
@@ -199,8 +280,74 @@ def render_markdown(report: dict) -> str:
         "Deny-all has no unauthorized execution in this rehearsal, but also no legitimate completion.",
         "OTP step-up is modeled as failing under live coercion because the victim relays the code.",
         "CallGate variants model contact availability and delay; lower availability creates conversion loss.",
+        "",
+        "## OTP relay sensitivity",
+        "",
+        "| p_relay | False execute | Wilson 95% | Legitimate completion | Median ms | P95 ms |",
+        "|---:|---:|---:|---:|---:|---:|",
+    ]
+    for item in report["sensitivity"]["otp_step_up"].values():
+        false_execute = item["false_execute"]
+        utility = item["legitimate_completion"]
+        interval = "–".join(f"{value:.1%}" for value in false_execute["wilson95"])
+        lines.append(
+            f"| {item['p_relay']:.2f} | {false_execute['numerator']}/{false_execute['denominator']} "
+            f"({false_execute['value']:.1%}) | {interval} | {utility['numerator']}/{utility['denominator']} "
+            f"({utility['value']:.1%}) | {item['verification_ms_median']} | {item['verification_ms_p95']} |")
+    lines += [
+        "",
+        "## Contact availability and delay sensitivity",
+        "",
+        "| Policy | False execute | Legitimate completion | Wilson 95% | Median ms | P95 ms |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+    for name, item in report["sensitivity"]["callgate"].items():
+        false_execute = item["false_execute"]
+        utility = item["legitimate_completion"]
+        interval = "–".join(f"{value:.1%}" for value in utility["wilson95"])
+        lines.append(
+            f"| {name} | {false_execute['numerator']}/{false_execute['denominator']} "
+            f"({false_execute['value']:.1%}) | {utility['numerator']}/{utility['denominator']} "
+            f"({utility['value']:.1%}) | {interval} | {item['verification_ms_median']} | "
+            f"{item['verification_ms_p95']} |")
+    lines += [
+        "",
+        "![OTP relay sensitivity chart](sensitivity_scan.svg)",
+        "",
+        "Unfavorable results are retained: deny-all has no utility; unguarded checkout always executes; "
+        "OTP becomes less safe as relay probability rises; contact unavailability lowers completion.",
     ]
     return "\n".join(lines) + "\n"
+
+
+def render_sensitivity_svg(report: dict) -> str:
+    width, height = 900, 500
+    left, top, plot_w, plot_h = 90, 70, 700, 330
+    points = []
+    labels = []
+    for item in report["sensitivity"]["otp_step_up"].values():
+        x = left + item["p_relay"] * plot_w
+        y = top + plot_h - item["false_execute"]["value"] * plot_h
+        points.append(f"{x:.1f},{y:.1f}")
+        labels.extend([
+            f'<circle cx="{x:.1f}" cy="{y:.1f}" r="7" fill="#7c3aed"/>',
+            f'<text x="{x:.1f}" y="{y - 13:.1f}" text-anchor="middle" font-family="system-ui" font-size="13">{item["false_execute"]["numerator"]}/{item["false_execute"]["denominator"]}</text>',
+            f'<text x="{x:.1f}" y="425" text-anchor="middle" font-family="system-ui" font-size="13">{item["p_relay"]:.2f}</text>',
+        ])
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">',
+        '<title id="title">OTP relay probability sensitivity</title>',
+        '<desc id="desc">Seeded simulated false execution as OTP relay probability increases.</desc>',
+        '<rect width="100%" height="100%" fill="#fff"/>',
+        '<text x="90" y="35" font-family="system-ui" font-size="22" font-weight="700">OTP relay sensitivity — simulated</text>',
+        f'<rect x="{left}" y="{top}" width="{plot_w}" height="{plot_h}" fill="#f8fafc" stroke="#cbd5e1"/>',
+        f'<polyline points="{" ".join(points)}" fill="none" stroke="#7c3aed" stroke-width="3"/>',
+        *labels,
+        f'<text x="{left + plot_w / 2}" y="465" text-anchor="middle" font-family="system-ui" font-size="17">p_relay</text>',
+        f'<text x="25" y="{top + plot_h / 2}" transform="rotate(-90 25 {top + plot_h / 2})" text-anchor="middle" font-family="system-ui" font-size="17">False execution</text>',
+        '</svg>',
+    ]
+    return "\n".join(parts) + "\n"
 
 
 def render_svg(report: dict) -> str:
@@ -286,9 +433,10 @@ def render_svg(report: dict) -> str:
 def main() -> int:
     report = run()
     ROOT.mkdir(exist_ok=True)
-    (ROOT / "results.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
-    (ROOT / "REPORT.md").write_text(render_markdown(report))
-    (ROOT / "safety_utility.svg").write_text(render_svg(report))
+    (ROOT / "results.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    (ROOT / "REPORT.md").write_text(render_markdown(report), encoding="utf-8", newline="\n")
+    (ROOT / "safety_utility.svg").write_text(render_svg(report), encoding="utf-8", newline="\n")
+    (ROOT / "sensitivity_scan.svg").write_text(render_sensitivity_svg(report), encoding="utf-8", newline="\n")
     print(json.dumps({"scenario_count": report["scenario_count"],
                       "systems": report["systems"],
                       "results": {k: {

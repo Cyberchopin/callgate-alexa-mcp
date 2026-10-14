@@ -1,16 +1,91 @@
-<div align="center">
+# CallGate — proof before a simulated high-impact action
 
-# CallGate
+## Amazon Developer Hackathon — Alexa+ track submission
+
+CallGate is a self-hosted MCP safety gateway that pauses simulated purchases and
+money transfers until a separately registered contact reviews the exact action.
+
+> **Track note:** this repository contains real, executable MCP servers and a
+> simulated voice-assistant experience. It is not connected to the real Alexa+
+> product, any payment provider, or any real account, and it cannot move money.
+
+### Run it in one command
+
+After installing the pinned dependencies, run from Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\demo.ps1
+```
+
+The launcher starts the simulated merchant MCP server, the CallGate MCP gateway,
+the assistant page, and the independent contact-review routes. Use `-Offline`
+for the deterministic, network-free injection comparison.
+
+### Architecture
+
+```mermaid
+flowchart LR
+    U[Simulated voice assistant] --> M[Merchant MCP server]
+    M --> A[Untrusted product and cart context]
+    A --> G[CallGate MCP gateway]
+    G --> P{Policy proof valid?}
+    P -->|No| E[URL-mode elicitation]
+    E --> R[Registered contact review page]
+    R -->|Approve exact action| G
+    P -->|Yes, unused, matching| X[One simulated execution]
+    P -->|Canary or mismatch| B[Blocked with stable reason]
+    G --> S[(SQLite replay store)]
+```
+
+The merchant server exposes product search and cart tools. The gateway exposes
+`send_money`, `place_order`, and the permanently blocked canary
+`share_verification_code`. Protected actions reuse the existing CallGate policy,
+signature, contact-selection, and replay logic rather than duplicating it in the
+MCP adapter.
+
+### MCP details
+
+- Protocol compatibility floor: **MCP 2025-11-25**, including URL-mode elicitation; real-client tests assert the negotiated protocol is at least that version.
+- Transport: self-hosted **Streamable HTTP**, with local HTTPS for the approval demonstration.
+- Pinned runtime: **mcp 2.3.0** and **cryptography 50.0.0**.
+- Replay protection: the MCP gateway uses the existing `SQLiteReplayStore`, so a consumed proof remains consumed after a server restart.
+- Approval display: the contact page obtains amount, destination, and request identity from server-held state, not URL query parameters.
+
+### What changed during the competition period
+
+The submission adds the self-hosted MCP gateway, URL-mode approval flow, stable
+protocol error mapping, SQLite-backed replay integration, simulated merchant
+server, deterministic injection experiment, accessible review experience,
+ApprovalBench Lite, dependency audit gates, and submission checks. The exact
+pre-existing-work boundary and first post-cutoff commits are generated from Git
+history in [PREEXISTING_WORK.md](docs/amazon/PREEXISTING_WORK.md).
+
+### Security boundaries and what we do not claim
+
+- Every product, identity, contact, payment, transfer, and approval is simulated.
+- The saved `subject` is a configured test identity, not proof of a real person.
+- Separate local credentials demonstrate role separation, not independent human identity.
+- This release does not claim commitment v2, durable cross-session recovery, production tenant isolation, or enforcement over a real assistant or payment system.
+- Agent Scan was postponed; dependency audit and Gitleaks results are not an external certification.
+- We do not claim invention of a new vulnerability category, production readiness, or superiority over all other approval designs.
+
+### Test and audit evidence
+
+Final local gate: **288 Python tests passed and 3 optional-dependency tests skipped**; the committed frozen evaluation blobs separately matched their SHA-256 manifest. The real-client MCP suites, merchant approval-and-replay chain, claim registry, both dependency audits, and redacted full-history secret scan passed. See [the build log](docs/amazon/BUILD_LOG.md), [security scan record](docs/amazon/SECURITY_SCAN.md), and [final gate](docs/amazon/FINAL_GATE.md). These checks support this repository state; they are not evidence of production safety or real-user effectiveness.
+
+---
+
+## Background: voice-risk research prototype
 
 **Streaming speech. Traceable risk evidence. Scoped approval.**
 
-A local prototype for examining risky voice requests and authorizing a simulated action.
+The original CallGate work is a local prototype for examining risky voice
+requests and authorizing a simulated action. The MCP submission above builds on
+that research while preserving its limitations and evaluation history.
 
 [Quick start](#quick-start) · [Evaluation](#evaluation) · [Security boundaries](#security-boundaries) · [Documentation](#documentation)
 
 <sub>Python · AssemblyAI · NetworkX · Ed25519 · SQLite · MIT</sub>
-
-</div>
 
 ---
 
@@ -31,7 +106,7 @@ CallGate connects live transcription, a deterministic risk policy, evidence insp
 
 The pilot contains **60 calls: 36 development and 24 initially held out**. The test set has 8 scam, 8 benign and 8 ambiguous calls. It is now revealed and retired from final improvement claims. Expansion to **600 new scenario families is planned, not completed**.
 
-As of 2026-10-05 (America/Los_Angeles), independent reviewer recruitment status: **[owner to fill]**. No new outreach or completed independent annotation was verified in this audit. The old outreach deadlines have passed and are not active commitments. See the [recruitment and scope conditions](evaluation_v1/STEP3_CONDITIONS.md).
+Independent annotation has not been completed. No new outreach or completed independent annotation was verified in this audit. The old outreach deadlines have passed and are not active commitments. See the [recruitment and scope conditions](evaluation_v1/STEP3_CONDITIONS.md).
 
 ### Evaluation disclosure
 
@@ -72,8 +147,8 @@ Only **UNVERIFIED (23)** and **CHALLENGED (1)** appeared in the 24-call pilot. C
 Use **Python 3.12** for the recorded dependency set. Node.js is needed only for the frontend logic tests.
 
 ```bash
-git clone https://github.com/Cyberchopin/CallGate_PreHackathon_Research.git
-cd CallGate_PreHackathon_Research
+git clone https://github.com/Cyberchopin/callgate-alexa-mcp.git
+cd callgate-alexa-mcp
 python -m venv .venv
 ```
 
@@ -128,7 +203,8 @@ OTP step-up baseline under live coercion, and CallGate variants with contact
 availability and delay parameters, with raw counts in
 `evaluation_checkout/results.json` and a short table in
 `evaluation_checkout/REPORT.md`. The same command also writes
-`evaluation_checkout/safety_utility.svg` for a pitch slide. This is synthetic
+`evaluation_checkout/safety_utility.svg` and `evaluation_checkout/sensitivity_scan.svg`.
+The generated sensitivity sweep uses **5 OTP relay settings** and **100 deterministic trials per scenario**, with seed **20261010**; the report and both figures are regenerated from the JSON output. This is synthetic
 and author-provided; it is not a real shopping metric or independent
 evaluation.
 
@@ -162,9 +238,13 @@ python -m pytest -q -p no:cacheprovider
 node --test tests/review_ui.test.cjs
 ```
 
-Recorded local checks: **184 Python tests and 3 Node logic tests passed**. These counts do not establish real-world accuracy or a green remote CI run. Check [GitHub Actions](https://github.com/Cyberchopin/CallGate_PreHackathon_Research/actions) for remote execution status.
+Final local gate: **288 Python tests passed and 3 optional-dependency tests skipped**; the committed frozen evaluation blobs separately matched their SHA-256 manifest. The Node logic suite also passed. These checks do not establish real-world accuracy. See the current repository's [GitHub Actions](https://github.com/Cyberchopin/callgate-alexa-mcp/actions) after the branch is pushed; workflow files alone are not evidence of a remote pass.
 
 ## Security boundaries
+
+In the deterministic, offline injected-product fixture, the deliberately vulnerable test double executed **2/2 simulated unauthorized actions without CallGate and 0/2 with CallGate**. These are fixture counts from `docs/amazon/merchant_injection_results.json`, not a human study or production security rate.
+
+ApprovalBench Lite reports **0/300 scripted attack successes for D5** across its three simulated attack cells. This author-scripted result is traceable to `evaluation_checkout/approvalbench/results.json`; it is not a real-user study or a claim about production deployment.
 
 ### Safety vs Coverage
 
@@ -177,7 +257,7 @@ The direct protected-action endpoint rejects participant input with `POLICY_PROO
 - **Approval is scoped to a simulation.** No bank, payment provider or telephone control is connected.
 - **Role separation is not identity verification.** Someone controlling both entry credentials and the challenge can self-approve. The multi-contact launcher uses separate local processes and keys, but they still run on the same host and under the same operator's control. Both processes and their host are trusted.
 - **Challenges are bounded.** Three incorrect responses cancel a request. Issuance is limited to five per minute and thirty per hour per workflow process; resets and consent changes do not clear that budget, but a process restart does.
-- **Keys and pending approvals are ephemeral.** The demo uses an in-memory replay gate. SQLite replay protection is a separately tested primitive; persistent issuer/reviewer key lifecycle management is not implemented.
+- **Replay behavior depends on the path.** The older speech/reviewer research demo uses an in-memory replay gate. The MCP gateway uses `SQLiteReplayStore`, including a restart test showing consumed proofs remain unusable. Persistent issuer/reviewer key lifecycle management is not implemented.
 - **Receipts attest to signed content.** They do not prove correct risk judgment or human identity, and they are not operation permissions. Authorization replay rejection is a separate mechanism.
 - **Consent is a product control.** Withdrawal cancels local provider tasks; it does not delete data already sent to the speech provider or establish legal consent from every speaker.
 
@@ -232,3 +312,9 @@ CallGate contributes revision-aware evidence handling, cross-turn risk rules, sc
 ## License
 
 [MIT](LICENSE). Reused libraries and models retain their respective licenses and attribution.
+Canonical tool-and-parameter binding is not yet implemented on the release candidate.
+The isolated MCP phase uses an exact cryptographic resource binding over parsed tool
+arguments, but it does not normalize Unicode, reject duplicate raw JSON keys, sign a
+stable subject, or carry an explicit commitment version. See
+[`docs/amazon/BINDING_FINDINGS.md`](docs/amazon/BINDING_FINDINGS.md).
+

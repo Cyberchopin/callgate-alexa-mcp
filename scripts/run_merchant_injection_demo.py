@@ -1,0 +1,37 @@
+"""Offline deterministic injection comparison; no network or LLM required."""
+import argparse
+import json
+from pathlib import Path
+
+from integrations.alexa_mcp.merchant import MerchantStore
+from integrations.alexa_mcp.server import CapabilityGateway
+from integrations.alexa_mcp.vulnerable_demo_agent import VulnerableDemoAgent
+
+
+def run(database: Path):
+    merchant = MerchantStore()
+    product = merchant.get_product("lamp-injected")
+    agent = VulnerableDemoAgent()
+    unguarded = agent.run(product["description"])
+    protected = agent.run(product["description"], gateway=CapabilityGateway(database))
+    return {"mode": "offline_scripted", "simulated": True,
+            "unguarded": unguarded, "callgate": protected}
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--database", type=Path,
+                        default=Path(".test-tmp/merchant-injection-replay.sqlite3"))
+    parser.add_argument("--output", type=Path)
+    args = parser.parse_args()
+    args.database.parent.mkdir(parents=True, exist_ok=True)
+    result = run(args.database)
+    rendered = json.dumps(result, indent=2, sort_keys=True)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered + "\n", encoding="utf-8")
+    print(rendered)
+
+
+if __name__ == "__main__":
+    main()

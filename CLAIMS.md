@@ -34,7 +34,7 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
   },
   {
     "id": "readme-003",
-    "quote": "As of 2026-10-05 (America/Los_Angeles), independent reviewer recruitment status: **[owner to fill]**. No new outreach or completed independent annotation was verified in this audit. The old outreach deadlines have passed and are not active commitments. See the [recruitment and scope conditions](evaluation_v1/STEP3_CONDITIONS.md).",
+    "quote": "Independent annotation has not been completed. No new outreach or completed independent annotation was verified in this audit. The old outreach deadlines have passed and are not active commitments. See the [recruitment and scope conditions](evaluation_v1/STEP3_CONDITIONS.md).",
     "evidence": "UNASSIGNED",
     "check": "nonmetric_reference",
     "references": [
@@ -225,10 +225,15 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
   },
   {
     "id": "readme-023",
-    "quote": "Recorded local checks: **184 Python tests and 3 Node logic tests passed**. These counts do not establish real-world accuracy or a green remote CI run. Check [GitHub Actions](https://github.com/Cyberchopin/CallGate_PreHackathon_Research/actions) for remote execution status.",
-    "evidence": "scambench/local-check.json; actual node --test output recorded in BUILD_LOG",
-    "check": "historical_tests",
-    "node_test_record": 3
+    "quote": "Final local gate: **288 Python tests passed and 3 optional-dependency tests skipped**; the committed frozen evaluation blobs separately matched their SHA-256 manifest. The Node logic suite also passed. These checks do not establish real-world accuracy. See the current repository's [GitHub Actions](https://github.com/Cyberchopin/callgate-alexa-mcp/actions) after the branch is pushed; workflow files alone are not evidence of a remote pass.",
+    "evidence": "docs/amazon/BUILD_LOG.md",
+    "check": "source_literals",
+    "sources": [
+      {
+        "path": "docs/amazon/BUILD_LOG.md",
+        "literals": ["288 passed", "3 skipped", "Node result: **3 passed, 0 failed, 0 skipped**"]
+      }
+    ]
   },
   {
     "id": "readme-024",
@@ -312,6 +317,72 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
     "check": "nonmetric_reference",
     "reason": "Prospective evaluation folder name, no performance metric.",
     "references": []
+  },
+  {
+    "id": "readme-032",
+    "quote": "The generated sensitivity sweep uses **5 OTP relay settings** and **100 deterministic trials per scenario**, with seed **20261010**; the report and both figures are regenerated from the JSON output. This is synthetic",
+    "evidence": "evaluation_checkout/results.json",
+    "check": "checkout_parameters"
+  },
+  {
+    "id": "readme-033",
+    "quote": "In the deterministic, offline injected-product fixture, the deliberately vulnerable test double executed **2/2 simulated unauthorized actions without CallGate and 0/2 with CallGate**. These are fixture counts from `docs/amazon/merchant_injection_results.json`, not a human study or production security rate.",
+    "evidence": "docs/amazon/merchant_injection_results.json",
+    "check": "merchant_injection_counts"
+  },
+  {
+    "id": "readme-034",
+    "quote": "ApprovalBench Lite reports **0/300 scripted attack successes for D5** across its three simulated attack cells. This author-scripted result is traceable to `evaluation_checkout/approvalbench/results.json`; it is not a real-user study or a claim about production deployment.",
+    "evidence": "evaluation_checkout/approvalbench/results.json",
+    "check": "approvalbench_d5"
+  },
+  {
+    "id": "readme-035",
+    "quote": "powershell -ExecutionPolicy Bypass -File .\\scripts\\demo.ps1",
+    "check": "nonmetric_reference",
+    "reason": "PowerShell script filename and invocation, not a measured quantity.",
+    "references": ["scripts/demo.ps1"]
+  },
+  {
+    "id": "readme-036",
+    "quote": "- Protocol compatibility floor: **MCP 2025-11-25**, including URL-mode elicitation; real-client tests assert the negotiated protocol is at least that version.",
+    "check": "source_literals",
+    "sources": [
+      {
+        "path": "tests/alexa_mcp/test_phase1.py",
+        "literals": ["initialized.protocol_version >= \"2025-11-25\""]
+      }
+    ]
+  },
+  {
+    "id": "readme-037",
+    "quote": "- Pinned runtime: **mcp 2.3.0** and **cryptography 50.0.0**.",
+    "check": "source_literals",
+    "sources": [
+      {
+        "path": "integrations/alexa_mcp/requirements.txt",
+        "literals": ["mcp==2.3.0", "cryptography==50.0.0"]
+      }
+    ]
+  },
+  {
+    "id": "readme-038",
+    "quote": "- This release does not claim commitment v2, durable cross-session recovery, production tenant isolation, or enforcement over a real assistant or payment system.",
+    "check": "nonmetric_reference",
+    "reason": "Version label in an explicit non-claim, not a performance quantity.",
+    "references": ["docs/amazon/BINDING_FINDINGS.md"]
+  },
+  {
+    "id": "readme-039",
+    "quote": "Final local gate: **288 Python tests passed and 3 optional-dependency tests skipped**; the committed frozen evaluation blobs separately matched their SHA-256 manifest. The real-client MCP suites, merchant approval-and-replay chain, claim registry, both dependency audits, and redacted full-history secret scan passed. See [the build log](docs/amazon/BUILD_LOG.md), [security scan record](docs/amazon/SECURITY_SCAN.md), and [final gate](docs/amazon/FINAL_GATE.md). These checks support this repository state; they are not evidence of production safety or real-user effectiveness.",
+    "evidence": "docs/amazon/BUILD_LOG.md",
+    "check": "source_literals",
+    "sources": [
+      {
+        "path": "docs/amazon/BUILD_LOG.md",
+        "literals": ["288 passed", "3 skipped"]
+      }
+    ]
   }
 ]
 ```

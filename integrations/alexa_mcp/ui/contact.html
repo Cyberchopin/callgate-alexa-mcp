@@ -1,0 +1,8 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Simulated contact review</title><link rel="stylesheet" href="/ui/style.css"></head><body><main>
+<div class="topbar"><div class="brand">CallGate review</div><span class="simulated">SIMULATED CONTACT</span></div>
+<div class="grid"><section class="card"><p class="eyebrow">Independent review</p><h1>Did you initiate this request?</h1><div class="status" aria-live="polite" data-live-status>Review every field before deciding.</div>
+<div class="facts"><div class="fact"><strong>Amount</strong>{{AMOUNT}} cents</div><div class="fact"><strong>Destination</strong>{{DESTINATION}}</div><div class="fact"><strong>Request identity</strong>{{IDENTITY}}</div></div>
+<label for="contact-token">Local demo contact credential</label><input id="contact-token" data-contact-token autocomplete="off" type="password"><p class="muted">This local demonstration credential is not identity proof and is never read from URL query parameters.</p>
+<p class="error" role="alert" data-error></p><div class="actions"><button class="primary" data-decision="approve">Yes, approve simulation</button><button class="danger" data-decision="deny">No, deny</button></div></section>
+<aside class="card"><h2>Request timeline</h2><ol class="timeline"><li>Created {{ISSUED_AT}}</li><li>Expires {{EXPIRES_AT}}</li><li>Decision pending</li></ol><details><summary>Proof panel</summary><dl><dt>Request ID</dt><dd>{{REQUEST_ID}}</dd><dt>Parameter hash</dt><dd>{{PARAMETER_HASH}}</dd><dt>Status</dt><dd>pending</dd><dt>Refusal reason</dt><dd>none</dd><dt>Latency</dt><dd>pending</dd></dl></details></aside></div>
+</main><script src="/ui/demo.js"></script></body></html>
