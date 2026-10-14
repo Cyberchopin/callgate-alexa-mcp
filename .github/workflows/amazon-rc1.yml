@@ -35,7 +35,7 @@ jobs:
           pip-audit==2.10.1
       - name: Run full Python suite
         run: python -m pytest -q -rs
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - name: Run Node suite
