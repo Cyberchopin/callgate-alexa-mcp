@@ -1,5 +1,14 @@
 # PR #20 conflict plan — 2026-10-13 UTC
 
+## Authorization update — 2026-10-13
+
+The owner explicitly approved the local-only merge described below. The three
+document conflicts were resolved using the proposed preservation approach;
+verification and the resulting merge are recorded in BUILD_LOG and HANDOFF.
+The earlier "not applied" wording below records the plan before authorization.
+No push, GitHub PR merge, or main update is authorized or performed.
+
+
 Read-only analysis of local repair commit `5f4cfe2` against remote main
 `1d1069169e4fd10b5ac887bdcdc827b77b195b92`. No merge has been started.
 
