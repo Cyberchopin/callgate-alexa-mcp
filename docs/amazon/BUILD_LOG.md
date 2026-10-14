@@ -27,7 +27,9 @@
   the AnyIO BlockingPortal deprecation. No prior pass regressed.
 - Pre-commit local Gitleaks 8.30.1 scanned 113 reachable commits with complete
   redaction and unchanged exact fingerprint ignores: `no leaks found`, exit 0.
-  The new merge's history requires a post-commit scan before handoff.
+  Post-commit scan of merge `9b79a5c` also reported 113 commits scanned,
+  `no leaks found`, exit 0. The scanner's commit count is its actual output,
+  not a substitute for counting all Git objects or certifying the repository.
 - Remote main was rechecked as `1d1069169e4fd10b5ac887bdcdc827b77b195b92`.
   GitHub CI has not been rerun. No remote write was made.
 

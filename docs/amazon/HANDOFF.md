@@ -11,6 +11,9 @@ update, core-security changes, or frozen-data edits.
   verification: 21 focused tests passed; full Python 290 passed, 3 skipped,
   1 warning; Node 3 passed; claims registered=39 unresolved_or_inconsistent=0.
   These match the pre-merge regression counts; no skip or xfail was added.
+- Local merge commit: `9b79a5c`, parents `6133361` and `1d10691`. The inspected
+  main is an ancestor of the local repair branch. Post-merge Gitleaks reported
+  113 commits scanned with no remaining findings under existing exact ignores.
 - Preserve the current portable environment guidance in REUSE_PLAN.
 - Preserve both branches' build logs; incoming historical handoff is retained
   below, not treated as current deployment instructions.
