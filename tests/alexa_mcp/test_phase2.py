@@ -29,6 +29,17 @@ def test_development_private_key_is_removed_after_context(tmp_path):
     assert not root.exists()
 
 
+def test_development_certificate_uses_browser_compatible_key(tmp_path):
+    # Chrome and Windows Schannel reject Ed25519 TLS certificates.
+    from cryptography import x509
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    certificate, _ = ensure_development_certificate(tmp_path)
+    public_key = x509.load_pem_x509_certificate(certificate.read_bytes()).public_key()
+    assert isinstance(public_key, ec.EllipticCurvePublicKey)
+    assert public_key.curve.name == "secp256r1"
+
+
 async def require_url(session, arguments):
     with pytest.raises(MCPError) as error:
         await session.call_tool("send_money", arguments)
