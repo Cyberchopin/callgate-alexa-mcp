@@ -15,10 +15,12 @@ TOKEN = "assistant-test-token"
 @contextmanager
 def running_services(tmp_path):
     ports = [_free_port() for _ in range(3)]
+    # A file, not an undrained pipe: a full pipe blocks every thread that logs.
+    log = (tmp_path / "launcher.log").open("w", encoding="utf-8")
     server = subprocess.Popen([sys.executable, "-m", "scripts.run_amazon_services",
         "--replay-db", str(tmp_path / "replay.sqlite3"), "--merchant-port", str(ports[0]),
         "--gateway-port", str(ports[1]), "--assistant-port", str(ports[2]),
-        "--contact-token", TOKEN], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        "--contact-token", TOKEN], stdout=log, stderr=subprocess.STDOUT)
     try:
         _wait_for_https(ports[1])
         base = f"http://127.0.0.1:{ports[2]}"
@@ -32,7 +34,8 @@ def running_services(tmp_path):
         yield base
     finally:
         server.terminate()
-        server.communicate(timeout=10)
+        server.wait(timeout=10)
+        log.close()
 
 
 def wait_for(base, run_id, predicate, timeout=60):
@@ -108,6 +111,8 @@ def test_injected_shopping_request_is_denied_and_canary_blocked(tmp_path):
         state = wait_for(base, run_id, lambda s: s["finished"])
         assert "denied" in kinds(state) and "blocked" in kinds(state)
         assert "done" not in kinds(state) and "error" not in kinds(state)
+    launcher_log = (tmp_path / "launcher.log").read_text(encoding="utf-8", errors="replace")
+    assert "HTTP Request" not in launcher_log
 
 
 @pytest.mark.parametrize("body,headers,status", [
