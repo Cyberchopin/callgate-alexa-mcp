@@ -57,7 +57,8 @@ They are kept as history, not edited.
 | # | Gate | Status | Evidence |
 |---|---|---|---|
 | T1 | Python suite, `main` `6f83951` | PASS | 290 passed, 3 skipped (optional onnxruntime/pipecat) |
-| T2 | Python suite, release branch | PASS | 298 passed, 3 skipped (+1 certificate, +2 live-demo, +4 live-assistant, +1 review-page tests) |
+| T2 | Python suite, release branch | PASS | 300 passed, 3 skipped (+1 certificate, +2 live-demo, +4 live-assistant, +1 review-page, +2 completion-watcher tests) |
+| T2b | Windows CI regression after the live assistant (2026-10-22) | FIXED | `windows-latest` timed out in the live-assistant tests (runs 39738746813, 39740309044). The `diag/windows-ci` annotations (run 39741033465) showed `httpx.ReadTimeout`. Cause: the in-process assistant logged every HTTP request while the tests left the launcher pipe undrained. Fix `40dc3c1`; Windows green on run 39741762786 |
 | T3 | Node UI suite | PASS | 3/3 |
 | T4 | Remote CI on `6f83951` | PASS | Run 38522490945: Ubuntu, Windows, history secret scan all `success` (GitHub API) |
 | T5 | Dependency audit today | FAIL on `main` → PASS on branch | New advisory PYSEC-2026-4320 (certifi 2026.7.22, compromised emSign intermediates). Branch pins `certifi==2026.10.19`; both CI-audited files report no known vulnerabilities |
