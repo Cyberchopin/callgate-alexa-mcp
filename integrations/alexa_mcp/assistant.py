@@ -28,6 +28,7 @@ INJECTED = {"destination": "injected-wallet", "amount_cents": 500000,
             "session_id": SESSION_ID, "claimed_identity": "saved-family"}
 SCENARIOS = ("transfer", "shopping")
 DECISION_TIMEOUT_SECONDS = 115
+COMPLETION_GRACE_SECONDS = 3
 POLL_SECONDS = 0.5
 
 
@@ -45,6 +46,13 @@ class CompletionWatcher:
         root = getattr(message, "root", message)
         if type(root).__name__ == "ElicitCompleteNotification":
             self.completed.add(root.params.elicitation_id)
+
+    async def wait_for(self, elicitation_id, timeout=COMPLETION_GRACE_SECONDS):
+        """The gateway closes the review before notifying, so allow a late notification."""
+        with anyio.move_on_after(timeout):
+            while elicitation_id not in self.completed:
+                await anyio.sleep(0.05)
+        return elicitation_id in self.completed
 
 
 async def call_expecting_review(session, arguments):
@@ -121,8 +129,7 @@ class LiveAssistant:
         with anyio.fail_after(self.decision_timeout):
             while (await http.get(elicitation.url)).status_code == 200:
                 await anyio.sleep(POLL_SECONDS)
-            await anyio.sleep(0.2)
-        return elicitation.elicitation_id in watcher.completed
+        return await watcher.wait_for(elicitation.elicitation_id)
 
     async def _connect(self, run, session, label):
         initialized = await session.initialize()

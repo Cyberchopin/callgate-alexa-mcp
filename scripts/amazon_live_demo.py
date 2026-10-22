@@ -100,9 +100,8 @@ async def gateway_scenes(http, gateway_url, cart, args):
             elicitation = await call_expecting_review(session, LEGITIMATE)
             show("Result", "JSON-RPC -32042 URL elicitation required; nothing executed")
             await wait_for_decision(http, elicitation, args, approve=True)
-            await anyio.sleep(0.2)
             show("Completion notification received",
-                 elicitation.elicitation_id in watcher.completed)
+                 await watcher.wait_for(elicitation.elicitation_id))
 
             scene("4. Approved once means once")
             done = await session.call_tool("send_money", LEGITIMATE)
