@@ -9,6 +9,7 @@ from tempfile import TemporaryDirectory
 import uvicorn
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.x509.oid import NameOID
 
@@ -23,7 +24,8 @@ def ensure_development_certificate(directory: Path):
     if certificate.exists() and private_key.exists():
         return certificate, private_key
     directory.mkdir(parents=True, exist_ok=True)
-    key = Ed25519PrivateKey.generate()
+    # ECDSA P-256 because browsers and Windows Schannel reject Ed25519 TLS certificates.
+    key = ec.generate_private_key(ec.SECP256R1())
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "localhost")])
     now = datetime.datetime.now(datetime.timezone.utc)
     cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name)
@@ -32,7 +34,7 @@ def ensure_development_certificate(directory: Path):
         .not_valid_after(now + datetime.timedelta(days=7))
         .add_extension(x509.SubjectAlternativeName([
             x509.DNSName("localhost"), x509.IPAddress(ipaddress.ip_address("127.0.0.1"))]), False)
-        .sign(key, algorithm=None))
+        .sign(key, algorithm=hashes.SHA256()))
     private_key.write_bytes(key.private_bytes(serialization.Encoding.PEM,
         serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
     certificate.write_bytes(cert.public_bytes(serialization.Encoding.PEM))

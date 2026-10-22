@@ -22,10 +22,12 @@ def main():
     parser.add_argument("--replay-db", type=Path, default=Path(".test-tmp/all-services.sqlite3"))
     parser.add_argument("--merchant-port", type=int, default=0)
     parser.add_argument("--gateway-port", type=int, default=0)
+    parser.add_argument("--contact-token",
+                        help="local simulated contact credential; random when omitted")
     args = parser.parse_args()
     args.merchant_port = args.merchant_port or available_port()
     args.gateway_port = args.gateway_port or available_port()
-    contact_credential = secrets.token_urlsafe(24)
+    contact_credential = args.contact_token or secrets.token_urlsafe(24)
     merchant_app = create_merchant_server().streamable_http_app(streamable_http_path="/mcp")
     gateway_app, _ = build_app(args.replay_db, f"https://127.0.0.1:{args.gateway_port}",
                                contact_credential)
@@ -41,6 +43,8 @@ def main():
         print(f"Merchant MCP: http://127.0.0.1:{args.merchant_port}/mcp")
         print(f"Gateway MCP: https://127.0.0.1:{args.gateway_port}/mcp")
         print(f"Assistant page: https://127.0.0.1:{args.gateway_port}/demo")
+        # Simulated local credential for the review page; it is not identity proof.
+        print(f"Simulated contact credential: {contact_credential}", flush=True)
         try:
             gateway.run()
         finally:

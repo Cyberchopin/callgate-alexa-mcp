@@ -21,6 +21,13 @@ The launcher starts the simulated merchant MCP server, the CallGate MCP gateway,
 the assistant page, and the independent contact-review routes. Use `-Offline`
 for the deterministic, network-free injection comparison.
 
+To watch the full chain with a real MCP client on macOS, Linux, or WSL, follow
+the exact commands in the [demo runbook](docs/release/AMAZON_DEMO_RUNBOOK.md):
+`scripts.run_amazon_services` starts both servers and prints a simulated contact
+credential, and `scripts.amazon_live_demo` connects as a scripted MCP client and
+prints each review URL. The scripted client is a deterministic test client, not
+Alexa+ or an LLM. The `/demo` assistant page is a fixed illustrative fixture.
+
 ### Architecture
 
 ```mermaid
