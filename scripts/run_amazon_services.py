@@ -1,5 +1,6 @@
 """One command to launch the local simulated MCP services and live assistant page."""
 import argparse
+import logging
 import secrets
 import socket
 import ssl
@@ -28,6 +29,9 @@ def main():
     parser.add_argument("--contact-token",
                         help="local simulated contact credential; random when omitted")
     args = parser.parse_args()
+    # The in-process assistant polls the gateway; per-request client logs would flood output.
+    for name in ("httpx", "httpx2"):
+        logging.getLogger(name).setLevel(logging.WARNING)
     args.merchant_port = args.merchant_port or available_port()
     args.gateway_port = args.gateway_port or available_port()
     args.assistant_port = args.assistant_port or available_port()

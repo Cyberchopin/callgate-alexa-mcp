@@ -33,10 +33,11 @@ def _wait_for_https(port, timeout=60):
 
 def test_launcher_and_client_complete_the_recorded_demo(tmp_path):
     merchant_port, gateway_port = _free_port(), _free_port()
+    log = (tmp_path / "launcher.log").open("w", encoding="utf-8")
     server = subprocess.Popen([sys.executable, "-m", "scripts.run_amazon_services",
         "--replay-db", str(tmp_path / "replay.sqlite3"), "--merchant-port", str(merchant_port),
         "--gateway-port", str(gateway_port), "--contact-token", "rehearsal-token"],
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        stdout=log, stderr=subprocess.STDOUT)
     try:
         _wait_for_https(gateway_port)
         client = subprocess.run([sys.executable, "-m", "scripts.amazon_live_demo",
@@ -46,7 +47,9 @@ def test_launcher_and_client_complete_the_recorded_demo(tmp_path):
             capture_output=True, text=True, timeout=120)
     finally:
         server.terminate()
-        launcher_output, _ = server.communicate(timeout=10)
+        server.wait(timeout=10)
+        log.close()
+    launcher_output = (tmp_path / "launcher.log").read_text(encoding="utf-8", errors="replace")
     assert "Simulated contact credential: rehearsal-token" in launcher_output
     assert client.returncode == 0, client.stdout + client.stderr
     for marker in ("Negotiated MCP protocol: 2025-11-25", "Completion notification received: True",
