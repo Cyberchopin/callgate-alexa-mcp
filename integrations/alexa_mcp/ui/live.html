@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Simulated voice assistant — CallGate</title><link rel="stylesheet" href="/ui/style.css"><link rel="stylesheet" href="/ui/live.css"></head><body><main>
+<div class="topbar"><div class="brand">CallGate</div><span class="simulated">SIMULATED VOICE ASSISTANT</span></div>
+<div class="grid"><section class="card" aria-labelledby="assistant-title">
+<p class="eyebrow">Live · real MCP servers · scripted assistant</p><h1 id="assistant-title">What would you like to do?</h1>
+<form class="ask" data-ask><label for="utterance">Type a request</label><div class="ask-row"><input id="utterance" data-utterance autocomplete="off" placeholder="Send fifty dollars to my grandson"><button class="primary" type="submit">Ask</button></div></form>
+<div class="chips" role="group" aria-label="Example requests"><button class="secondary" type="button" data-scenario="transfer">“Send $50 to my grandson”</button><button class="secondary" type="button" data-scenario="shopping">“Find me a reading lamp”</button></div>
+<label class="speak"><input type="checkbox" data-speak> Read replies aloud with this browser's built-in voice</label>
+<ol class="conversation" data-conversation aria-live="polite"></ol></section>
+<aside class="card"><h2>What CallGate guarantees</h2><ol class="timeline"><li>Protected actions never run on the assistant's word.</li><li>A saved contact reviews the exact amount and destination on their own device.</li><li>An approval is used once, for exactly those parameters.</li><li>Sharing a verification code is never allowed.</li></ol>
+<p class="muted">Everything here is simulated. No Alexa+, payment, account, or real contact is connected. The assistant is a scripted MCP test client, not an LLM.</p></aside></div>
+</main><script src="/ui/live.js"></script></body></html>

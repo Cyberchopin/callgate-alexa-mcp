@@ -16,8 +16,12 @@ import anyio
 import httpx2
 from mcp.client.session import ClientSession
 from mcp.client.streamable_http import streamable_http_client
-from mcp.shared.exceptions import MCPError, UrlElicitationRequiredError
-from mcp.types import ElicitResult
+
+from integrations.alexa_mcp.assistant import (
+    CompletionWatcher,
+    accept_elicitation,
+    call_expecting_review,
+)
 
 SESSION_ID = "demo-household-session"
 LEGITIMATE = {"destination": "simulated-wallet", "amount_cents": 5000,
@@ -46,32 +50,6 @@ def require_loopback(url):
     if urlsplit(url).hostname not in LOOPBACK_HOSTS:
         raise SystemExit(f"refusing non-loopback demo URL: {url}")
     return url
-
-
-async def accept_elicitation(_context, _params):
-    return ElicitResult(action="accept")
-
-
-class CompletionWatcher:
-    """Records notifications/elicitation/complete sent to this MCP session."""
-
-    def __init__(self):
-        self.completed = set()
-
-    async def __call__(self, message):
-        root = getattr(message, "root", message)
-        if type(root).__name__ == "ElicitCompleteNotification":
-            self.completed.add(root.params.elicitation_id)
-
-
-async def call_expecting_review(session, arguments):
-    try:
-        result = await session.call_tool("send_money", arguments)
-    except MCPError as error:
-        if error.code != -32042:
-            raise
-        return UrlElicitationRequiredError.from_error(error.error).elicitations[0]
-    raise SystemExit(f"expected URL elicitation, got: {result_text(result)}")
 
 
 async def wait_for_decision(http, elicitation, args, approve):

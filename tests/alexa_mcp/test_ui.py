@@ -51,6 +51,16 @@ def test_contact_page_uses_server_request_not_query_parameters(tmp_path):
     assert "Parameter hash" in response.text and request_id not in response.text
 
 
+def test_contact_page_shows_dollars_and_readable_times(tmp_path):
+    _, flow = build_app(tmp_path / "replay.sqlite3", "https://review.example", "family-token",
+                        clock=lambda: 1792652359)
+    request_id = anyio.run(pending, flow)
+    response = anyio.run(request, Starlette(routes=flow.routes()), "GET", f"/approval/{request_id}")
+    assert "$43.21 (4321 cents)" in response.text
+    assert "2026-10-22 06:59:19 UTC" in response.text
+    assert "1792652359" not in response.text
+
+
 def test_ui_assets_cover_keyboard_mobile_loading_and_error_states(tmp_path):
     _, flow = build_app(tmp_path / "replay.sqlite3", "https://review.example", "family-token")
     app = Starlette(routes=flow.routes())

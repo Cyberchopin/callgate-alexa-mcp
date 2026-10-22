@@ -1,4 +1,5 @@
 """No-build, local-only UI assets for the simulated phase-2 experience."""
+import datetime
 from pathlib import Path
 
 from starlette.responses import HTMLResponse, Response
@@ -37,14 +38,23 @@ async def javascript(_request):
                     headers=security_headers())
 
 
+def _amount(cents: int) -> str:
+    return f"${cents / 100:,.2f} ({cents} cents)"
+
+
+def _utc(timestamp: int) -> str:
+    moment = datetime.datetime.fromtimestamp(timestamp, datetime.timezone.utc)
+    return moment.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
 def render_contact_page(item) -> str:
     operation = item.arguments
     values = {
-        "{{AMOUNT}}": str(int(operation["amount_cents"])),
+        "{{AMOUNT}}": _amount(int(operation["amount_cents"])),
         "{{DESTINATION}}": __import__("html").escape(operation["destination"]),
         "{{IDENTITY}}": __import__("html").escape(item.request.claimed_identity or ""),
-        "{{ISSUED_AT}}": str(item.request.issued_at),
-        "{{EXPIRES_AT}}": str(item.request.expires_at),
+        "{{ISSUED_AT}}": _utc(item.request.issued_at),
+        "{{EXPIRES_AT}}": _utc(item.request.expires_at),
         "{{REQUEST_ID}}": __import__("html").escape(item.request.request_id),
         "{{PARAMETER_HASH}}": operation_resource("send_money", operation),
     }
