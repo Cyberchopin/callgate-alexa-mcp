@@ -1,6 +1,6 @@
 # Amazon Alexa+ release gate — 2026-10-21
 
-Audited 2026-10-21, 23:35–late evening PDT, against the official rules at
+Audited 2026-10-21 23:35 PDT to 2026-10-22 early morning PDT, against the official rules at
 https://amazonappdev2026.devpost.com/rules (fetched the same evening).
 Deadline: **2026-10-23 12:00 PM PDT**.
 
@@ -25,7 +25,7 @@ They are kept as history, not edited.
 | R1 | Alexa+ track: self-hosted MCP server, MCP ≥ 2025-11-25, Streamable HTTP | PASS | Live client negotiated `2025-11-25` over Streamable HTTP (`scripts/amazon_live_demo.py` output; `tests/alexa_mcp/test_live_demo.py`) |
 | R2 | Required tech imported and called at runtime | PASS | `integrations/alexa_mcp/server/app.py` (`MCPServer`), `merchant.py`; real `ClientSession` calls in tests and demo client |
 | R3 | Public repo with visible open-source license | PASS | GitHub API: `public`, license `MIT` detected; `LICENSE` at root |
-| R4 | Setup and run instructions in repo | PASS on branch / PARTIAL on `main` | `main` README launcher is PowerShell-only and hides the contact credential; branch README adds the cross-platform live command |
+| R4 | Setup and run instructions in repo | PASS on branch / PARTIAL on `main` | `main` README launcher is PowerShell-only and hides the contact credential; the branch README points to the cross-platform runbook |
 | R5 | English materials | PASS | README and `docs/release/*` are English. `START_HERE.md` is Chinese and labeled as a separate guide |
 | R6 | Video < 3 min, public on YouTube/Vimeo, shows project working | NOT DONE (owner) | Script ready in `AMAZON_DEMO_RUNBOOK.md` |
 | R7 | Product feedback per tool | READY | `AMAZON_FINAL_DEVPOST.md` §Product feedback; owner must confirm the "build again" answer |
@@ -48,14 +48,16 @@ They are kept as history, not edited.
 | F8 | Canary blocked | PASS | `403 BLOCKED: canary tool is permanently disabled` |
 | F9 | Offline injection comparison reproduces committed evidence | PASS | Fresh run is identical to `docs/amazon/merchant_injection_results.json`: unguarded 2/2 executed, CallGate 0/2 |
 | F10 | Review page reachable from the Windows browser | PASS on branch / FAIL on `main` | `main` used an Ed25519 TLS certificate: Windows `curl.exe` (Schannel) handshake failed. After switching to ECDSA P-256: HTTP 200 from Windows, and approve/deny POSTs succeeded |
-| F11 | Review page renders and clicks correctly in Chrome | UNVERIFIED | The Chrome extension was not connected. Owner checks this during the rehearsal take |
+| F11 | Pages render and work in a Chromium browser | PASS (headless Edge) | Headless Microsoft Edge on Windows was driven over the DevTools protocol through both scenarios; screenshots are in `docs/release/screenshots/`. Interactive Chrome is still to be checked by the owner during the rehearsal take |
+| F12 | Live simulated-assistant page (added 2026-10-22) | PASS | `http://127.0.0.1:8002/`: transfer approve → once → new review; shopping → product cards → injected $5,000 paused → denied → canary blocked. Driven from Windows `curl.exe` and headless Edge; `tests/alexa_mcp/test_live_assistant.py` (4 tests) |
+| F13 | Review page is human-readable | PASS | Shows `$50.00 (5000 cents)` and UTC times; `test_contact_page_shows_dollars_and_readable_times` |
 
 ## Test and security gates
 
 | # | Gate | Status | Evidence |
 |---|---|---|---|
 | T1 | Python suite, `main` `6f83951` | PASS | 290 passed, 3 skipped (optional onnxruntime/pipecat) |
-| T2 | Python suite, release branch | PASS | 293 passed, 3 skipped (+1 certificate test, +2 live-demo tests) |
+| T2 | Python suite, release branch | PASS | 298 passed, 3 skipped (+1 certificate, +2 live-demo, +4 live-assistant, +1 review-page tests) |
 | T3 | Node UI suite | PASS | 3/3 |
 | T4 | Remote CI on `6f83951` | PASS | Run 38522490945: Ubuntu, Windows, history secret scan all `success` (GitHub API) |
 | T5 | Dependency audit today | FAIL on `main` → PASS on branch | New advisory PYSEC-2026-4320 (certifi 2026.7.22, compromised emSign intermediates). Branch pins `certifi==2026.10.19`; both CI-audited files report no known vulnerabilities |

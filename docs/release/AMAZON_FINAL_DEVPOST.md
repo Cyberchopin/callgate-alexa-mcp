@@ -29,9 +29,18 @@ it can show a reassuring "$50 lamp" while the real tool call sends $5,000
 elsewhere. We wanted a boundary where the conversation can be compromised and
 money still doesn't move.
 
+The people this matters most for are older adults and the families who support
+them. The FTC reports that adults 60 and over reported fraud losses rising from
+about $600 million in 2020 to $2.4 billion in 2024 ([FTC, Dec 1 2025](https://www.ftc.gov/news-events/news/press-releases/2025/12/ftc-issues-annual-report-congress-agencys-actions-protect-older-adults)).
+Voice purchasing makes it easier for those losses to happen inside a single
+conversation.
+
 ## What it does
 
-CallGate puts protected actions behind a self-hosted MCP gateway:
+CallGate puts protected actions behind a self-hosted MCP gateway. You can watch
+it work in a live, simulated voice-assistant page. The page shows each MCP
+connection, product cards from the merchant, a "paused" card linking to the
+contact's review, and the final outcome.
 
 - **Shopping stays useful.** A separate simulated merchant MCP server provides `search_products`, `get_product`, `add_to_cart`, and `view_cart`. Their output is treated as untrusted.
 - **Protected actions fail closed.** `send_money` and `place_order` never run on the agent's say-so. Without proof they return a stable refusal (`403 POLICY_PROOF_REQUIRED`) or pause for review.
@@ -48,6 +57,7 @@ CallGate puts protected actions behind a self-hosted MCP gateway:
 - **SQLite** replay ledger, so a consumed proof stays consumed after a server restart.
 - **Local HTTPS** with a short-lived, self-signed ECDSA certificate for the review page. It is deleted on exit.
 - A deterministic, deliberately vulnerable **test double** for the injection comparison. It uses no LLM, and no LLM takes part in authorization.
+- A **live simulated-assistant page** with a small Starlette backend. The backend is itself a real MCP client of both servers and checks the gateway's certificate. The no-build HTML/CSS/JS frontend builds every element with `textContent`. It can optionally read replies aloud with the browser's local speech synthesis.
 
 ## What we built during the submission period
 
@@ -62,7 +72,7 @@ built from 2026-10-10 onward:
 - Simulated merchant MCP server and the injected-product fixture
 - Deterministic injection comparison and ApprovalBench Lite
 - Real-client MCP test suites, dependency audits, secret scanning, and CI on Ubuntu and Windows
-- On 2026-10-21: a live demo client, a browser-compatible certificate fix, and an audit fix
+- On 2026-10-21 and 22: the live simulated-assistant page, a scripted terminal client, a browser-compatible certificate fix, a readable review page (dollars and UTC times), and a dependency-audit fix
 
 **[OWNER: confirm that no CallGate code existed outside this repository before 2026-08-31. If any part of CallGate was submitted to another hackathon, name it here.]**
 
@@ -100,9 +110,10 @@ assistant runtime.
 ## What is simulated (please read)
 
 The voice assistant, the merchant, products, payments, orders, contacts,
-identities, and approval credentials are all simulated. The demo client is a
-scripted MCP client, and the vulnerable agent is a deterministic test double.
-Neither is Alexa+ or an LLM. Nothing connects to Alexa+, Amazon accounts,
+identities, and approval credentials are all simulated. The assistant page and
+the terminal client are scripted MCP clients. In the shopping scenario the
+assistant deliberately obeys injected text. The offline vulnerable agent is a
+deterministic test double. None of these is Alexa+ or an LLM. Nothing connects to Alexa+, Amazon accounts,
 banks, payment networks, or SMS. The contact credential is a local demo value,
 not proof of a person.
 
@@ -114,15 +125,25 @@ Public repository (MIT): https://github.com/Cyberchopin/callgate-alexa-mcp
 git clone https://github.com/Cyberchopin/callgate-alexa-mcp.git && cd callgate-alexa-mcp
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-lock.txt -r requirements-verification.txt -r requirements-safety.txt -r integrations/alexa_mcp/requirements.txt
-python -m scripts.run_amazon_services --replay-db .test-tmp/demo-replay.sqlite3 --merchant-port 8001 --gateway-port 8443
-# second terminal:
-python -m scripts.amazon_live_demo --merchant http://127.0.0.1:8001/mcp --gateway https://127.0.0.1:8443/mcp
+python -m scripts.run_amazon_services --replay-db .test-tmp/demo-replay.sqlite3 --merchant-port 8001 --gateway-port 8443 --assistant-port 8002
+# open http://127.0.0.1:8002/ (live assistant); review links open on https://127.0.0.1:8443
+# terminal alternative: python -m scripts.amazon_live_demo --merchant http://127.0.0.1:8001/mcp --gateway https://127.0.0.1:8443/mcp
 python -m pytest -q
 ```
+
+The full walkthrough is in `docs/release/AMAZON_DEMO_RUNBOOK.md`.
 
 **[OWNER: these commands are on `main` only after the release branch is merged. See AMAZON_BLOCKERS.md, item B-1.]**
 
 Video: **[OWNER: YouTube or Vimeo URL]**
+
+Gallery images (real captures, 2026-10-22), in `docs/release/screenshots/`:
+
+1. `transfer-1-paused.png`: the transfer paused at the gateway.
+2. `transfer-2-contact.png`: the contact's independent review.
+3. `transfer-3-final.png`: completed once, then a new review required.
+4. `shopping-3-final.png`: poisoned product text, the contact's denial, and the blocked canary.
+5. `shopping-2-contact.png`: the contact sees $5,000.00 to injected-wallet.
 
 ---
 

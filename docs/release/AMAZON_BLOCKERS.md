@@ -13,8 +13,19 @@ submission by **2026-10-23 12:00 PM PDT**. No features were added.
 | X-4 | **The dependency audit fails today.** PYSEC-2026-4320, certifi 2026.7.22 (compromised emSign intermediates). The scheduled audit (Mondays 09:23 UTC) would turn `main` red on 2026-10-26, during judging | Pinned `certifi==2026.10.19` in `requirements-lock.txt` and `requirements-integrations-lock.txt` | `pip_audit` on both CI-audited files: no known vulnerabilities |
 
 Also changed: the README gains a short cross-platform "watch the full chain"
-section. Full suite on the branch: 293 passed, 3 skipped. Node: 3/3. Claim
-registry: consistent.
+section.
+
+## Added 2026-10-22 to strengthen the entry (not blockers)
+
+| ID | Change | Why | Verification |
+|---|---|---|---|
+| E-1 | Live simulated-assistant page (`integrations/alexa_mcp/assistant.py`, `ui/live.*`), started by the launcher on `--assistant-port` | Judging weighs Design ("complete, coherent product experience"). The old video was a terminal plus a static fixture | 4 e2e tests; driven from Windows; headless Edge screenshots |
+| E-2 | Review page shows dollars and UTC times instead of raw cents and epoch seconds | The contact must understand the request at a glance | New UI test |
+| E-3 | Devpost cites a primary-source statistic (FTC, Dec 1 2025) | Potential Impact criterion; the old draft had an unfilled `{{SOURCE_NEEDED}}` | Checked on ftc.gov |
+
+Full suite on the branch: 298 passed, 3 skipped. Node: 3/3. Claim registry:
+consistent. Both CI-audited dependency files: no known vulnerabilities. Gateway
+authorization, policy, and replay code are unchanged.
 
 ## Remaining — owner action required
 
@@ -29,7 +40,7 @@ registry: consistent.
 
 ### B-2 (critical): Record and upload the video
 
-- **Action:** follow `AMAZON_DEMO_RUNBOOK.md`. Do one rehearsal take first; it doubles as the Chrome rendering check (gate F11, which I could not run because the Chrome extension was not connected). Upload to YouTube or Vimeo as **Public**, under 3:00.
+- **Action:** follow `AMAZON_DEMO_RUNBOOK.md`. Do one rehearsal take first; it doubles as the interactive Chrome check. Rendering already passed in headless Edge (gate F11). Upload to YouTube or Vimeo as **Public**, under 3:00.
 - **Why:** this is a required field. Judges may score only the text, images, and video.
 
 ### B-3 (critical): Complete owner-only fields and submit on Devpost
@@ -48,7 +59,6 @@ In `AMAZON_FINAL_DEVPOST.md`:
 - `requirements-integrations-lock.txt` pins `pillow 12.3.0` (CVE-2026-112396, fix in 13.0.0). This file is for optional Pipecat/Silero extras only; CI does not install or audit it, and the MCP demo does not use it. A major-version bump is not worth the risk before the deadline.
 - `docs/amazon/FINAL_GATE.md`, `SUBMISSION_SCORECARD.md`, `DEMO_SCRIPT.md`, and `DEVPOST.md` contain stale statuses and `{{…}}` placeholders. They are historical; `docs/release/*` supersede them. Judges are unlikely to open them.
 - The README ends with a note that canonical tool-parameter binding (commitment v2) is not implemented. That is accurate, and the release docs do not claim v2.
-- The contact page shows the amount in raw cents ("5000 cents"). Cosmetic.
 - `scripts/demo.ps1 -Offline` rewrites `docs/amazon/merchant_injection_results.json`. The content is deterministic and identical, but on Windows it may show as modified. The runbook writes to `.test-tmp/` instead.
 - The Windows clone `C:\Users\wangs\callgate-alexa-mcp` is at `f18eda5` with many uncommitted changes. Do not use it. Nothing in it was touched.
 - Gitleaks has not run locally on the branch. CI runs it automatically if the branch is pushed (B-1).
