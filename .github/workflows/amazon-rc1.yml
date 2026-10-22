@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [windows-latest]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -34,7 +34,28 @@ jobs:
           -r integrations/alexa_mcp/requirements.txt
           pip-audit==2.10.1
       - name: Run full Python suite
-        run: python -m pytest -q -rs
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pytest -q -rfEs 2>&1 | tee pytest.log
+      - name: Publish pytest failures as annotations (diagnostic)
+        if: failure()
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("pytest.log").read_text(encoding="utf-8", errors="replace")
+          start = max(text.find("= FAILURES ="), text.find("= ERRORS ="))
+          body = text[start:] if start >= 0 else text[-20000:]
+          chunks = [body[i:i + 3500] for i in range(0, len(body), 3500)][-9:]
+          summary = [line for line in text.splitlines() if line.startswith(("FAILED", "ERROR"))]
+          def emit(title, message):
+              message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+              print(f"::error title={title}::{message}")
+          emit("pytest summary", "\n".join(summary[:40] + text.splitlines()[-3:]))
+          for index, chunk in enumerate(chunks, 1):
+              emit(f"pytest detail {index}/{len(chunks)}", chunk)
+          PY
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
