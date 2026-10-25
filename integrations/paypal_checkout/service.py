@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import secrets
 import time
 from decimal import Decimal
@@ -407,7 +408,7 @@ class CheckoutService:
         summary = d.get("order_summary") or {}
         item_value = Decimal(summary.get("total") or "0") - Decimal(summary.get("shipping") or "0")
         flags = RK.ship_flags(ship_to_addr=d.get("ship_to"), label_country=label_country, label_postal=label_postal,
-                              carrier=body.get("carrier_name_other") or body["carrier"], item_value=item_value,
+                              carrier=re.sub(r"[\s-]+", "_", carrier.strip()).upper(), item_value=item_value,
                               declared_value=declared)
         blocks = RK.blocking(flags)
         if blocks:

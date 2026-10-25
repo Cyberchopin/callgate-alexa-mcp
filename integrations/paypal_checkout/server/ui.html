@@ -323,6 +323,8 @@ function allFlags(){
     ? {...f, severity:"info", title: f.title + " — seller agreed", why: "Seller's reason: " + ov.reason} : f);
   return [...(CO.chat_flags||[]), ...pay, ...((CO.shipment||{}).flags||[])];
 }
+const CARRIER_NAMES = {USPS:"USPS", UPS:"UPS", FEDEX:"FedEx", DHL:"DHL", CA_CANADA_POST:"Canada Post", AU_AU_POST:"Australia Post",
+  JPN_JAPAN_POST:"Japan Post", YAMATO:"Yamato", SAGAWA:"Sagawa", CN_CHINA_POST_EMS:"China Post", EMS:"EMS", YUNEXPRESS:"YunExpress", HK_POST:"Hongkong Post"};
 const PROTECTS = {seller:"Protects the seller", buyer:"Protects the buyer", both:"Protects both sides"};
 function flagItem(f){
   return `<li class="flag ${f.severity}"><b>${esc(f.title)}</b>${esc(f.why)}
@@ -427,7 +429,7 @@ function renderOrder(){
         + (payerView ? `<p>The seller is packing your order. You'll see the packing photos and tracking here.</p>` : packPanel(true));
       actions = `<a class="btn ghost" href="/api/checkouts/${CO.id}/receipt" target="_blank">View signed receipt</a>`; break;
     case "SHIPPED":
-      verdict = `<div class="verdict ok">Paid ${esc(o?.total)} ${esc(o?.currency)} and shipped: ${esc(CO.shipment.carrier_name_other || CO.shipment.carrier)} ${esc(CO.shipment.tracking_number)}. Tracking is on the PayPal order.</div>`
+      verdict = `<div class="verdict ok">Paid ${esc(o?.total)} ${esc(o?.currency)} and shipped: ${esc(CO.shipment.carrier_name_other || CARRIER_NAMES[CO.shipment.carrier] || CO.shipment.carrier)} ${esc(CO.shipment.tracking_number)}. Tracking is on the PayPal order.</div>`
         + `<p style="font-size:.92rem;color:var(--muted)">Packed weight ${esc(CO.shipment.packed_weight?.value)} ${esc(CO.shipment.packed_weight?.unit)} · label to ${esc(CO.shipment.label_destination?.country_code)} ${esc(CO.shipment.label_destination?.postal_code)}${CO.shipment.declared_value ? ` · declared value $${esc(CO.shipment.declared_value)}` : ""}</p>`
         + ackPanel() + packPanel(false);
       actions = `<a class="btn ghost" href="/api/checkouts/${CO.id}/receipt" target="_blank">View signed receipt</a>`
@@ -459,7 +461,8 @@ function packPanel(editable){
   }).join("");
   const ready = (CO.checklist||[]).every(l=>CO.photos?.[l.id] || CO.skipped?.[l.id]);
   const form = !editable ? "" : `<div class="row">
-      <label>Carrier <select id="carrier"><option>USPS</option><option>UPS</option><option>FEDEX</option><option>DHL</option><option>CANADA_POST</option><option value="OTHER">Other</option></select></label>
+      <label>Carrier <select id="carrier"><option value="USPS">USPS</option><option value="UPS">UPS</option><option value="FEDEX">FedEx</option><option value="DHL">DHL</option><option value="CANADA_POST">Canada Post</option><option value="JAPAN_POST">Japan Post</option><option value="YAMATO">Yamato</option><option value="CHINA_POST">China Post</option><option value="YUNEXPRESS">YunExpress</option><option value="OTHER">Other…</option></select></label>
+      <label id="carrier-other-wrap" class="hidden">Carrier name <input type="text" id="carrier-other" size="14"></label>
       <label>Tracking number <input type="text" id="tracking" size="20" autocomplete="off"></label></div>
     <div class="row"><label>Label goes to country <input type="text" id="lcountry" size="3" maxlength="2" value="${esc(CO.ship_to?.country_code||"")}"></label>
       <label>ZIP / postal code on the label <input type="text" id="lpostal" size="9"></label>
@@ -517,7 +520,8 @@ async function pay(twice=false){
 }
 
 async function shipNow(ack){
-  const body = {carrier:$("#carrier").value, tracking_number:$("#tracking").value, label_country:$("#lcountry").value,
+  const carrier = $("#carrier").value === "OTHER" ? $("#carrier-other").value : $("#carrier").value;
+  const body = {carrier, tracking_number:$("#tracking").value, label_country:$("#lcountry").value,
     label_postal:$("#lpostal").value, weight:$("#weight").value, weight_unit:$("#wunit").value,
     declared_value:$("#declared").value || null, acknowledge_warnings: ack};
   try {
@@ -550,6 +554,7 @@ document.addEventListener("submit", e=>{
 });
 
 document.addEventListener("change", e=>{
+  if (e.target.id==="carrier"){ $("#carrier-other-wrap").classList.toggle("hidden", e.target.value!=="OTHER"); return; }
   if (e.target.id==="pv-import" && e.target.files?.length){
     act(async()=>{ const text = await e.target.files[0].text(); let chain;
       try { chain = JSON.parse(text); } catch { throw new Error("That file isn't a passport"); }

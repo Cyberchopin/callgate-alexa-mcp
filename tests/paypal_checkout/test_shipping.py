@@ -65,7 +65,7 @@ def test_unknown_carrier_goes_through_as_other(env):  # noqa: F811
         svc.add_photo(co["id"], line, JPG + line.encode())
     co = svc.ship(co["id"], carrier="yunexpress", tracking_number="YT2512345678901", **LABEL)
     t = fake.trackers[co["data"]["order_id"]][0]
-    assert (t["carrier"], t["carrier_name_other"]) == ("OTHER", "Yunexpress")
+    assert t["carrier"] == "YUNEXPRESS" and "carrier_name_other" not in t
 
 
 def test_concurrent_photo_uploads_are_all_kept(env):  # noqa: F811
@@ -106,3 +106,20 @@ def test_photos_are_only_served_for_their_own_checkout(tmp_path):
     assert c.get(f"/api/checkouts/{a['id']}/photos/{sha}").content == PNG
     assert c.get(f"/api/checkouts/{b['id']}/photos/{sha}").status_code == 404
     assert c.get(f"/api/checkouts/{a['id']}/photos/{'0' * 64}").status_code == 404
+
+
+@pytest.mark.parametrize("typed,code,other", [
+    ("Canada Post", "CA_CANADA_POST", None), ("canada_post", "CA_CANADA_POST", None),
+    ("JAPAN_POST", "JPN_JAPAN_POST", None), ("UPS", "UPS", None), ("FedEx", "FEDEX", None),
+    ("CA_CANADA_POST", "CA_CANADA_POST", None), ("OnTrac", "OTHER", "OnTrac"), ("SF EXPRESS", "OTHER", "Sf Express"),
+])
+def test_carrier_names_map_to_paypal_codes(typed, code, other):
+    from integrations.paypal_checkout.shipping import tracking_body
+    body = tracking_body("CAP1", "1Z999AA10123456784", typed, None)
+    assert body["carrier"] == code and body.get("carrier_name_other") == other
+
+
+def test_other_carrier_needs_a_name():
+    from integrations.paypal_checkout.shipping import tracking_body
+    with pytest.raises(ValueError):
+        tracking_body("CAP1", "1Z999AA10123456784", "OTHER", None)

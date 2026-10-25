@@ -25,7 +25,18 @@ _IMAGE_SIGNATURES = [
     (b"RIFF", "image/webp"),
 ]
 MAX_PHOTO_BYTES = 8 * 1024 * 1024
-CARRIERS = {"USPS", "UPS", "FEDEX", "DHL", "CANADA_POST", "ROYAL_MAIL", "AUSTRALIA_POST", "OTHER"}
+# What sellers type -> PayPal Add Tracking carrier code (developer.paypal.com/track-orders/carriers).
+# Only codes we confirmed in PayPal's list or examples; anything else is sent as OTHER with its name.
+CARRIERS = {
+    "USPS": "USPS", "UPS": "UPS", "FEDEX": "FEDEX", "DHL": "DHL",
+    "CANADA_POST": "CA_CANADA_POST", "AUSTRALIA_POST": "AU_AU_POST", "JAPAN_POST": "JPN_JAPAN_POST",
+    "YAMATO": "YAMATO", "SAGAWA": "SAGAWA", "CHINA_POST": "CN_CHINA_POST_EMS", "EMS": "EMS",
+    "YUNEXPRESS": "YUNEXPRESS", "HK_POST": "HK_POST",
+}
+CARRIER_LABELS = {"USPS": "USPS", "UPS": "UPS", "FEDEX": "FedEx", "DHL": "DHL", "CANADA_POST": "Canada Post",
+                  "AUSTRALIA_POST": "Australia Post", "JAPAN_POST": "Japan Post", "YAMATO": "Yamato",
+                  "SAGAWA": "Sagawa", "CHINA_POST": "China Post", "EMS": "EMS", "YUNEXPRESS": "YunExpress",
+                  "HK_POST": "Hongkong Post"}
 
 
 def checklist(terms: dict, title: str | None = None) -> list[dict]:
@@ -105,13 +116,17 @@ def tracking_body(capture_id: str, tracking_number: str, carrier: str, item_name
     tracking_number = tracking_number.strip()
     if not re.fullmatch(r"[A-Za-z0-9-]{4,64}", tracking_number):
         raise ValueError("tracking number must be 4-64 letters, digits or dashes")
-    carrier = carrier.strip().upper()
+    typed = re.sub(r"[\s-]+", "_", carrier.strip()).upper()
     body = {"capture_id": capture_id, "tracking_number": tracking_number, "notify_payer": True}
-    if carrier in CARRIERS and carrier != "OTHER":
-        body["carrier"] = carrier
+    code = CARRIERS.get(typed) or (typed if typed in CARRIERS.values() else None)
+    if code:
+        body["carrier"] = code
     else:
+        name = re.sub(r"\s+", " ", carrier).strip()[:64]
+        if not name or typed == "OTHER":
+            raise ValueError("type the carrier's name")
         body["carrier"] = "OTHER"
-        body["carrier_name_other"] = (carrier.title() if carrier not in CARRIERS else "Other")[:64]
+        body["carrier_name_other"] = name if not name.isupper() else name.title()
     if item_name:
         body["items"] = [{"name": item_name[:127], "quantity": "1"}]
     return body
