@@ -131,6 +131,7 @@ input[type=text],select{border:1px solid var(--line);border-radius:6px;padding:7
     <h2>Paste the conversation where the deal was made</h2>
     <textarea id="chat" placeholder="Buyer: is the cap still available?&#10;Seller: yes, $95 plus $8 shipping&#10;…"></textarea>
     <div class="row">
+      <label>What's being sold <input type="text" id="title" size="26" placeholder="e.g. Haunted Mansion cap"></label>
       <label>Currency if the chat doesn't say
         <select id="cur"><option>USD</option><option>CAD</option><option>EUR</option><option>GBP</option><option>AUD</option></select></label>
       <button class="btn ghost small" id="example">Use the hat sale example</button>
@@ -380,6 +381,7 @@ function renderHistory(){
   $("#events").innerHTML = (CO.events||[]).map(e=>{
     const d = e.detail || {}; const note = d.note && d.note !== e.to.replaceAll("_"," ").toLowerCase() ? d.note : "";
     const extra = note || d.error || (d.blocking?.length ? "blocked: "+d.blocking.join(", ") : "") || (d.via ? "via "+d.via : "") || (d.request_id ? "request "+d.request_id : "");
+    if (e.from === e.to) return `<li>${esc(d.note || extra || "updated")}</li>`;
     return `<li><b>${esc(e.to.replaceAll("_"," ").toLowerCase())}</b>${extra ? " — "+esc(extra) : ""}</li>`; }).join("");
 }
 
@@ -432,9 +434,9 @@ document.addEventListener("click", e=>{
   if (j){ e.preventDefault(); const m = $("#m"+j.dataset.jump); m.scrollIntoView({block:"center",behavior:"smooth"});
           m.classList.add("flash"); setTimeout(()=>m.classList.remove("flash"),1400); return; }
   const id = e.target.id;
-  if (id==="example") $("#chat").value = EX;
-  if (id==="example-zh") $("#chat").value = EX_ZH;
-  if (id==="read") act(async()=>render(await api("/api/checkouts",{body:{chat:$("#chat").value, currency:$("#cur").value}})));
+  if (id==="example"){ $("#chat").value = EX; $("#title").value = "Haunted Mansion cap"; }
+  if (id==="example-zh"){ $("#chat").value = EX_ZH; $("#title").value = "鬼屋帽子"; }
+  if (id==="read") act(async()=>render(await api("/api/checkouts",{body:{chat:$("#chat").value, currency:$("#cur").value, title:$("#title").value || null}})));
   if (id==="restart"){ CO=null; history.replaceState(null,"","/"); location.reload(); }
   if (id==="confirm") act(async()=>render(await api(`/api/checkouts/${CO.id}/confirm`,{post:true})));
   if (id==="build") act(async()=>{ render(await api(`/api/checkouts/${CO.id}/build-order`,{post:true})); payKey=null; });

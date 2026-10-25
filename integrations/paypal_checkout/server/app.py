@@ -41,7 +41,8 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
                model_reader="default", public_url: str | None = None) -> FastAPI:
     state = Path(state_dir or os.environ.get("CALLGATE_CHECKOUT_STATE", ".callgate-checkout"))
     state.mkdir(parents=True, exist_ok=True)
-    public_url = (public_url or os.environ.get("CALLGATE_PUBLIC_URL", "http://localhost:8787")).rstrip("/")
+    public_url = (public_url or os.environ.get("CALLGATE_PUBLIC_URL") or os.environ.get("RENDER_EXTERNAL_URL")
+                  or "http://localhost:8787").rstrip("/")
     if fake is None and os.environ.get("PAYPAL_CLIENT_ID"):
         mode, client = "sandbox", PayPalClient.from_env()
         webhook_id = os.environ.get("PAYPAL_WEBHOOK_ID")
