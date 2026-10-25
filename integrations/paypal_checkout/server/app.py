@@ -54,6 +54,7 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
 
     app = FastAPI(title="CallGate Checkout", docs_url=None, redoc_url=None)
     app.state.svc, app.state.fake, app.state.mode = svc, fake, mode
+    app.state.public_url = public_url
 
     @app.exception_handler(CheckoutError)
     async def checkout_error(_, e: CheckoutError):
@@ -249,3 +250,42 @@ def _view(svc, co):
             "approval": None if not approval else {k: approval[k] for k in ("order_fingerprint", "expires_at", "nonce")},
             "capture_id": d.get("capture_id"), "capture_status": d.get("capture_status"),
             "events": svc.ledger.events(co["id"])}
+
+
+class _AgentAuth:
+    """Bearer-token check in front of /mcp when CALLGATE_AGENT_TOKEN is set."""
+
+    def __init__(self, app, token: str | None):
+        self.app, self.token = app, token
+
+    async def __call__(self, scope, receive, send):
+        if self.token and scope["type"] == "http" and scope["path"].startswith("/mcp"):
+            import hmac
+            got = dict(scope.get("headers") or []).get(b"authorization", b"").decode()
+            if not hmac.compare_digest(got, f"Bearer {self.token}"):
+                from starlette.responses import JSONResponse as _J
+                await _J({"error": "AGENT_UNAUTHORIZED"}, status_code=401)(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
+
+def create_asgi(**kwargs):
+    """Checkout pages + API at /, agent gateway (MCP streamable HTTP) at /mcp, one process."""
+    from urllib.parse import urlparse
+
+    from mcp.server.transport_security import TransportSecuritySettings
+    from starlette.routing import Mount
+
+    from ..agent_gateway import create_agent_gateway
+
+    api = create_app(**kwargs)
+    url = urlparse(api.state.public_url)
+    hosts = {"127.0.0.1:*", "localhost:*", url.netloc, url.hostname or ""}
+    security = TransportSecuritySettings(enable_dns_rebinding_protection=True,
+                                         allowed_hosts=sorted(h for h in hosts if h),
+                                         allowed_origins=[api.state.public_url, "http://localhost:*", "http://127.0.0.1:*"])
+    gateway = create_agent_gateway(api.state.svc, base_url=api.state.public_url)
+    root = gateway.streamable_http_app(streamable_http_path="/mcp", transport_security=security)
+    root.routes.append(Mount("/", app=api))
+    root.state.api = api
+    return _AgentAuth(root, os.environ.get("CALLGATE_AGENT_TOKEN"))
