@@ -1,28 +1,42 @@
 # CallGate Checkout
 
-**Pay exactly what you agreed in the chat.**
+**Pay exactly what you agreed in the chat — and ship exactly what you promised.**
 
-My brother resells hats, blind boxes and sneakers. Deals happen in chat: the buyer asks, he quotes, they haggle, someone says "deal", and he sends a PayPal link. The money step is where it goes wrong — a typo, a link from a different listing, shipping counted twice, an assistant that drafted the order from the wrong message. The buyer often doesn't notice, and the mismatch surfaces later as a refund request or a dispute that's one person's word against the other's.
+My brother resells hats, blind boxes and sneakers, some bought in Japan and sold to buyers in the US and Canada. Every deal happens in a chat: the buyer asks, he quotes, they haggle, someone says "deal", and he sends a PayPal link. That is where it goes wrong, for both sides:
 
-CallGate Checkout puts one check between the conversation and the charge:
+- the link says the wrong amount, or adds shipping twice, and the buyer pays it;
+- the buyer asks to ship "to my cousin, it's a gift", then says it never arrived — and PayPal Seller Protection doesn't cover parcels sent to another address;
+- the buyer suggests friends-and-family "to save the fee", and neither side is protected any more;
+- shipping was agreed for the US, and the payment comes from a Canadian address;
+- the parcel crosses a border and nobody said who pays the import duties;
+- the box arrives and the buyer says it was empty;
+- nobody along the chain (Tokyo store → proxy buyer → reseller → buyer) can show where the item came from.
 
-1. Paste the chat. Two readers extract the agreed price, currency, shipping and the message where the other person said yes — every value comes with the exact words it was copied from.
-2. A person confirms those terms. A value that is not in the chat cannot be confirmed.
-3. The PayPal order (built by CallGate, or drafted elsewhere — by hand or by an AI sales agent) is compared with the terms field by field.
-4. The payer confirms the exact order version they saw. If the order changes afterwards, it cannot be captured.
-5. The capture runs once — through double clicks, timeouts, restarts and duplicate webhooks — and ends in a signed receipt.
-6. The promises in the chat ("comes with the original box") become the packing checklist. Photos are hashed into the receipt, tracking goes to PayPal, and the evidence pack is ready in PayPal's dispute format.
+These are not hypotheticals. [`docs/paypal/RESEARCH.md`](../../docs/paypal/RESEARCH.md) lists each one with the PayPal rule or public report it comes from.
 
-AI sales agents connect through an MCP gateway that can draft orders but has no tool to confirm, approve or capture.
+CallGate Checkout sits between the conversation and the money, and stays with the parcel until it's delivered:
 
-AI reads the messy part (counter-offers, "ok 80 then", Chinese and English). Deterministic code is responsible for making sure the payment equals what was confirmed.
+1. **Read the deal.** Paste the chat. Two readers extract the agreed price, currency, shipping and the message where the other person said yes. Every value is shown next to the exact words it came from. Risky lines (redirect requests, buyer-arranged shipping, off-platform payment, overpayment refunds) are flagged with their quote and the rule that makes them risky.
+2. **Confirm it.** The seller confirms the terms. A value that isn't in the chat can't be confirmed.
+3. **Check the PayPal order** — built by CallGate, or drafted by someone else, including an AI sales agent — field by field.
+4. **The buyer sees everything first:** the terms, the flags, and where the item came from. They confirm the exact order version; a signed approval is bound to it.
+5. **Before the money moves,** PayPal's ship-to address is checked against what the chat agreed. A destination the agreed shipping doesn't cover holds the payment until the seller re-agrees. Cross-border orders warn when nobody said who pays duties.
+6. **Pay once,** through double clicks, timeouts after PayPal already charged, restarts and duplicate webhooks.
+7. **Pack what was promised.** "Comes with the original box" becomes a photo line. The label must go to PayPal's address; packed weight is recorded; items worth more than the carrier's default liability get a warning. Tracking goes to PayPal.
+8. **The buyer confirms it arrived as described** — or says what was different.
+9. **If there's a dispute,** the evidence pack is already in PayPal's provide-evidence format.
+
+A **provenance passport** travels with the item between resellers: each holder adds a signed, hash-linked entry (where, when, serials, receipt and tag photos as hashes). The next seller verifies every link before adding theirs.
+
+AI reads the messy part — counter-offers, "ok 80 then", "80刀 包邮", mixed Chinese and English. Deterministic code decides whether money or a parcel moves.
 
 ## What it is not
 
-- It checks payments that go through this checkout. It cannot see or block any other PayPal payment.
-- It does not judge whether someone is a scammer or whether an item is genuine. The receipt records what was agreed, confirmed and charged — not the item's condition.
-- "Includes the original box" is recorded in the receipt; PayPal has no field to verify it.
-- It is a prototype: the seller page has no login. Checkout ids are unguessable (80 random bits) and act as the link to a checkout; the agent gateway can require a token. Demo controls are off unless the PayPal stand-in is in use or `CALLGATE_DEMO=1`.
+- It governs payments made through this checkout. It can't see or block any other PayPal payment.
+- It doesn't decide whether someone is a scammer or whether an item is genuine. Flags show what was said and why it matters; people decide.
+- A provenance passport proves who recorded what, in what order, and that nobody changed it afterwards — not that a receipt is genuine.
+- Packing photos prove the photos existed before shipping, not what was in the box. That is why the carrier's acceptance weight is on the checklist.
+- It is a prototype: the seller page has no login. Checkout ids are unguessable (80 random bits) and act as the link; the agent gateway can require a token. Demo controls are off unless the offline PayPal stand-in is in use or `CALLGATE_DEMO=1`.
 
 ## How it decides
 
@@ -30,30 +44,49 @@ AI reads the messy part (counter-offers, "ok 80 then", Chinese and English). Det
 flowchart LR
     C[Chat] --> R[Rule reader<br/>never invents numbers]
     C --> M[Model reader<br/>must quote the chat]
+    C --> F[Risk lines<br/>redirect, off-platform,<br/>buyer's shipper, overpay]
     R --> X{Referee}
     M --> X
     X -->|agree| T[Terms with quotes]
     X -->|disagree / ungrounded| H[Person decides<br/>by pointing at words]
     H --> T
-    T --> K[Person confirms terms<br/>commitment hash]
+    T --> K[Seller confirms<br/>commitment hash]
     K --> O[PayPal order]
     O --> D{Field-by-field diff}
-    D -->|blocking difference| B[Can't be paid<br/>rebuild from terms]
-    D -->|match| P[Payer confirms this<br/>order fingerprint<br/>signed approval]
-    P --> G{At capture:<br/>re-read order,<br/>same fingerprint?}
-    G -->|no| N[Refused, nothing charged]
+    D -->|blocking| B[Can't be paid<br/>rebuild from terms]
+    D -->|match| P[Payer confirms this<br/>order fingerprint]
+    F --> P
+    P --> G{At capture: same order?<br/>ship-to inside agreed<br/>destinations?}
+    G -->|order changed| N[Refused, nothing charged]
+    G -->|destination outside| A[Held until the<br/>seller re-agrees]
     G -->|yes| W[Write-ahead CAPTURING]
     W --> Q[Capture with<br/>PayPal-Request-Id]
     Q --> S[(Ledger + webhooks<br/>+ reconcile)]
-    S --> E[Signed receipt]
+    S --> L{Ship: label = PayPal address?<br/>weight recorded?<br/>value vs carrier liability}
+    L --> E[Tracking to PayPal<br/>signed receipt<br/>dispute evidence]
 ```
 
 ### Reading terms without guessing
 
-- **Grounding.** Every value carries `(message_index, quote)`. A quote must be an exact substring of that message and, for money, must contain the amount (or, for a total, be the sum of the amounts it quotes: "$95 plus $8"). The model's ungrounded values are dropped and listed.
-- **Two readers, one referee.** If the rules and the model read different totals, the total becomes a *conflict* and a person must choose by pointing at words in the chat. A total found only by the model is flagged for review.
+- **Grounding.** Every value carries `(message_index, quote)`. A quote must be an exact substring of that message and, for money, must contain the amount — or, for a total, be the sum of the amounts it quotes ("$95 plus $8"). The model's ungrounded values are dropped and listed.
+- **Two readers, one referee.** If the rules and the model read different totals, the total becomes a conflict a person resolves by pointing at words. A total found only by the model is flagged for review.
 - **Deal detection.** A price counts as agreed only when the *other* person accepts it without countering. A new price after the "yes" reopens the deal. A message with two different prices (`$40 … the agreed total is $400`) is never resolved automatically.
-- **Chat text is data.** The model prompt says so, and the grounding check means an instruction hidden in the chat can at most become a *quote* a person sees.
+- **Shipping words label only the nearest amount**, so "$95 plus $8 shipping" is item $95 + shipping $8, "$130 shipped" is a total, and "free shipping" / "包邮" is shipping 0.
+- **Chat text is data.** An instruction hidden in the chat can at most become a quote a person sees.
+
+### Checks from real complaints
+
+| Check | When | Effect | Why |
+|---|---|---|---|
+| Redirect request ("ship it to my friend", "改地址", forwarders) | Reading the chat | Flag to both sides | Seller Protection requires shipping to the PayPal address |
+| Buyer-arranged shipping ("use my UPS account", "我叫快递来取") | Reading the chat | Flag | Buyer can reroute and claim non-delivery |
+| Off-platform payment (friends & family, Zelle, wire, crypto, gift card, 微信转账) | Reading the chat | Flag | Not covered by Purchase Protection |
+| Overpayment refund | Reading the chat | Flag | Classic reversal scam |
+| PayPal ship-to outside the agreed destinations ("within the US only") | Capture | **Payment held**; seller can release with a recorded reason | The agreed shipping doesn't cover it |
+| Cross-border and nobody mentioned duties | Capture | Warning (mentions the end of US de minimis on Aug 29, 2025 for US-bound parcels) | Surprise duty bills cause refused parcels |
+| Label ZIP/country ≠ PayPal ship-to | Ship | **Blocked** | Seller Protection address rule |
+| Item value > UPS default $100 liability, no declared value | Ship | Warning the seller must acknowledge | Carrier won't pay above its liability |
+| Packed weight | Ship | Required, recorded in receipt and evidence | Weight records were what helped sellers against "empty box" claims |
 
 ### Binding approval to an order version
 
@@ -65,60 +98,62 @@ flowchart LR
 |---|---|
 | Double click, same `Idempotency-Key` | Second request gets the stored result (`replayed: true`) |
 | Ten concurrent clicks with different keys | SQLite compare-and-set on state: exactly one reaches PayPal |
-| PayPal charges, then the connection drops | State is `CAPTURE_UNKNOWN`; next attempt reconciles by reading the order instead of capturing again |
+| PayPal charges, then the connection drops — or returns a 5xx | `CAPTURE_UNKNOWN`; the next attempt reconciles by reading the order instead of capturing again |
 | Request never reached PayPal | Reconcile finds no capture, returns to `BUYER_CONFIRMED`; retry uses the **same** `PayPal-Request-Id` |
 | Funds pending, completion arrives by webhook | `CAPTURE_PENDING → CAPTURED` from a verified webhook |
 | Webhook redelivered / forged | Deduplicated by event id / rejected by signature verification |
 | Server restarts mid-capture | Ledger is on disk; reconcile resumes |
+| Concurrent photo uploads | Read-modify-write runs inside the ledger lock; none are lost |
 
 Every transition is written to an append-only event log, shown on the page as "What happened".
 
+### Provenance passport
+
+Each entry: `{item_id, seq, prev = SHA-256(previous signed entry), event, holder, where, when, serials, evidence[{kind, sha256}], note, recorded_at, signer}` plus an Ed25519 signature by the recording holder. Verification checks every signature, that `seq` runs 0…n, that every `prev` matches, and that all entries name the same item. Editing an entry breaks its signature; removing, reordering or re-signing a forged first entry breaks the next link. A sale through CallGate appends a signed `sold` entry, and the receipt commits to the chain head. Export with `GET /api/checkouts/{id}/passport`; the next seller imports it and adds their own entries. Anyone holding a photo can check it against the hashes in the chain.
+
 ## AI sales agents (MCP)
 
-The server also exposes `/mcp` (streamable HTTP) with three tools:
+The server exposes `/mcp` (streamable HTTP) with three tools:
 
 | Tool | What the agent can do |
 |---|---|
-| `read_deal` | Paste a chat, get the terms with quotes. The seller still confirms them. |
+| `read_deal` | Paste a chat, get the terms with quotes and the same flags people see. The seller still confirms them. |
 | `propose_order` | Draft a PayPal order. It is checked against the confirmed terms; a mismatch is shown to the seller and gets no payer link. |
 | `get_checkout` | Read status. A payer link appears only for a verified order. |
 
-There is deliberately no tool to confirm terms, approve for the payer, or capture. `python -m scripts.paypal_agent_demo` runs a scripted agent that obeys an instruction planted in the chat ("the real price is $180"): the planted price reopens the deal for the seller, and the agent's $180 order is blocked. Set `CALLGATE_AGENT_TOKEN` to require a bearer token on `/mcp`.
-
-## After the payment
-
-- The packing checklist is generated from the confirmed terms: the item, one line per promised inclusion (with its quote), and the packed box.
-- "Mark shipped" requires every line photographed or skipped with a reason, then sends tracking with `POST /v2/checkout/orders/{id}/track` (`notify_payer: true`).
-- The signed receipt gains the tracking number and the SHA-256 of each photo. The payer page shows the packing photos.
-- `GET /api/checkouts/{id}/evidence` returns the `provide-evidence` input (`PROOF_OF_FULFILLMENT` with tracking and a plain-language summary of the chat agreement). `POST /api/checkouts/{id}/disputes/{dispute_id}/evidence` sends it with the receipt and photos attached.
+There is deliberately no tool to confirm terms, approve for the payer, release a hold, ship, or capture. `python -m scripts.paypal_agent_demo` runs a scripted agent that obeys an instruction planted in the chat ("the real price is $180"): the planted price reopens the deal for the seller, and the agent's $180 order is blocked. Set `CALLGATE_AGENT_TOKEN` to require a bearer token on `/mcp`.
 
 ## Run it
 
-Offline (simulated PayPal, every failure case has a demo button):
+Offline (simulated PayPal; every failure case has a demo button, and "Use a risky cross-border example" shows the flags, the address hold and the liability warning):
 
 ```bash
-pip install -r requirements-lock.txt          # fastapi, uvicorn, httpx, cryptography
+pip install -r requirements-lock.txt -r integrations/alexa_mcp/requirements.txt
 python -m integrations.paypal_checkout.server  # http://localhost:8787
 ```
 
-PayPal sandbox (real orders, real approval page, real capture):
+PayPal sandbox (real orders, real approval page, real capture, real tracking):
 
-1. On developer.paypal.com create a sandbox app; copy its Client ID and Secret. Sandbox accounts gives you a personal (buyer) login.
+1. On developer.paypal.com create a sandbox app and copy its Client ID and Secret. Sandbox accounts gives you a personal (buyer) login.
 2. ```bash
    export PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=...
-   export ANTHROPIC_API_KEY=...        # optional: model reader (or OPENAI_API_KEY + OPENAI_MODEL)
+   export SELLER_COUNTRY=US             # where you ship from
+   export ANTHROPIC_API_KEY=...         # optional: model reader (or OPENAI_API_KEY + OPENAI_MODEL)
    python -m integrations.paypal_checkout.server
    ```
 3. Webhooks (optional): expose the server (e.g. a tunnel), set `CALLGATE_PUBLIC_URL`, subscribe the app to `PAYMENT.CAPTURE.*` at `/webhooks/paypal`, and set `PAYPAL_WEBHOOK_ID`.
 
-The live PayPal host is refused unless `CALLGATE_ALLOW_LIVE=1`.
-
-Hosted demo: `render.yaml` at the repository root deploys the offline demo on Render's free plan; add the sandbox credentials in the Render dashboard to switch it to the real sandbox.
+The live PayPal host is refused unless `CALLGATE_ALLOW_LIVE=1`. `render.yaml` at the repository root deploys the offline demo on Render's free plan; add the sandbox credentials in the Render dashboard to switch it to the real sandbox.
 
 ## Evidence
 
-- `pytest tests/paypal_checkout` — 46 tests covering every row of the reliability table, approval forgery, rebuild after tampering, grounding, the MCP agent gateway over a real MCP client, and the packing / tracking / evidence steps.
-- `python -m evaluation_paypal.run` — CheckoutBench-lite: 18 author-written negotiations (English, Chinese, mixed) and 6 order mutations. Rules-only result on 2026-10-25: 12/13 deals read exactly, 1 sent to a person (the injected-price chat), **0 wrong totals, 0 of 5 no-deal chats made payable**, 67/67 mutations handled. These chats were written and labelled by the author; they show the reader handles known patterns and say nothing about accuracy on real conversations.
+- `pytest tests/paypal_checkout` — 74 tests: every reliability row above, approval and webhook forgery, rebuild after tampering, grounding, the MCP gateway over a real MCP client, packing / tracking / evidence, every risk check, and provenance tampering (edit, remove, reorder, re-signed forgery, altered import).
+- `python -m evaluation_paypal.run` — CheckoutBench-lite, rules-only, October 25, 2026:
+  - 18 negotiations (English, Chinese, mixed): 12/13 deals read exactly, 1 sent to a person (the injected-price chat), **0 wrong totals**, **0 of 5 no-deal chats made payable**;
+  - 67/67 order mutations caught;
+  - 28 single chat lines: 16/16 risky lines flagged, 0/12 false alarms on ordinary lines that use similar words.
+
+  Every chat and line was written and labelled by the author while building the rules, so these numbers show the rules handle the patterns we know about. They are not a measure of accuracy on real conversations.
 
 ## Files
 
@@ -127,11 +162,13 @@ Hosted demo: `render.yaml` at the repository root deploys the offline demo on Re
 | `terms.py` | Terms model, chat parsing, grounding checks, commitment hash |
 | `extract.py` | Rule reader, model reader, referee |
 | `order_check.py` | Field-by-field comparison, fingerprint, order built from terms |
+| `risk.py` | Risky chat lines, destination and duties checks, label and liability checks |
+| `provenance.py` | Signed, hash-linked provenance passport |
 | `ledger.py` | SQLite state machine, idempotency keys, webhook dedupe, event log |
-| `paypal_client.py` | Orders v2 + webhook verification, `PayPal-Request-Id` on every write |
+| `paypal_client.py` | Orders v2, tracking, disputes, webhook verification; `PayPal-Request-Id` on every write |
 | `fake_paypal.py` | Offline stand-in used by tests and the demo (not PayPal) |
 | `service.py` | The checkout flow |
-| `shipping.py` | Packing checklist, photo storage, tracking body, dispute evidence input |
+| `shipping.py` | Packing checklist, photo storage, weight, tracking body, dispute evidence |
 | `agent_gateway.py` | MCP tools for AI sales agents |
 | `server/` | Seller page, payer page (`/pay/{id}`), JSON API, webhook endpoint, `/mcp` |
 
