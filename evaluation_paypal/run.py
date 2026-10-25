@@ -83,7 +83,22 @@ def run(model_reader=None):
             caught += ok
             if not ok:
                 mutation_rows.append({"scenario": sid, "mutation": m["id"], "blocked": got})
-    return {"reader": "rules+" + model_reader.label if model_reader else "rules-only",
+    from integrations.paypal_checkout.risk import chat_flags
+    risk = {"lines": 0, "caught": 0, "missed": [], "false_alarms": [], "scam_lines": 0, "ordinary_lines": 0}
+    for row in data.get("risk_lines", []):
+        got = {f.code for f in chat_flags(parse_chat(row["line"]))}
+        risk["lines"] += 1
+        if row["expect"]:
+            risk["scam_lines"] += 1
+            if row["expect"] in got:
+                risk["caught"] += 1
+            else:
+                risk["missed"].append(row["line"])
+        else:
+            risk["ordinary_lines"] += 1
+            if got:
+                risk["false_alarms"].append({"line": row["line"], "flags": sorted(got)})
+    return {"reader": "rules+" + model_reader.label if model_reader else "rules-only", "risk": risk,
             "counts": counts, "scenarios": rows,
             "mutations": {"correct": caught, "total": total, "misses": mutation_rows}}
 
@@ -97,6 +112,13 @@ if __name__ == "__main__":
     print(f"deals: {c['deals']}  exact: {c['exact']}  abstained (sent to a person): {c['abstained']}  wrong total: {c['wrong_total']}")
     print(f"no-deal chats: {c['no_deals']}  wrongly made payable: {c['false_ready']}")
     print(f"order mutations handled: {result['mutations']['correct']}/{result['mutations']['total']}")
+    rk = result["risk"]
+    print(f"risky chat lines flagged: {rk['caught']}/{rk['scam_lines']}  false alarms on ordinary lines: "
+          f"{len(rk['false_alarms'])}/{rk['ordinary_lines']}")
+    for line in rk["missed"]:
+        print("   missed:", line)
+    for fa in rk["false_alarms"]:
+        print("   false alarm:", fa)
     for r in result["scenarios"]:
         if r["outcome"] not in ("exact", "correctly_held"):
             print("  ", r)

@@ -37,6 +37,9 @@ def _public(co: dict, base_url: str) -> dict[str, Any]:
         "terms_confirmed_by_seller": bool(d.get("terms_commitment")),
         "unresolved": t.get("unresolved", []),
         "seller_review_url": f"{base_url}/?checkout={co['id']}",
+        # Agents see the same warnings people do, so they can tell the seller instead of acting on them.
+        "flags": [{"code": f["code"], "severity": f["severity"], "title": f["title"], "quote": f.get("quote")}
+                  for f in (d.get("chat_flags") or []) + (d.get("payment_flags") or [])],
     }
     if d.get("order_id"):
         out["order"] = d.get("order_summary")

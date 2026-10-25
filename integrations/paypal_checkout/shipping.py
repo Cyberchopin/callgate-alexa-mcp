@@ -141,6 +141,15 @@ def evidence_input(co: dict, receipt: dict) -> dict:
     if ship.get("label_destination") and d.get("ship_to"):
         lines.append(f"Label destination {ship['label_destination']['country_code']} {ship['label_destination']['postal_code']} "
                      f"matches the PayPal ship-to address.")
+    chain = (d.get("provenance") or {}).get("chain") or []
+    if chain:
+        from .provenance import entry_hash, verify_chain
+        v = verify_chain(chain)
+        lines.append(f"Provenance passport: {len(chain)} signed entries from {v['holders']} holder(s), "
+                     f"{'all links intact' if v['ok'] else 'ALTERED'}; head {entry_hash(chain[-1])[:16]}….")
+    if d.get("destination_override"):
+        lines.append(f"Shipped to {d['destination_override']['country_code']} after the seller re-agreed: "
+                     f"\"{d['destination_override']['reason']}\".")
     ack = d.get("buyer_ack")
     if ack:
         lines.append("Payer confirmed it arrived as described." if ack["as_described"]
