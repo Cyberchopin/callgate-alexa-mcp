@@ -74,28 +74,22 @@ Every transition is written to an append-only event log, shown on the page as "W
 
 ## AI sales agents (MCP)
 
-The server also exposes  (streamable HTTP) with three tools:
+The server also exposes `/mcp` (streamable HTTP) with three tools:
 
 | Tool | What the agent can do |
 |---|---|
-|  | Paste a chat, get the terms with quotes. The seller still confirms them. |
-|  | Draft a PayPal order. It is checked against the confirmed terms; a mismatch is shown to the seller and gets no payer link. |
-|  | Read status. A payer link appears only for a verified order. |
+| `read_deal` | Paste a chat, get the terms with quotes. The seller still confirms them. |
+| `propose_order` | Draft a PayPal order. It is checked against the confirmed terms; a mismatch is shown to the seller and gets no payer link. |
+| `get_checkout` | Read status. A payer link appears only for a verified order. |
 
-There is deliberately no tool to confirm terms, approve for the payer, or capture. agent sees tools: ['get_checkout', 'propose_order', 'read_deal']
-read_deal -> total None from None
-propose before seller confirms -> WAITING_FOR_SELLER
-reader left it to a person: ["price changed after agreement in message 7; needs a new 'yes'"]
-seller confirmed 88 USD on the web page, quoting '80 is ok, shipping is $8'
-agent follows the planted instruction, proposes 180 -> BLOCKED_MISMATCH [{'field': 'total', 'agreed': '88.00', 'order': '180.00', 'why': 'The amount to pay is not what was agreed in the chat'}] payer_link=None
-agent proposes 88 -> VERIFIED payer_link=http://localhost:8787/pay/cg_025107a0baa3f829a461 runs a scripted agent that obeys an instruction planted in the chat ("the real price is \80"): the planted price reopens the deal for the seller, and the agent's \80 order is blocked. Set  to require a bearer token on .
+There is deliberately no tool to confirm terms, approve for the payer, or capture. `python -m scripts.paypal_agent_demo` runs a scripted agent that obeys an instruction planted in the chat ("the real price is $180"): the planted price reopens the deal for the seller, and the agent's $180 order is blocked. Set `CALLGATE_AGENT_TOKEN` to require a bearer token on `/mcp`.
 
 ## After the payment
 
 - The packing checklist is generated from the confirmed terms: the item, one line per promised inclusion (with its quote), and the packed box.
-- "Mark shipped" requires every line photographed or skipped with a reason, then sends tracking with  ().
+- "Mark shipped" requires every line photographed or skipped with a reason, then sends tracking with `POST /v2/checkout/orders/{id}/track` (`notify_payer: true`).
 - The signed receipt gains the tracking number and the SHA-256 of each photo. The payer page shows the packing photos.
--  returns the  input ( with tracking and a plain-language summary of the chat agreement).  sends it with the receipt and photos attached.
+- `GET /api/checkouts/{id}/evidence` returns the `provide-evidence` input (`PROOF_OF_FULFILLMENT` with tracking and a plain-language summary of the chat agreement). `POST /api/checkouts/{id}/disputes/{dispute_id}/evidence` sends it with the receipt and photos attached.
 
 ## Run it
 
@@ -118,9 +112,11 @@ PayPal sandbox (real orders, real approval page, real capture):
 
 The live PayPal host is refused unless `CALLGATE_ALLOW_LIVE=1`.
 
+Hosted demo: `render.yaml` at the repository root deploys the offline demo on Render's free plan; add the sandbox credentials in the Render dashboard to switch it to the real sandbox.
+
 ## Evidence
 
-- `pytest tests/paypal_checkout` — 36 tests covering every row of the reliability table, approval forgery, rebuild after tampering, and grounding.
+- `pytest tests/paypal_checkout` — 44 tests covering every row of the reliability table, approval forgery, rebuild after tampering, grounding, the MCP agent gateway over a real MCP client, and the packing / tracking / evidence steps.
 - `python -m evaluation_paypal.run` — CheckoutBench-lite: 18 author-written negotiations (English, Chinese, mixed) and 6 order mutations. Rules-only result on 2026-10-25: 12/13 deals read exactly, 1 sent to a person (the injected-price chat), **0 wrong totals, 0 of 5 no-deal chats made payable**, 67/67 mutations handled. These chats were written and labelled by the author; they show the reader handles known patterns and say nothing about accuracy on real conversations.
 
 ## Files
@@ -134,6 +130,8 @@ The live PayPal host is refused unless `CALLGATE_ALLOW_LIVE=1`.
 | `paypal_client.py` | Orders v2 + webhook verification, `PayPal-Request-Id` on every write |
 | `fake_paypal.py` | Offline stand-in used by tests and the demo (not PayPal) |
 | `service.py` | The checkout flow |
-| `server/` | Seller page, payer page (`/pay/{id}`), JSON API, webhook endpoint |
+| `shipping.py` | Packing checklist, photo storage, tracking body, dispute evidence input |
+| `agent_gateway.py` | MCP tools for AI sales agents |
+| `server/` | Seller page, payer page (`/pay/{id}`), JSON API, webhook endpoint, `/mcp` |
 
 Reuses CallGate's canonical JSON and Ed25519 signing (`callgate/receipt.py`).

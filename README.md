@@ -1,6 +1,6 @@
 > **PayPal AI Hackathon:** CallGate Checkout — pay exactly what you agreed in the chat — lives in
-> [](integrations/paypal_checkout/README.md). Run it with
-> .
+> [`integrations/paypal_checkout/`](integrations/paypal_checkout/README.md). Run it with
+> `python -m integrations.paypal_checkout.server`.
 
 # CallGate — proof before a simulated high-impact action
 
