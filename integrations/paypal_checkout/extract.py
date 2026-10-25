@@ -39,7 +39,7 @@ _CHANGE_MIND = re.compile(r"\b(actually|wait|change|instead|sorry,? (it'?s|make 
 
 _INCLUSIONS = [
     re.compile(r"(with|includes?|comes with) (the )?(og |original )?box|og box|带盒|原盒", re.I),
-    re.compile(r"\b(nwt|new with tags?|tags? attached)\b|带吊牌", re.I),
+    re.compile(r"\b(nwt|new with tags?|tags? (attached|on)|with (the )?tags?)\b|带吊牌", re.I),
     re.compile(r"extra laces|comes with (the )?card|all (the )?accessories|配件齐全|附卡", re.I),
     re.compile(r"receipt included|with receipt|带小票", re.I),
 ]
@@ -202,6 +202,15 @@ class RuleReader:
 def _accept_quote(msg: Message) -> str:
     """The whole short message reads better as evidence than the bare word 'ok'."""
     first_line = msg.text.split("\n", 1)[0].strip()
+    m = _ACCEPT.search(first_line)
+    if m:
+        # Quote the sentence that says yes, not whatever else the message asks for.
+        bounds = [0] + [x.end() for x in re.finditer(r"[.!?。！？]\s*", first_line)] + [len(first_line)]
+        for a, b in zip(bounds, bounds[1:]):
+            if a <= m.start() < b:
+                sentence = first_line[a:b].strip()
+                if sentence:
+                    return sentence[:120]
     if len(first_line) <= 120:
         return first_line
     m = _ACCEPT.search(first_line)
