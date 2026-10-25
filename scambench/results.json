@@ -3,10 +3,10 @@
   "cases": 25,
   "corpus": "synthetic-dev-smoke-v2",
   "limitations": "Same-author development cases; Wilson intervals describe only this small corpus; no held-out accuracy or audio latency claim.",
-  "extractor": "rules-en-v3",
+  "extractor": "rules-en-v4",
   "policy": "v2-phase1",
-  "python": "3.12.14",
-  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.13.17",
+  "platform": "Linux-6.18.44-fc-v153-x86_64-with-glibc2.39",
   "event_precision": 1.0,
   "event_recall": 1.0,
   "alert_confusion": {
@@ -123,7 +123,7 @@
     }
   },
   "state_passes": 25,
-  "engine_p95_ms": 0.11560000007193594,
+  "engine_p95_ms": 0.17315299999154377,
   "rows": [
     {
       "id": "benign-chat",
