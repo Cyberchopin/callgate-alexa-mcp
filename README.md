@@ -61,7 +61,7 @@ MCP adapter.
 
 - Protocol compatibility floor: **MCP 2025-11-25**, including URL-mode elicitation; real-client tests assert the negotiated protocol is at least that version.
 - Transport: self-hosted **Streamable HTTP**, with local HTTPS for the approval demonstration.
-- Pinned runtime: **mcp 2.3.0** and **cryptography 50.0.0**.
+- Pinned runtime: **mcp 2.3.0** and **cryptography 50.0.2**.
 - Replay protection: the MCP gateway uses the existing `SQLiteReplayStore`, so a consumed proof remains consumed after a server restart.
 - Approval display: the contact page obtains amount, destination, and request identity from server-held state, not URL query parameters.
 
