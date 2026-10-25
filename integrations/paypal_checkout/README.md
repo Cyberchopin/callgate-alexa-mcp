@@ -22,6 +22,7 @@ AI reads the messy part (counter-offers, "ok 80 then", Chinese and English). Det
 - It checks payments that go through this checkout. It cannot see or block any other PayPal payment.
 - It does not judge whether someone is a scammer or whether an item is genuine. The receipt records what was agreed, confirmed and charged — not the item's condition.
 - "Includes the original box" is recorded in the receipt; PayPal has no field to verify it.
+- It is a prototype: the seller page has no login. Checkout ids are unguessable (80 random bits) and act as the link to a checkout; the agent gateway can require a token. Demo controls are off unless the PayPal stand-in is in use or `CALLGATE_DEMO=1`.
 
 ## How it decides
 
@@ -116,7 +117,7 @@ Hosted demo: `render.yaml` at the repository root deploys the offline demo on Re
 
 ## Evidence
 
-- `pytest tests/paypal_checkout` — 44 tests covering every row of the reliability table, approval forgery, rebuild after tampering, grounding, the MCP agent gateway over a real MCP client, and the packing / tracking / evidence steps.
+- `pytest tests/paypal_checkout` — 46 tests covering every row of the reliability table, approval forgery, rebuild after tampering, grounding, the MCP agent gateway over a real MCP client, and the packing / tracking / evidence steps.
 - `python -m evaluation_paypal.run` — CheckoutBench-lite: 18 author-written negotiations (English, Chinese, mixed) and 6 order mutations. Rules-only result on 2026-10-25: 12/13 deals read exactly, 1 sent to a person (the injected-price chat), **0 wrong totals, 0 of 5 no-deal chats made payable**, 67/67 mutations handled. These chats were written and labelled by the author; they show the reader handles known patterns and say nothing about accuracy on real conversations.
 
 ## Files

@@ -11,7 +11,7 @@ Reused unchanged: `callgate/receipt.py` (`canonical` JSON encoding used for sign
 ## New during the hackathon (branch `paypal/checkout`, from October 25, 2026)
 
 - `integrations/paypal_checkout/` — terms reader (rules + grounded model + referee), order comparison and fingerprint, signed approval bound to an order version, SQLite checkout ledger with idempotency and webhook dedupe, PayPal Orders v2 client, offline PayPal stand-in, seller and payer web pages.
-- `tests/paypal_checkout/` — 44 tests.
+- `tests/paypal_checkout/` — 46 tests.
 - `integrations/paypal_checkout/agent_gateway.py`, `scripts/paypal_agent_demo.py` — MCP gateway for AI sales agents.
 - `integrations/paypal_checkout/shipping.py` — packing checklist, PayPal tracking, dispute evidence.
 - `render.yaml`, `docs/paypal/` — hosted demo blueprint and submission materials.

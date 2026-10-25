@@ -43,7 +43,7 @@ AI sales agents get their own door: an MCP server with three tools — read a de
 
 ## Accomplishments
 
-- 44 tests, including ten simultaneous clicks capturing once, a timeout after PayPal committed, a forged approval, a forged webhook and a server restart mid-capture.
+- 46 tests, including ten simultaneous clicks capturing once, a timeout after PayPal committed, a forged approval, a forged webhook and a server restart mid-capture.
 - CheckoutBench-lite (18 author-written negotiations in English, Chinese and mixed, plus 6 order mutations): 12 of 13 deals read exactly, 1 sent to a person, **0 wrong totals**, **0 of 5 no-deal chats made payable**, 67/67 order mutations caught. These chats were written and labelled by us; they show behaviour on known patterns, not accuracy on real conversations.
 - [Sandbox run: order id …, capture id …, tracker added, webhook received.]
 

@@ -56,6 +56,14 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
     app = FastAPI(title="CallGate Checkout", docs_url=None, redoc_url=None)
     app.state.svc, app.state.fake, app.state.mode = svc, fake, mode
     app.state.public_url = public_url
+    demo_on = mode == "fake" or os.environ.get("CALLGATE_DEMO") == "1"
+
+    @app.middleware("http")
+    async def demo_gate(request: Request, call_next):
+        # Demo controls change orders on purpose; never expose them on a sandbox deploy by accident.
+        if request.url.path.startswith("/demo/") and not demo_on:
+            return JSONResponse({"error": "DEMO_DISABLED", "message": "set CALLGATE_DEMO=1 to enable"}, status_code=404)
+        return await call_next(request)
 
     @app.exception_handler(CheckoutError)
     async def checkout_error(_, e: CheckoutError):
@@ -99,7 +107,7 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
     # ------------------------------------------------------------------ api
     @app.get("/api/config")
     def config():
-        return {"mode": mode, "model": reader.label if reader else None,
+        return {"mode": mode, "demo": demo_on, "model": reader.label if reader else None,
                 "public_key": svc.public_key.public_bytes_raw().hex()}
 
     @app.post("/api/checkouts")

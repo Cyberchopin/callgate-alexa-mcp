@@ -366,3 +366,12 @@ def test_model_only_total_is_flagged_for_review():
                 "acceptance": {"value": "Buyer", "message": 1, "quote": "deal"}})
     t = read_terms(msgs, m)
     assert t.total.value == "40.00" and any("only the model found the total" in u for u in t.unresolved)
+
+
+def test_paypal_500_after_commit_is_unknown_not_failed(env):
+    svc, fake, _ = env
+    co = confirmed_and_approved(svc, fake)
+    fake.fail_next_capture = "server_error_after_commit"
+    assert svc.capture(co["id"], idempotency_key="click-500-01")["state"] == L.CAPTURE_UNKNOWN
+    assert svc.capture(co["id"], idempotency_key="click-500-02")["state"] == L.CAPTURED
+    assert fake.capture_count[co["data"]["order_id"]] == 1

@@ -32,7 +32,7 @@ class FakePayPal:
         self.capture_count: dict[str, int] = {}
         self.trackers: dict[str, list[dict]] = {}
         self.evidence: dict[str, list[dict]] = {}
-        self.fail_next_capture: str | None = None    # "timeout_after_commit" | "decline" | "pending" | "timeout_before"
+        self.fail_next_capture: str | None = None    # "timeout_after_commit" | "decline" | "pending" | "timeout_before" | "server_error_after_commit"
         self._secret = secrets.token_bytes(32)
         self._ids = itertools.count(1)
 
@@ -124,6 +124,9 @@ class FakePayPal:
                     self.fail_next_capture = None
                     raise httpx.ReadTimeout("injected timeout before reaching PayPal", request=request)
                 status, out = self._capture(oid)
+                if self.fail_next_capture == "server_error_after_commit" and status == 201:
+                    self.fail_next_capture = None
+                    return _err(500, "INTERNAL_SERVER_ERROR")
                 if self.fail_next_capture == "timeout_after_commit" and status == 201:
                     self.fail_next_capture = None
                     if rid:
@@ -175,7 +178,7 @@ class FakePayPal:
         if o["status"] != "APPROVED":
             return 422, {"name": "UNPROCESSABLE_ENTITY", "details": [{"issue": "ORDER_NOT_APPROVED"}]}
         mode, self.fail_next_capture = self.fail_next_capture, (
-            self.fail_next_capture if self.fail_next_capture == "timeout_after_commit" else None)
+            self.fail_next_capture if self.fail_next_capture in ("timeout_after_commit", "server_error_after_commit") else None)
         if mode == "decline":
             return 422, {"name": "UNPROCESSABLE_ENTITY", "details": [{"issue": "INSTRUMENT_DECLINED"}]}
         self.capture_count[oid] = self.capture_count.get(oid, 0) + 1

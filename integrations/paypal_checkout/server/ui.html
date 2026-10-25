@@ -390,7 +390,7 @@ function render(co){
   if (!CO){ $("#start").classList.remove("hidden"); renderSteps(); return; }
   $("#start").classList.add("hidden");
   ["#main","#history"].forEach(s=>$(s).classList.remove("hidden"));
-  if (!payerView) $("#demo").classList.remove("hidden");
+  if (!payerView && CFG.demo) $("#demo").classList.remove("hidden");
   document.querySelectorAll(".fake-only").forEach(x=>x.classList.toggle("hidden", CFG.mode!=="fake"));
   if (!payerView) history.replaceState(null, "", "/?checkout="+CO.id);
   renderSteps(); renderChat(); renderTag(); renderOrder(); renderHistory();

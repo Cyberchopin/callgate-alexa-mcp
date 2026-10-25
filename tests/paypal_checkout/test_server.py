@@ -79,3 +79,16 @@ def test_capture_requires_idempotency_key(tmp_path):
     c, _ = make(tmp_path)
     co = c.post("/api/checkouts", json={"chat": HAT_CHAT}).json()
     assert c.post(f"/api/checkouts/{co['id']}/capture").status_code == 422
+
+
+def test_demo_controls_are_off_in_sandbox_mode(tmp_path, monkeypatch):
+    from integrations.paypal_checkout.paypal_client import PayPalClient
+    fake = FakePayPal()
+    monkeypatch.setenv("PAYPAL_CLIENT_ID", "x")
+    monkeypatch.setenv("PAYPAL_CLIENT_SECRET", "y")
+    monkeypatch.delenv("CALLGATE_DEMO", raising=False)
+    real_from_env = PayPalClient.from_env
+    monkeypatch.setattr(PayPalClient, "from_env", classmethod(lambda cls, transport=None: real_from_env.__func__(cls, fake.transport())))
+    c = TestClient(create_app(state_dir=tmp_path, model_reader=None))
+    assert c.get("/api/config").json() == {**c.get("/api/config").json(), "mode": "sandbox", "demo": False}
+    assert c.post("/demo/edit-order", json={"checkout_id": "x"}).status_code == 404

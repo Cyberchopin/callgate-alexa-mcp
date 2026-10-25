@@ -200,7 +200,7 @@ class CheckoutService:
 
     def _capture(self, checkout_id):
         co = self.ledger.get(checkout_id)
-        if co["state"] in (L.CAPTURED, L.CAPTURE_PENDING):
+        if co["state"] in (L.CAPTURED, L.CAPTURE_PENDING, L.SHIPPED, L.REFUNDED):
             return self._result(co, note="already captured; no second charge")
         if co["state"] == L.CAPTURING:
             raise CheckoutError("IN_FLIGHT", "A capture for this checkout is already in progress")
@@ -245,6 +245,11 @@ class CheckoutService:
         except PayPalError as exc:
             if exc.name == "ORDER_ALREADY_CAPTURED":
                 return self._result(self.reconcile(checkout_id), note="PayPal reports this order already captured")
+            if exc.status >= 500:
+                # A server error does not tell us whether the capture happened.
+                co = self.ledger.transition(checkout_id, L.CAPTURING, L.CAPTURE_UNKNOWN,
+                                            detail={"note": "PayPal server error; will reconcile", "error": exc.name})
+                return self._result(co, note="PayPal had an error; checking the order before doing anything else")
             co = self.ledger.transition(checkout_id, L.CAPTURING, L.CAPTURE_FAILED,
                                         update={"last_error": exc.name}, detail={"error": exc.name})
             raise CheckoutError("CAPTURE_FAILED", f"PayPal refused the capture: {exc.name}", 402, checkout=co) from None
