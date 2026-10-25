@@ -93,6 +93,20 @@ details.demo p{margin:6px 0;color:var(--muted);font-size:.9rem}
   .chat{max-height:none}
 }
 .hidden{display:none!important}
+.pack{list-style:none;margin:10px 0 0;padding:0}
+.pack li{display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.pack .thumb{width:72px;height:72px;border-radius:6px;background:#EEF2F5;border:1px dashed var(--line);
+  display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.8rem;overflow:hidden}
+.pack .thumb img{width:100%;height:100%;object-fit:cover}
+.pack .done .thumb{border:2px solid var(--ok)}
+.pack small{display:block;color:var(--muted)}
+.pack .skipped{color:var(--info);font-size:.9rem}
+label.file{display:inline-block;margin-top:6px}
+label.file input{position:absolute;left:-9999px}
+label.file span{display:inline-block;border:1px solid var(--ink);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.9rem}
+label.file input:focus-visible + span{outline:3px solid var(--focus);outline-offset:2px}
+.linkish{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.85rem;margin-left:8px}
+input[type=text],select{border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:#fff}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -110,6 +124,7 @@ details.demo p{margin:6px 0;color:var(--muted);font-size:.9rem}
     <li data-s="order">Check the PayPal order</li>
     <li data-s="payer">Payer confirms</li>
     <li data-s="paid">Paid</li>
+    <li data-s="ship">Shipped</li>
   </ol>
 
   <section id="start" class="panel hidden">
@@ -199,15 +214,15 @@ async function act(fn){
 // ------------------------------------------------------------- rendering
 const STEP = {DRAFT:"terms", TERMS_CONFIRMED:"order", ORDER_ATTACHED:"order", MISMATCH:"order",
   READY:"payer", BUYER_CONFIRMED:"payer", ORDER_CHANGED:"order", CAPTURING:"paid", CAPTURE_UNKNOWN:"paid",
-  CAPTURE_PENDING:"paid", CAPTURED:"paid", CAPTURE_FAILED:"paid", REFUNDED:"paid", CANCELLED:"paid"};
-const ORDER = ["read","terms","order","payer","paid"];
+  CAPTURE_PENDING:"paid", CAPTURED:"ship", CAPTURE_FAILED:"paid", SHIPPED:"ship", REFUNDED:"ship", CANCELLED:"paid"};
+const ORDER = ["read","terms","order","payer","paid","ship"];
 
 function renderSteps(){
   const cur = CO ? STEP[CO.state] : "read";
   const stop = CO && ["MISMATCH","ORDER_CHANGED","CAPTURE_FAILED"].includes(CO.state);
   document.querySelectorAll("#steps li").forEach(li=>{
     const i = ORDER.indexOf(li.dataset.s), c = ORDER.indexOf(cur);
-    li.className = i < c || (CO?.state==="CAPTURED" && i===c) ? "done" : i===c ? (stop ? "stop":"now") : "";
+    li.className = i < c || (CO?.state==="SHIPPED" && i===c) ? "done" : i===c ? (stop ? "stop":"now") : "";
   });
 }
 
@@ -325,14 +340,40 @@ function renderOrder(){
     case "CAPTURE_PENDING":
       verdict = `<div class="verdict neutral">PayPal accepted the payment; the funds are pending.</div>`; break;
     case "CAPTURED":
-      verdict = `<div class="verdict ok">Paid ${esc(o?.total)} ${esc(o?.currency)}. PayPal capture ${esc(CO.capture_id)}.</div>`;
+      verdict = `<div class="verdict ok">Paid ${esc(o?.total)} ${esc(o?.currency)}. PayPal capture ${esc(CO.capture_id)}.</div>`
+        + (payerView ? `<p>The seller is packing your order. You'll see the packing photos and tracking here.</p>` : packPanel(true));
       actions = `<a class="btn ghost" href="/api/checkouts/${CO.id}/receipt" target="_blank">View signed receipt</a>`; break;
+    case "SHIPPED":
+      verdict = `<div class="verdict ok">Paid ${esc(o?.total)} ${esc(o?.currency)} and shipped: ${esc(CO.shipment.carrier_name_other || CO.shipment.carrier)} ${esc(CO.shipment.tracking_number)}. Tracking is on the PayPal order.</div>` + packPanel(false);
+      actions = `<a class="btn ghost" href="/api/checkouts/${CO.id}/receipt" target="_blank">View signed receipt</a>`
+        + (payerView ? "" : ` <a class="btn ghost" href="/api/checkouts/${CO.id}/evidence" target="_blank">Dispute evidence pack</a>`); break;
     case "CAPTURE_FAILED":
       verdict = `<div class="verdict no">PayPal didn't accept the payment. Nothing was charged.</div>`; break;
   }
   p.innerHTML = `<div class="order-head"><h2>PayPal order</h2><span>${o ? esc(o.id)+" · "+src : ""}</span></div>
     ${o ? `<table><thead><tr><th></th><th>Agreed in chat</th><th>PayPal order</th></tr></thead><tbody>${rows.join("")}</tbody></table>` : ""}
     ${verdict}<div class="row">${actions}</div>`;
+}
+
+function packPanel(editable){
+  const lines = (CO.checklist||[]).map(l=>{
+    const p = CO.photos?.[l.id], sk = CO.skipped?.[l.id];
+    const thumb = p ? `<img alt="${esc(l.label)}" src="/api/checkouts/${CO.id}/photos/${p.sha256}">` : "No photo";
+    const ctl = !editable ? (sk ? `<span class="skipped">Not photographed: ${esc(sk)}</span>` : "")
+      : `<label class="file"><input type="file" accept="image/*" capture="environment" data-line="${esc(l.id)}"><span>${p?"Retake":"Add photo"}</span></label>
+         ${p ? "" : `<button class="linkish" data-skip="${esc(l.id)}">Can't photograph this</button>`}
+         ${sk ? `<span class="skipped">Skipped: ${esc(sk)}</span>` : ""}`;
+    return `<li class="${p?"done":""}"><div class="thumb">${thumb}</div><div><b>${esc(l.label)}</b>
+      <small>${esc(l.why)}${l.quote ? ` — ${esc("“"+l.quote+"”")}` : ""}${p ? ` · sha256 ${p.sha256.slice(0,12)}…` : ""}</small>${ctl}</div></li>`;
+  }).join("");
+  const ready = (CO.checklist||[]).every(l=>CO.photos?.[l.id] || CO.skipped?.[l.id]);
+  const form = !editable ? "" : `<div class="row">
+      <label>Carrier <select id="carrier"><option>USPS</option><option>UPS</option><option>FEDEX</option><option>DHL</option><option>CANADA_POST</option><option value="OTHER">Other</option></select></label>
+      <label>Tracking number <input type="text" id="tracking" size="20" autocomplete="off"></label>
+      <button class="btn" id="ship" ${ready?"":"disabled"}>Mark shipped and send tracking to PayPal</button></div>
+      ${ready ? "" : `<p style="color:var(--muted);font-size:.9rem;margin:6px 0 0">Every line needs a photo, or a reason it can't have one.</p>`}`;
+  return `<h2 style="margin-top:16px">${editable ? "Pack what was promised" : "Packed before shipping"}</h2>
+    <ul class="pack">${lines}</ul>${form}`;
 }
 
 function renderHistory(){
@@ -379,6 +420,13 @@ document.addEventListener("submit", e=>{
     acceptance:{value:sender, message_index:+f.get("amsg"), quote:f.get("aquote")}}}})));
 });
 
+document.addEventListener("change", e=>{
+  const line = e.target.dataset?.line; if (!line || !e.target.files?.length) return;
+  const fd = new FormData(); fd.append("line", line); fd.append("photo", e.target.files[0]);
+  act(async()=>{ const r = await fetch(`/api/checkouts/${CO.id}/photos`, {method:"POST", body:fd});
+    const data = await r.json(); if (!r.ok){ const err=new Error(data.message||"Upload failed"); err.data=data; throw err; } render(data); });
+});
+
 document.addEventListener("click", e=>{
   const j = e.target.closest("[data-jump]");
   if (j){ e.preventDefault(); const m = $("#m"+j.dataset.jump); m.scrollIntoView({block:"center",behavior:"smooth"});
@@ -392,6 +440,9 @@ document.addEventListener("click", e=>{
   if (id==="build") act(async()=>{ render(await api(`/api/checkouts/${CO.id}/build-order`,{post:true})); payKey=null; });
   if (id==="bconfirm") act(async()=>render(await api(`/api/checkouts/${CO.id}/buyer-confirm`,{body:{seen_fingerprint:CO.order_fingerprint}})));
   if (id==="pay"){ const b=e.target; b.disabled=true; act(()=>pay()).finally(()=>{ b.disabled=false; }); }
+  if (e.target.dataset?.skip){ const reason = prompt("Why can't this be photographed?"); if (reason)
+    act(async()=>render(await api(`/api/checkouts/${CO.id}/skip`,{body:{line:e.target.dataset.skip, reason}}))); }
+  if (id==="ship") act(async()=>{ render(await api(`/api/checkouts/${CO.id}/ship`,{body:{carrier:$("#carrier").value, tracking_number:$("#tracking").value}})); toast("Shipped. Tracking is on the PayPal order and the buyer was notified."); });
   if (id==="reconcile") act(async()=>render(await api(`/api/checkouts/${CO.id}/reconcile`,{post:true})));
   if (id==="fake-approve"){ e.preventDefault(); act(async()=>{ await api("/demo/approve",{body:{checkout_id:CO.id}}); toast("Approved in PayPal (simulated). Now complete the payment."); }); }
   const d = e.target.dataset.demo;

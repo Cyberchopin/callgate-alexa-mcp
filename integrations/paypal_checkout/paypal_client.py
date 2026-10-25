@@ -15,7 +15,9 @@ Endpoints (sandbox host https://api-m.sandbox.paypal.com):
 """
 from __future__ import annotations
 
+import json
 import os
+import re
 import threading
 import time
 
@@ -101,6 +103,23 @@ class PayPalClient:
     def capture(self, order_id: str, *, request_id: str) -> dict:
         _check_id(order_id)
         return self._send("POST", f"/v2/checkout/orders/{order_id}/capture", json={}, request_id=request_id)
+
+    def add_tracking(self, order_id: str, body: dict, *, request_id: str) -> dict:
+        _check_id(order_id)
+        return self._send("POST", f"/v2/checkout/orders/{order_id}/track", json=body, request_id=request_id)
+
+    def provide_evidence(self, dispute_id: str, input_json: dict, files: list[tuple[str, bytes, str]]) -> dict:
+        """multipart/form-data: JSON in the `input` part, each document as its own file part."""
+        if not re.fullmatch(r"PP-[A-Z]-[A-Z0-9-]{1,40}|PP-[0-9A-Z-]{1,40}", dispute_id):
+            raise ValueError("invalid PayPal dispute id")
+        parts = [("input", ("input.json", json.dumps(input_json).encode(), "application/json"))]
+        parts += [(f"file{i + 1}", (name, data, mime)) for i, (name, data, mime) in enumerate(files)]
+        try:
+            r = self._http.post(f"/v1/customer/disputes/{dispute_id}/provide-evidence",
+                                headers={"Authorization": f"Bearer {self._bearer()}"}, files=parts)
+        except (httpx.TimeoutException, httpx.NetworkError) as exc:
+            raise PayPalTimeout(f"provide-evidence: {type(exc).__name__}") from exc
+        return self._check(r)
 
     # ---------------------------------------------------------- webhooks
     def verify_webhook(self, headers: dict, event: dict, webhook_id: str) -> bool:

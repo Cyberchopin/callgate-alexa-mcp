@@ -27,6 +27,7 @@ CAPTURE_UNKNOWN = "CAPTURE_UNKNOWN"    # timeout / crash during capture; reconci
 CAPTURE_PENDING = "CAPTURE_PENDING"    # PayPal accepted but funds pending (e.g. eCheck, review)
 CAPTURED = "CAPTURED"
 CAPTURE_FAILED = "CAPTURE_FAILED"
+SHIPPED = "SHIPPED"                    # tracking handed to PayPal, packing photos recorded
 REFUNDED = "REFUNDED"
 CANCELLED = "CANCELLED"
 
@@ -41,12 +42,13 @@ TRANSITIONS: dict[str, set[str]] = {
     CAPTURING: {CAPTURED, CAPTURE_PENDING, CAPTURE_FAILED, CAPTURE_UNKNOWN},
     CAPTURE_UNKNOWN: {CAPTURED, CAPTURE_PENDING, CAPTURE_FAILED, BUYER_CONFIRMED},
     CAPTURE_PENDING: {CAPTURED, CAPTURE_FAILED},
-    CAPTURED: {REFUNDED},
+    CAPTURED: {SHIPPED, REFUNDED},
+    SHIPPED: {REFUNDED},
     CAPTURE_FAILED: {BUYER_CONFIRMED, CANCELLED},
     REFUNDED: set(),
     CANCELLED: set(),
 }
-TERMINAL = {CAPTURED, REFUNDED, CANCELLED}
+TERMINAL = {SHIPPED, REFUNDED, CANCELLED}
 
 
 class Conflict(Exception):
@@ -118,7 +120,8 @@ class Ledger:
         return None if row is None else self.get(row[0])
 
     def transition(self, checkout_id: str, expect: str | set[str], to: str, *,
-                   update: dict | None = None, detail: dict | None = None) -> dict:
+                   update: dict | None = None, detail: dict | None = None, mutate=None) -> dict:
+        """`mutate(data)` runs inside the write lock, for read-modify-write of nested fields."""
         expected = {expect} if isinstance(expect, str) else set(expect)
         now = self.clock()
         with closing(self._db()) as db:
@@ -133,6 +136,8 @@ class Ledger:
                 if to != state and to not in TRANSITIONS[state]:
                     raise Conflict(f"transition {state} -> {to} not allowed")
                 data.update(update or {})
+                if mutate is not None:
+                    mutate(data)
                 db.execute("UPDATE checkouts SET state=?, version=?, data=?, updated_at=? WHERE id=? AND version=?",
                            (to, version + 1, json.dumps(data), now, checkout_id, version))
                 db.execute("INSERT INTO events (checkout_id, at, from_state, to_state, detail) VALUES (?,?,?,?,?)",

@@ -32,6 +32,7 @@ from . import ledger as L
 from .extract import ModelReader, read_terms
 from .order_check import blocking, compare, order_fingerprint, order_from_terms
 from .paypal_client import PayPalClient, PayPalError, PayPalTimeout, approve_link, capture_of
+from . import shipping as SH
 from .terms import (AgreedTerms, Evidence, Field, ground_terms, parse_chat, terms_from_dict)
 
 APPROVAL_VERSION = "callgate-checkout-approval-v1"
@@ -47,8 +48,11 @@ class CheckoutError(Exception):
 class CheckoutService:
     def __init__(self, ledger: L.Ledger, paypal: PayPalClient, signing_key: Ed25519PrivateKey, *,
                  model_reader: ModelReader | None = None, clock=time.time, approval_ttl: int = 900,
-                 return_url: str = "http://localhost:8787/return", webhook_id: str | None = None):
+                 return_url: str = "http://localhost:8787/return", webhook_id: str | None = None,
+                 photo_dir=None):
+        from pathlib import Path
         self.ledger, self.paypal, self.key = ledger, paypal, signing_key
+        self.photo_dir = Path(photo_dir) if photo_dir else Path(ledger.path).parent / "photos"
         self.model_reader, self.clock, self.ttl = model_reader, clock, approval_ttl
         self.return_url, self.webhook_id = return_url, webhook_id
 
@@ -250,9 +254,11 @@ class CheckoutService:
         cap = capture_of(order_or_capture) or (order_or_capture if order_or_capture.get("status") else None)
         status = (cap or {}).get("status")
         to = {"COMPLETED": L.CAPTURED, "PENDING": L.CAPTURE_PENDING}.get(status, L.CAPTURE_FAILED)
+        co = self.ledger.get(checkout_id)
         return self.ledger.transition(checkout_id, expect, to,
                                       update={"capture_id": (cap or {}).get("id"), "capture_status": status,
-                                              "captured_amount": (cap or {}).get("amount")},
+                                              "captured_amount": (cap or {}).get("amount"),
+                                              "checklist": SH.checklist(co["data"]["terms"], co["data"].get("title"))},
                                       detail={"via": via, "capture_status": status})
 
     # ---------------------------------------------------- 6. reconcile
@@ -297,11 +303,99 @@ class CheckoutService:
         else:
             self.ledger.transition(co["id"], co["state"], to,
                                    update={"capture_id": resource.get("id") or co["data"].get("capture_id"),
-                                           "capture_status": resource.get("status")},
+                                           "capture_status": resource.get("status"),
+                                           "checklist": co["data"].get("checklist") or SH.checklist(co["data"]["terms"], co["data"].get("title"))},
                                    detail={"via": "webhook", "event": etype, "event_id": event_id})
             outcome = f"{co['state']} -> {to}"
         self.ledger.webhook_outcome(event_id, outcome)
         return {"status": "processed", "outcome": outcome}
+
+    # ------------------------------------------------------ 8. shipping
+    def add_photo(self, checkout_id: str, line_id: str, data: bytes) -> dict:
+        co = self.ledger.get(checkout_id)
+        if co["state"] != L.CAPTURED:
+            raise CheckoutError("WRONG_STATE", "Packing photos are added after payment and before shipping")
+        if line_id not in {x["id"] for x in co["data"].get("checklist", [])}:
+            raise CheckoutError("UNKNOWN_LINE", "That is not on this order's packing checklist", 400)
+        try:
+            photo = SH.store_photo(self.photo_dir, data)
+        except ValueError as e:
+            raise CheckoutError("BAD_PHOTO", str(e), 400) from None
+        photo["taken_at"] = int(self.clock())
+
+        def put(data):
+            data.setdefault("photos", {})[line_id] = photo
+            (data.get("skipped") or {}).pop(line_id, None)
+        return self.ledger.transition(checkout_id, L.CAPTURED, L.CAPTURED, mutate=put,
+                                      detail={"note": f"photo for {line_id}", "sha256": photo["sha256"][:16]})
+
+    def skip_line(self, checkout_id: str, line_id: str, reason: str) -> dict:
+        co = self.ledger.get(checkout_id)
+        reason = (reason or "").strip()[:200]
+        if co["state"] != L.CAPTURED or not reason:
+            raise CheckoutError("BAD_SKIP", "Say why this one can't be photographed", 400)
+        if line_id not in {x["id"] for x in co["data"].get("checklist", [])}:
+            raise CheckoutError("UNKNOWN_LINE", "That is not on this order's packing checklist", 400)
+        return self.ledger.transition(checkout_id, L.CAPTURED, L.CAPTURED,
+                                      mutate=lambda data: data.setdefault("skipped", {}).__setitem__(line_id, reason),
+                                      detail={"note": f"skipped {line_id}: {reason}"})
+
+    def ship(self, checkout_id: str, *, carrier: str, tracking_number: str) -> dict:
+        co = self.ledger.get(checkout_id)
+        if co["state"] == L.SHIPPED:
+            return co
+        if co["state"] != L.CAPTURED:
+            raise CheckoutError("WRONG_STATE", f"cannot ship while {co['state']}")
+        d = co["data"]
+        missing = [x["label"] for x in d.get("checklist", [])
+                   if x["id"] not in (d.get("photos") or {}) and x["id"] not in (d.get("skipped") or {})]
+        if missing:
+            raise CheckoutError("CHECKLIST_INCOMPLETE", "Photograph or skip (with a reason) every line first", 400,
+                                missing=missing)
+        item = d["order_summary"]["items"][0]["name"] if (d.get("order_summary") or {}).get("items") else None
+        try:
+            body = SH.tracking_body(d["capture_id"], tracking_number, carrier, item)
+        except ValueError as e:
+            raise CheckoutError("BAD_TRACKING", str(e), 400) from None
+        rid = "cg-track-" + hashlib.sha256(f"{checkout_id}|{body['tracking_number']}".encode()).hexdigest()[:24]
+        self.paypal.add_tracking(d["order_id"], body, request_id=rid)
+        shipment = {k: body[k] for k in ("tracking_number", "carrier") if k in body}
+        if "carrier_name_other" in body:
+            shipment["carrier_name_other"] = body["carrier_name_other"]
+        shipment["shipped_at"] = int(self.clock())
+        return self.ledger.transition(checkout_id, L.CAPTURED, L.SHIPPED, update={"shipment": shipment},
+                                      detail={"note": "tracking sent to PayPal", "tracking": body["tracking_number"]})
+
+    def photo_path(self, checkout_id: str, sha256: str):
+        co = self.ledger.get(checkout_id)
+        if sha256 not in {p["sha256"] for p in (co["data"].get("photos") or {}).values()}:
+            raise CheckoutError("NOT_FOUND", "no such photo on this checkout", 404)
+        return self.photo_dir / sha256
+
+    # ---------------------------------------------------- 9. disputes
+    def evidence_pack(self, checkout_id: str) -> dict:
+        co = self.ledger.get(checkout_id)
+        if co["state"] not in (L.CAPTURED, L.SHIPPED, L.REFUNDED):
+            raise CheckoutError("WRONG_STATE", "Evidence exists only for paid checkouts")
+        receipt = self.receipt(checkout_id)
+        photos = co["data"].get("photos") or {}
+        return {"input": SH.evidence_input(co, receipt), "receipt": receipt,
+                "documents": [{"line": k, "sha256": v["sha256"], "content_type": v["content_type"]}
+                              for k, v in photos.items()]}
+
+    def submit_evidence(self, checkout_id: str, dispute_id: str) -> dict:
+        pack = self.evidence_pack(checkout_id)
+        files = [("callgate-receipt.json", json.dumps(pack["receipt"], indent=2).encode(), "application/json")]
+        ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/heic": "heic"}
+        for doc in pack["documents"][:9]:
+            files.append((f"{doc['line']}.{ext.get(doc['content_type'], 'bin')}",
+                          (self.photo_dir / doc["sha256"]).read_bytes(), doc["content_type"]))
+        self.paypal.provide_evidence(dispute_id, pack["input"], files)
+        co = self.ledger.get(checkout_id)
+        return self.ledger.transition(checkout_id, co["state"], co["state"],
+                                      update={"evidence_submitted": {"dispute_id": dispute_id, "files": len(files),
+                                                                     "at": int(self.clock())}},
+                                      detail={"note": f"evidence sent to PayPal dispute {dispute_id}", "files": len(files)})
 
     # -------------------------------------------------------- receipts
     def receipt(self, checkout_id: str) -> dict:
@@ -318,7 +412,11 @@ class CheckoutService:
                    "order_id": d.get("order_id"), "order_fingerprint": d.get("order_fingerprint"),
                    "approval_nonce": ((d.get("approval") or {}).get("payload") or {}).get("nonce"),
                    "capture_id": d.get("capture_id"), "capture_status": d.get("capture_status"),
-                   "note": "Records what was agreed, confirmed and charged. It does not prove item condition."}
+                   "shipment": d.get("shipment"),
+                   "packing_photos": {k: v["sha256"] for k, v in (d.get("photos") or {}).items()},
+                   "not_photographed": d.get("skipped") or {},
+                   "note": "Records what was agreed, confirmed, charged and photographed before shipping. "
+                           "It does not prove what is in the photos or the item's condition."}
         return {"payload": payload, "signature": self.key.sign(canonical(payload)).hex(),
                 "public_key": self.public_key.public_bytes_raw().hex()}
 

@@ -200,8 +200,13 @@ class RuleReader:
 
 
 def _accept_quote(msg: Message) -> str:
-    m = _ACCEPT.search(msg.text)
-    return m.group(0) if m else msg.text[:60]
+    """The whole short message reads better as evidence than the bare word 'ok'."""
+    first_line = msg.text.split("\n", 1)[0].strip()
+    if len(first_line) <= 120:
+        return first_line
+    m = _ACCEPT.search(first_line)
+    start = max(0, (m.start() if m else 0) - 40)
+    return first_line[start:start + 120].strip()
 
 
 # --------------------------------------------------------------- model reader

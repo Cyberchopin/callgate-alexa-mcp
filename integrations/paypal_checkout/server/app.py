@@ -14,8 +14,8 @@ from decimal import Decimal
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 
 from .. import ledger as L
 from ..extract import default_model_reader
@@ -151,6 +151,42 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
         _get(svc, checkout_id)
         return svc.receipt(checkout_id)
 
+    @app.post("/api/checkouts/{checkout_id}/photos")
+    async def add_photo(checkout_id: str, line: str = Form(...), photo: UploadFile = File(...)):
+        data = await photo.read(8 * 1024 * 1024 + 1)
+        return _view(svc, svc.add_photo(checkout_id, line, data))
+
+    @app.post("/api/checkouts/{checkout_id}/skip")
+    async def skip(checkout_id: str, req: Request):
+        body = await req.json()
+        return _view(svc, svc.skip_line(checkout_id, str(body.get("line", "")), str(body.get("reason", ""))))
+
+    @app.get("/api/checkouts/{checkout_id}/photos/{sha256}")
+    def get_photo(checkout_id: str, sha256: str):
+        path = svc.photo_path(checkout_id, sha256)
+        co = svc.ledger.get(checkout_id)
+        mime = next(p["content_type"] for p in co["data"]["photos"].values() if p["sha256"] == sha256)
+        return FileResponse(path, media_type=mime, headers={"Cache-Control": "private, max-age=3600",
+                                                            "X-Content-Type-Options": "nosniff"})
+
+    @app.post("/api/checkouts/{checkout_id}/ship")
+    async def ship(checkout_id: str, req: Request):
+        body = await req.json()
+        return _view(svc, svc.ship(checkout_id, carrier=str(body.get("carrier", "")),
+                                   tracking_number=str(body.get("tracking_number", ""))))
+
+    @app.get("/api/checkouts/{checkout_id}/evidence")
+    def evidence(checkout_id: str):
+        _get(svc, checkout_id)
+        return svc.evidence_pack(checkout_id)
+
+    @app.post("/api/checkouts/{checkout_id}/disputes/{dispute_id}/evidence")
+    def submit_evidence(checkout_id: str, dispute_id: str):
+        try:
+            return _view(svc, svc.submit_evidence(checkout_id, dispute_id))
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+
     @app.post("/webhooks/paypal")
     async def webhook(req: Request):
         return svc.handle_webhook(dict(req.headers), await req.body())
@@ -249,6 +285,8 @@ def _view(svc, co):
             "approve_url": d.get("approve_url"),
             "approval": None if not approval else {k: approval[k] for k in ("order_fingerprint", "expires_at", "nonce")},
             "capture_id": d.get("capture_id"), "capture_status": d.get("capture_status"),
+            "checklist": d.get("checklist", []), "photos": d.get("photos", {}), "skipped": d.get("skipped", {}),
+            "shipment": d.get("shipment"), "evidence_submitted": d.get("evidence_submitted"),
             "events": svc.ledger.events(co["id"])}
 
 

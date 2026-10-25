@@ -30,6 +30,8 @@ class FakePayPal:
         self.orders: dict[str, dict] = {}
         self.request_ids: dict[tuple[str, str], tuple[int, dict]] = {}
         self.capture_count: dict[str, int] = {}
+        self.trackers: dict[str, list[dict]] = {}
+        self.evidence: dict[str, list[dict]] = {}
         self.fail_next_capture: str | None = None    # "timeout_after_commit" | "decline" | "pending" | "timeout_before"
         self._secret = secrets.token_bytes(32)
         self._ids = itertools.count(1)
@@ -92,6 +94,14 @@ class FakePayPal:
         if rid and (path, rid) in self.request_ids:
             status, body = self.request_ids[(path, rid)]
             return httpx.Response(status, json=copy.deepcopy(body))
+        if path.startswith("/v1/customer/disputes/") and path.endswith("/provide-evidence"):
+            ctype = request.headers.get("content-type", "")
+            if not ctype.startswith("multipart/form-data"):
+                return _err(415, "UNSUPPORTED_MEDIA_TYPE")
+            raw = request.content
+            dispute = path.split("/")[4]
+            self.evidence.setdefault(dispute, []).append({"bytes": len(raw), "parts": raw.count(b"Content-Disposition")})
+            return httpx.Response(200, json={"links": [{"rel": "self", "href": f"{self.base_url}/v1/customer/disputes/{dispute}"}]})
         body = json.loads(request.content or b"null")
 
         if path == "/v2/checkout/orders" and method == "POST":
@@ -107,6 +117,8 @@ class FakePayPal:
                 status, out = 200, copy.deepcopy(self.orders[oid])
             elif len(parts) == 5 and method == "PATCH":
                 status, out = self._patch(oid, body)
+            elif len(parts) == 6 and parts[5] == "track" and method == "POST":
+                status, out = self._track(oid, body)
             elif len(parts) == 6 and parts[5] == "capture" and method == "POST":
                 if self.fail_next_capture == "timeout_before":
                     self.fail_next_capture = None
@@ -173,6 +185,18 @@ class FakePayPal:
         cap["amount"].pop("breakdown", None)
         o["purchase_units"][0]["payments"] = {"captures": [cap]}
         o["status"] = "COMPLETED"
+        return 201, copy.deepcopy(o)
+
+    def _track(self, oid, body):
+        o = self.orders[oid]
+        cap = ((o["purchase_units"][0].get("payments") or {}).get("captures") or [{}])[0]
+        if o["status"] != "COMPLETED" or body.get("capture_id") != cap.get("id"):
+            return 422, {"name": "UNPROCESSABLE_ENTITY", "details": [{"issue": "CAPTURE_ID_NOT_FOUND"}]}
+        if not body.get("tracking_number") or not body.get("carrier"):
+            return 400, {"name": "INVALID_REQUEST", "details": [{"issue": "MISSING_REQUIRED_PARAMETER"}]}
+        tracker = {"id": f"{cap['id']}-{body['tracking_number']}", "status": "SHIPPED", **body}
+        self.trackers.setdefault(oid, []).append(tracker)
+        o["purchase_units"][0].setdefault("shipping", {})["trackers"] = self.trackers[oid]
         return 201, copy.deepcopy(o)
 
     def _verify(self, body):
