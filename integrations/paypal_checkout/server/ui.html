@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CallGate Checkout</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M2 16 9 4h21v24H9z%22 fill=%22%23F1D27A%22 stroke=%22%2318232E%22 stroke-width=%222%22/%3E%3Ccircle cx=%2212%22 cy=%2216%22 r=%223%22 fill=%22%2318232E%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E8EDF1; --panel:#FFFFFF; --ink:#18232E; --muted:#5B6B79; --line:#C4CED6;
+  --tag:#F1D27A; --tag-edge:#C9A548; --ok:#2E7356; --ok-bg:#E2F0E8; --bad:#B8322A; --bad-bg:#F8E3E0;
+  --info:#3C5A7A; --focus:#2E64B8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);
+  font:16px/1.5 "Familjen Grotesk",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+button,textarea,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 64px}
+header{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+header h1{font-size:1.5rem;font-weight:700;margin:0;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted)}
+.mode{margin-left:auto;font-size:.85rem;padding:3px 10px;border:1px solid var(--line);border-radius:99px;background:var(--panel)}
+.steps{display:flex;gap:0;margin:0 0 20px;padding:0;list-style:none;counter-reset:s;flex-wrap:wrap}
+.steps li{counter-increment:s;flex:1 1 150px;padding:8px 10px;border-top:3px solid var(--line);color:var(--muted);font-size:.9rem}
+.steps li::before{content:counter(s)". ";font-weight:600}
+.steps li.done{border-color:var(--ok);color:var(--ink)}
+.steps li.now{border-color:var(--ink);color:var(--ink);font-weight:600}
+.steps li.stop{border-color:var(--bad);color:var(--bad);font-weight:600}
+.grid{display:grid;grid-template-columns:5fr 7fr;gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px}
+h2{font-size:1.05rem;margin:0 0 10px;font-weight:600}
+.chat{display:flex;flex-direction:column;gap:6px;max-height:560px;overflow:auto;padding-right:4px}
+.msg{max-width:88%;padding:7px 11px;border-radius:12px;background:#EEF2F5;white-space:pre-wrap;transition:box-shadow .3s}
+.msg.b{align-self:flex-end;background:#DCE6EF}
+.msg small{display:block;color:var(--muted);font-size:.75rem}
+.msg.flash{box-shadow:0 0 0 3px var(--focus)}
+mark{background:var(--tag);border-radius:3px;padding:0 2px;cursor:pointer}
+mark.bad{background:var(--bad-bg);outline:1px solid var(--bad)}
+textarea{width:100%;min-height:230px;border:1px solid var(--line);border-radius:6px;padding:10px;background:#FBFCFD;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.btn{border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:6px;padding:9px 16px;cursor:pointer;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.small{padding:5px 10px;font-weight:500;font-size:.9rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* the hang tag: the one bold object on the page */
+.tag{position:relative;background:var(--tag);border:1px solid var(--tag-edge);border-radius:6px 22px 22px 6px;
+  padding:18px 22px 18px 54px;margin-bottom:18px;clip-path:polygon(0 50%,26px 0,100% 0,100% 100%,26px 100%)}
+.tag::before{content:"";position:absolute;left:30px;top:50%;width:12px;height:12px;margin-top:-6px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--tag-edge)}
+.tag .price{font-size:3rem;font-weight:700;line-height:1;letter-spacing:-.02em}
+.tag .price small{font-size:1rem;font-weight:500;margin-left:6px}
+.tag .lines{margin:10px 0 0;padding:0;list-style:none;font-size:.95rem}
+.tag .lines li{margin:2px 0}
+.tag .q,.q{font-style:italic;color:var(--ink);text-decoration-color:var(--tag-edge);text-underline-offset:3px}
+.tag.unsure{background:#F4EBCB;border-style:dashed}
+.issues{margin:10px 0 0;padding:10px 12px;background:var(--bad-bg);border-radius:6px;font-size:.92rem}
+.issues ul{margin:4px 0 0;padding-left:18px}
+.order-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.order-head span{color:var(--muted);font-size:.85rem}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top;font-size:.95rem}
+th{font-weight:600;color:var(--muted);font-size:.85rem}
+tr.block td{background:var(--bad-bg)} tr.block td:first-child{border-left:4px solid var(--bad)}
+tr.match td:first-child{border-left:4px solid var(--ok)}
+tr.info td{color:var(--info)}
+.why{display:block;font-size:.85rem;color:var(--bad)}
+.verdict{margin:14px 0 0;padding:12px 14px;border-radius:6px;font-weight:600}
+.verdict.ok{background:var(--ok-bg);color:var(--ok)} .verdict.no{background:var(--bad-bg);color:var(--bad)}
+.verdict.neutral{background:#EEF2F5;color:var(--ink);font-weight:500}
+.link{word-break:break-all;font-size:.9rem}
+.history{margin-top:20px}
+.history ol{margin:0;padding-left:20px;font-size:.9rem;color:var(--muted)}
+.history li b{color:var(--ink);font-weight:600}
+details.demo{margin-top:20px;border:1px dashed var(--muted);border-radius:6px;padding:10px 14px;background:#F2F5F7}
+details.demo summary{cursor:pointer;font-weight:600}
+details.demo p{margin:6px 0;color:var(--muted);font-size:.9rem}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;
+  border-radius:6px;max-width:min(560px,90vw);font-size:.95rem;display:none}
+.toast.show{display:block}
+.payer .wrap{max-width:560px}
+.payer .grid{grid-template-columns:1fr}
+.payer #main>section:first-child{order:2}
+@media (max-width:600px){
+  .steps li{flex:0 0 auto;padding:6px 8px;font-size:0}
+  .steps li::before{font-size:.9rem}
+  .steps li.now,.steps li.stop{flex:1 1 auto;font-size:.9rem}
+  .tag .price{font-size:2.4rem}
+  .chat{max-height:none}
+}
+.hidden{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>CallGate Checkout</h1>
+    <p id="tagline">Pay exactly what you agreed in the chat.</p>
+    <span class="mode" id="mode">…</span>
+  </header>
+
+  <ol class="steps" id="steps">
+    <li data-s="read">Read the chat</li>
+    <li data-s="terms">Confirm what was agreed</li>
+    <li data-s="order">Check the PayPal order</li>
+    <li data-s="payer">Payer confirms</li>
+    <li data-s="paid">Paid</li>
+  </ol>
+
+  <section id="start" class="panel hidden">
+    <h2>Paste the conversation where the deal was made</h2>
+    <textarea id="chat" placeholder="Buyer: is the cap still available?&#10;Seller: yes, $95 plus $8 shipping&#10;…"></textarea>
+    <div class="row">
+      <label>Currency if the chat doesn't say
+        <select id="cur"><option>USD</option><option>CAD</option><option>EUR</option><option>GBP</option><option>AUD</option></select></label>
+      <button class="btn ghost small" id="example">Use the hat sale example</button>
+      <button class="btn ghost small" id="example-zh">Use a Chinese example</button>
+      <button class="btn" id="read">Read the agreement</button>
+    </div>
+  </section>
+
+  <div id="main" class="grid hidden">
+    <section class="panel">
+      <h2>The conversation</h2>
+      <div class="chat" id="msgs"></div>
+      <p style="color:var(--muted);font-size:.85rem;margin:10px 0 0" id="readers"></p>
+    </section>
+    <section>
+      <div id="tag"></div>
+      <div class="panel" id="order-panel"></div>
+    </section>
+  </div>
+
+  <section class="history panel hidden" id="history"><h2>What happened</h2><ol id="events"></ol></section>
+
+  <details class="demo hidden" id="demo">
+    <summary>Demo controls</summary>
+    <p>These buttons stand in for things that happen outside this page, so each failure can be shown on camera.</p>
+    <div class="row">
+      <button class="btn ghost small" data-demo="agent">AI sales agent drafts the order at $180</button>
+      <button class="btn ghost small" data-demo="edit">Change the order to $180 after the payer confirmed</button>
+    </div>
+    <div class="row fake-only">
+      <button class="btn ghost small" data-demo="approve">Payer approves in PayPal (simulated)</button>
+      <button class="btn ghost small" data-demo="double">Send two payment requests at once</button>
+      <button class="btn ghost small" data-demo="timeout">Next payment: PayPal times out after charging</button>
+      <button class="btn ghost small" data-demo="pending">Next payment: funds pending</button>
+      <button class="btn ghost small" data-demo="webhook">Deliver “capture completed” webhook twice</button>
+      <button class="btn ghost small" data-demo="count">How many charges did PayPal make?</button>
+    </div>
+  </details>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const payerView = location.pathname.startsWith("/pay/");
+let CO = null, CFG = null, payKey = null;
+
+const EX = `Buyer: hi is the Haunted Mansion cap still available?
+Seller: yes! new with tags, comes with the original box
+Buyer: how much?
+Seller: $95 plus $8 shipping
+Buyer: can you do $80?
+Seller: 80 is ok, shipping is $8
+Buyer: deal
+Seller: sending the paypal link now`;
+const EX_ZH = `买家: 这顶鬼屋帽子还有吗
+卖家: 有的 全新带吊牌 带盒
+买家: 多少钱
+卖家: 85刀 包邮
+买家: 80刀可以吗
+卖家: 行 80刀 包邮
+买家: 好的 成交`;
+
+function toast(text){ const t=$("#toast"); t.textContent=text; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),5200); }
+
+async function api(path, opts={}){
+  const r = await fetch(path, {method: opts.body!==undefined||opts.post ? "POST":"GET",
+    headers: {"Content-Type":"application/json", ...(opts.headers||{})},
+    body: opts.body!==undefined ? JSON.stringify(opts.body) : (opts.post ? "{}" : undefined)});
+  let data = {}; try { data = await r.json(); } catch {}
+  if (!r.ok){ const err = new Error(data.message || data.detail || r.statusText); err.data = data; err.status = r.status; throw err; }
+  return data;
+}
+
+async function act(fn){
+  try { await fn(); }
+  catch(e){ if (e.data?.checkout) render(e.data.checkout); toast(e.message);
+            if (e.data?.problems) toast(e.message + ": " + e.data.problems.join("; ")); }
+}
+
+// ------------------------------------------------------------- rendering
+const STEP = {DRAFT:"terms", TERMS_CONFIRMED:"order", ORDER_ATTACHED:"order", MISMATCH:"order",
+  READY:"payer", BUYER_CONFIRMED:"payer", ORDER_CHANGED:"order", CAPTURING:"paid", CAPTURE_UNKNOWN:"paid",
+  CAPTURE_PENDING:"paid", CAPTURED:"paid", CAPTURE_FAILED:"paid", REFUNDED:"paid", CANCELLED:"paid"};
+const ORDER = ["read","terms","order","payer","paid"];
+
+function renderSteps(){
+  const cur = CO ? STEP[CO.state] : "read";
+  const stop = CO && ["MISMATCH","ORDER_CHANGED","CAPTURE_FAILED"].includes(CO.state);
+  document.querySelectorAll("#steps li").forEach(li=>{
+    const i = ORDER.indexOf(li.dataset.s), c = ORDER.indexOf(cur);
+    li.className = i < c || (CO?.state==="CAPTURED" && i===c) ? "done" : i===c ? (stop ? "stop":"now") : "";
+  });
+}
+
+function marksFor(){
+  // message index -> list of {quote, cls}
+  const m = {}; if (!CO) return m;
+  const t = CO.terms, bad = new Set((CO.differences||[]).filter(d=>d.severity==="block").flatMap(d=>d.evidence.map(e=>e.quote)));
+  const add = f => f && f.evidence.forEach(e => (m[e.message_index] ||= []).push({q:e.quote, cls: bad.has(e.quote)?"bad":""}));
+  [t.currency,t.total,t.shipping,t.acceptance,...(t.inclusions||[])].forEach(add);
+  (t.items||[]).forEach(i=>add(i.name));
+  return m;
+}
+
+function renderChat(){
+  const marks = marksFor(); const first = CO.messages[0]?.sender;
+  $("#msgs").innerHTML = CO.messages.map(m=>{
+    let html = esc(m.text);
+    const qs = (marks[m.index]||[]).sort((a,b)=>b.q.length-a.q.length); const done=new Set();
+    for (const {q,cls} of qs){ if (done.has(q)) continue; done.add(q);
+      const eq = esc(q); html = html.replace(eq, `<mark class="${cls}" title="Used as evidence">${eq}</mark>`); }
+    return `<div class="msg ${m.sender===first?"":"b"}" id="m${m.index}"><small>${esc(m.sender)}</small>${html}</div>`;
+  }).join("");
+  $("#readers").textContent = "Read by: " + (CO.readers||[]).join(" + ") + (CFG?.model ? "" : " (no AI model key set; rules only)");
+}
+
+function quoteLink(ev){ if (!ev) return ""; return `<a href="#m${ev.message_index}" class="q" data-jump="${ev.message_index}">“${esc(ev.quote)}”</a>`; }
+
+function renderTag(){
+  const t = CO.terms, ok = t.currency && t.total && t.acceptance;
+  const conflicts = (t.unresolved||[]).filter(u=>u.startsWith("CONFLICT")||u.startsWith("no price")||u.startsWith("price changed")||u.startsWith("currency"));
+  const lines = [];
+  if (t.shipping) lines.push(`<li>Shipping ${Number(t.shipping.value)===0?"included":esc(t.shipping.value)} — ${quoteLink(t.shipping.evidence[0])}</li>`);
+  (t.items||[]).forEach(i=>lines.push(`<li>${esc(i.quantity.value)} × ${esc(i.name.value)}</li>`));
+  (t.inclusions||[]).forEach(i=>lines.push(`<li>Includes: ${esc(i.value)} — ${quoteLink(i.evidence[0])}</li>`));
+  if (t.acceptance) lines.push(`<li>${esc(t.acceptance.value)} said yes: ${quoteLink(t.acceptance.evidence[0])}</li>`);
+  const confirmed = CO.terms_commitment;
+  $("#tag").innerHTML = `<div class="tag ${ok?"":"unsure"}">
+    <div style="font-size:.9rem">${ok ? (confirmed ? "Agreed and confirmed" : "Agreed in the chat") : "Not agreed yet"}</div>
+    <div class="price">${ok ? esc(t.total.value) : "—"}<small>${ok ? esc(t.currency.value) : ""}</small></div>
+    <ul class="lines">${ok ? `<li>Price from ${t.total.evidence.map(quoteLink).join(" + ")}</li>` : ""}${lines.join("")}</ul>
+    ${conflicts.length ? `<div class="issues"><b>Needs a person to decide</b><ul>${conflicts.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>` : ""}
+  </div>`;
+}
+
+function msgOptions(sel){ return CO.messages.map(m=>`<option value="${m.index}" ${m.index===sel?"selected":""}>${m.index+1}. ${esc(m.sender)}: ${esc(m.text.slice(0,50))}</option>`).join(""); }
+function resolveForm(){
+  const t = CO.terms;
+  return `<form id="resolve" class="panel" style="margin-top:12px">
+    <h2>Decide it yourself</h2>
+    <p style="margin:0 0 8px;color:var(--muted);font-size:.9rem">Point at the exact words in the chat. A value that isn't in the chat can't be confirmed.</p>
+    <div class="row"><label>Agreed total <input name="total" size="8" value="${esc(t.total?.value||"")}" required></label>
+      <label>Currency <input name="currency" size="4" value="${esc(t.currency?.value||"USD")}" required></label></div>
+    <div class="row"><label>Said in <select name="tmsg">${msgOptions(t.total?.evidence[0]?.message_index)}</select></label>
+      <label>Exact words <input name="tquote" size="22" value="${esc(t.total?.evidence[0]?.quote||"")}" required></label></div>
+    <div class="row"><label>The other person said yes in <select name="amsg">${msgOptions(t.acceptance?.evidence[0]?.message_index)}</select></label>
+      <label>Exact words <input name="aquote" size="14" value="${esc(t.acceptance?.evidence[0]?.quote||"")}" required></label></div>
+    <div class="row"><button class="btn" type="submit">Confirm with these quotes</button></div></form>`;
+}
+
+function renderOrder(){
+  const p = $("#order-panel"), s = CO.state;
+  if (s === "DRAFT"){
+    const ok = CO.terms.currency && CO.terms.total && CO.terms.acceptance;
+    p.innerHTML = payerView ? `<p>The seller hasn't confirmed the terms yet.</p>` : `<h2>Is this what you both agreed?</h2>
+      <p>Every value above is copied from a highlighted line in the chat. Nothing is charged until the PayPal order matches it.</p>
+      <div class="row">${ok ? `<button class="btn" id="confirm">Confirm these terms</button>` : ""}
+      <button class="btn ghost small" id="restart">Paste a different chat</button></div>
+      ${ok ? "" : resolveForm()}`;
+    return;
+  }
+  if (s === "TERMS_CONFIRMED"){
+    p.innerHTML = `<h2>Create the PayPal order</h2>
+      <p>CallGate builds the order from the confirmed terms, so the amount can only be ${esc(CO.terms.total.value)} ${esc(CO.terms.currency.value)}.</p>
+      <div class="row"><button class="btn" id="build">Create PayPal order</button></div>`;
+    return;
+  }
+  const o = (s==="ORDER_CHANGED" && CO.changed_order) ? CO.changed_order : CO.order;
+  const diffs = CO.differences || [];
+  const blocks = diffs.filter(d=>d.severity==="block");
+  const t = CO.terms;
+  const rows = [];
+  const blockFor = f => blocks.find(d=>d.field===f);
+  const addRow = (label, agreed, ordered, f, ev) => { const d = blockFor(f);
+    rows.push(`<tr class="${d?"block":"match"}"><td>${label}</td><td>${esc(agreed??"—")}${ev?`<br><small>${quoteLink(ev)}</small>`:""}</td>
+      <td>${esc(ordered??"—")}${d?`<span class="why">${esc(d.why)}</span>`:""}</td></tr>`); };
+  if (o){
+    addRow("Total", t.total && t.total.value, o.total, "total", t.total?.evidence[0]);
+    addRow("Currency", t.currency?.value, o.currency, "currency");
+    addRow("Shipping", t.shipping ? t.shipping.value : "not discussed", o.shipping ?? "0.00", "shipping", t.shipping?.evidence[0]);
+    blocks.filter(d=>!["total","currency","shipping"].includes(d.field)).forEach(d=>
+      rows.push(`<tr class="block"><td>${esc(d.field)}</td><td>${esc(d.agreed??"—")}</td><td>${esc(d.order??"—")}<span class="why">${esc(d.why)}</span></td></tr>`));
+    diffs.filter(d=>d.severity==="info").forEach(d=>
+      rows.push(`<tr class="info"><td>Included</td><td>${esc(d.agreed)}</td><td>${esc(d.why)}</td></tr>`));
+  }
+  const src = CO.order_source === "ai-sales-agent" ? "drafted by the AI sales agent" : CO.order_source === "callgate" ? "built from the confirmed terms" : "added by the seller";
+  let verdict = "", actions = "";
+  switch (s){
+    case "MISMATCH":
+      verdict = `<div class="verdict no">This order doesn't match the chat. It can't be paid.</div>`;
+      actions = payerView ? "" : `<button class="btn" id="build">Rebuild the order from the agreed terms</button>`; break;
+    case "READY":
+      verdict = `<div class="verdict ok">The order matches what was agreed.</div>`;
+      actions = payerView ? `<button class="btn" id="bconfirm">This is what we agreed — continue</button>`
+        : `<p>Send this link to the buyer:</p><p class="link"><a href="/pay/${CO.id}" target="_blank">${location.origin}/pay/${CO.id}</a></p>`; break;
+    case "BUYER_CONFIRMED":
+      verdict = `<div class="verdict ok">Payer confirmed this exact order. Confirmation expires ${new Date(CO.approval.expires_at*1000).toLocaleTimeString()}.</div>`;
+      actions = payerView ? `${CO.approve_url ? `<a class="btn ghost" href="${esc(CO.approve_url)}" ${CFG.mode==="fake"?'id="fake-approve"':""}>Approve in PayPal</a>`:""}
+        <button class="btn" id="pay">Complete payment</button>` : `<p>Waiting for the buyer to pay.</p>`; break;
+    case "ORDER_CHANGED":
+      verdict = `<div class="verdict no">The order was changed after the payer confirmed it. Nothing was charged.</div>`;
+      actions = payerView ? "" : `<button class="btn" id="build">Rebuild the order from the agreed terms</button>`; break;
+    case "CAPTURING": case "CAPTURE_UNKNOWN":
+      verdict = `<div class="verdict neutral">Checking with PayPal whether the payment went through. It won't be charged twice.</div>`;
+      actions = `<button class="btn" id="reconcile">Check again</button>`; break;
+    case "CAPTURE_PENDING":
+      verdict = `<div class="verdict neutral">PayPal accepted the payment; the funds are pending.</div>`; break;
+    case "CAPTURED":
+      verdict = `<div class="verdict ok">Paid ${esc(o?.total)} ${esc(o?.currency)}. PayPal capture ${esc(CO.capture_id)}.</div>`;
+      actions = `<a class="btn ghost" href="/api/checkouts/${CO.id}/receipt" target="_blank">View signed receipt</a>`; break;
+    case "CAPTURE_FAILED":
+      verdict = `<div class="verdict no">PayPal didn't accept the payment. Nothing was charged.</div>`; break;
+  }
+  p.innerHTML = `<div class="order-head"><h2>PayPal order</h2><span>${o ? esc(o.id)+" · "+src : ""}</span></div>
+    ${o ? `<table><thead><tr><th></th><th>Agreed in chat</th><th>PayPal order</th></tr></thead><tbody>${rows.join("")}</tbody></table>` : ""}
+    ${verdict}<div class="row">${actions}</div>`;
+}
+
+function renderHistory(){
+  $("#events").innerHTML = (CO.events||[]).map(e=>{
+    const d = e.detail || {}; const note = d.note && d.note !== e.to.replaceAll("_"," ").toLowerCase() ? d.note : "";
+    const extra = note || d.error || (d.blocking?.length ? "blocked: "+d.blocking.join(", ") : "") || (d.via ? "via "+d.via : "") || (d.request_id ? "request "+d.request_id : "");
+    return `<li><b>${esc(e.to.replaceAll("_"," ").toLowerCase())}</b>${extra ? " — "+esc(extra) : ""}</li>`; }).join("");
+}
+
+function render(co){
+  if (co) CO = co;
+  if (!CO){ $("#start").classList.remove("hidden"); renderSteps(); return; }
+  $("#start").classList.add("hidden");
+  ["#main","#history"].forEach(s=>$(s).classList.remove("hidden"));
+  if (!payerView) $("#demo").classList.remove("hidden");
+  document.querySelectorAll(".fake-only").forEach(x=>x.classList.toggle("hidden", CFG.mode!=="fake"));
+  if (!payerView) history.replaceState(null, "", "/?checkout="+CO.id);
+  renderSteps(); renderChat(); renderTag(); renderOrder(); renderHistory();
+}
+
+// ---------------------------------------------------------------- actions
+async function refresh(){ render(await api(`/api/checkouts/${CO.id}`)); }
+
+async function pay(twice=false){
+  payKey = payKey || crypto.randomUUID();       // one key per payment intent: retries reuse it
+  const call = () => api(`/api/checkouts/${CO.id}/capture`, {post:true, headers:{"Idempotency-Key":payKey}});
+  if (twice){
+    const rs = await Promise.allSettled([call(), call()]);
+    const msgs = rs.map(r => r.status==="fulfilled" ? (r.value.replayed ? "replayed earlier result" : r.value.state) : (r.reason.data?.error || r.reason.message));
+    toast("Two requests sent: " + msgs.join(" / "));
+    return refresh();
+  }
+  const r = await call();
+  toast(r.replayed ? "Already processed; showing the earlier result." : (r.note || "Payment " + r.state.toLowerCase().replaceAll("_"," ")));
+  render(r.checkout || await api(`/api/checkouts/${CO.id}`));
+}
+
+document.addEventListener("submit", e=>{
+  if (e.target.id!=="resolve") return; e.preventDefault();
+  const f = new FormData(e.target), sender = CO.messages[+f.get("amsg")].sender;
+  act(async()=>render(await api(`/api/checkouts/${CO.id}/confirm`,{body:{resolutions:{
+    total:{value:f.get("total"), message_index:+f.get("tmsg"), quote:f.get("tquote")},
+    currency:{value:f.get("currency"), message_index:+f.get("tmsg"), quote:f.get("tquote")},
+    acceptance:{value:sender, message_index:+f.get("amsg"), quote:f.get("aquote")}}}})));
+});
+
+document.addEventListener("click", e=>{
+  const j = e.target.closest("[data-jump]");
+  if (j){ e.preventDefault(); const m = $("#m"+j.dataset.jump); m.scrollIntoView({block:"center",behavior:"smooth"});
+          m.classList.add("flash"); setTimeout(()=>m.classList.remove("flash"),1400); return; }
+  const id = e.target.id;
+  if (id==="example") $("#chat").value = EX;
+  if (id==="example-zh") $("#chat").value = EX_ZH;
+  if (id==="read") act(async()=>render(await api("/api/checkouts",{body:{chat:$("#chat").value, currency:$("#cur").value}})));
+  if (id==="restart"){ CO=null; history.replaceState(null,"","/"); location.reload(); }
+  if (id==="confirm") act(async()=>render(await api(`/api/checkouts/${CO.id}/confirm`,{post:true})));
+  if (id==="build") act(async()=>{ render(await api(`/api/checkouts/${CO.id}/build-order`,{post:true})); payKey=null; });
+  if (id==="bconfirm") act(async()=>render(await api(`/api/checkouts/${CO.id}/buyer-confirm`,{body:{seen_fingerprint:CO.order_fingerprint}})));
+  if (id==="pay"){ const b=e.target; b.disabled=true; act(()=>pay()).finally(()=>{ b.disabled=false; }); }
+  if (id==="reconcile") act(async()=>render(await api(`/api/checkouts/${CO.id}/reconcile`,{post:true})));
+  if (id==="fake-approve"){ e.preventDefault(); act(async()=>{ await api("/demo/approve",{body:{checkout_id:CO.id}}); toast("Approved in PayPal (simulated). Now complete the payment."); }); }
+  const d = e.target.dataset.demo;
+  if (d) act(async()=>{
+    if (d==="agent"){ render(await api("/demo/agent-draft",{body:{checkout_id:CO.id, value:"180"}})); toast("The sales agent attached a $180 order."); }
+    if (d==="edit"){ const r = await api("/demo/edit-order",{body:{checkout_id:CO.id, value:"180"}}); toast(`PayPal order ${r.order_id} now says ${r.new_total}. Try to pay it.`); }
+    if (d==="approve"){ await api("/demo/approve",{body:{checkout_id:CO.id}}); toast("Payer approved the order in PayPal (simulated)."); }
+    if (d==="double") await pay(true);
+    if (d==="timeout"){ await api("/demo/inject",{body:{mode:"timeout_after_commit"}}); toast("Next payment: PayPal charges, then the connection drops."); }
+    if (d==="pending"){ await api("/demo/inject",{body:{mode:"pending"}}); toast("Next payment will come back pending."); }
+    if (d==="webhook"){ const r = await api("/demo/webhook",{body:{checkout_id:CO.id, redeliver:true}}); toast(`Webhook: ${r.first.outcome || r.first.status}; redelivery: ${r.redelivered.status}`); await refresh(); }
+    if (d==="count"){ const r = await api(`/demo/paypal-count/${CO.id}`); toast(`PayPal recorded ${r.captures_at_paypal} charge${r.captures_at_paypal===1?"":"s"} for this order.`); }
+  });
+});
+
+(async()=>{
+  CFG = await api("/api/config");
+  $("#mode").textContent = CFG.mode==="fake" ? "Offline demo (simulated PayPal)" : "PayPal sandbox";
+  if (payerView){
+    document.body.classList.add("payer");
+    $("#tagline").textContent = "Check the payment against your chat before you pay.";
+    const id = location.pathname.split("/")[2];
+    render(await api(`/api/checkouts/${id}`));
+    if (new URLSearchParams(location.search).get("back")==="approved") toast("Approved in PayPal. Complete the payment to finish.");
+  } else {
+    const id = new URLSearchParams(location.search).get("checkout");
+    if (id){ try { render(await api(`/api/checkouts/${id}`)); return; } catch {} }
+    render(null);
+  }
+})();
+</script>
+</body>
+</html>

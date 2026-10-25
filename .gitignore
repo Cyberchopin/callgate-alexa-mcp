@@ -25,3 +25,6 @@ scambench/heldout/private/
 *.sqlite3-wal
 *.sqlite3-shm
 
+# CallGate Checkout local state (ledger + signing key)
+.callgate-checkout/
+evaluation_paypal/results.json
