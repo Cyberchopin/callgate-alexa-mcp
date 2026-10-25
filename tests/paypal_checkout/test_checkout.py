@@ -70,7 +70,7 @@ def test_rules_read_counter_offer_and_add_shipping():
 def test_chinese_chat_free_shipping():
     chat = "买家: 帽子多少钱\n卖家: 85刀 包邮\n买家: 80刀可以吗\n卖家: 行 80刀 包邮\n买家: 好的 成交"
     t = read_terms(parse_chat(chat))
-    assert (t.total.value, t.shipping.value) == ("80.00", "0")
+    assert (t.total.value, t.shipping.value) == ("80.00", "0.00")
 
 
 def test_price_changed_after_yes_is_not_agreed():
@@ -346,7 +346,7 @@ def test_rebuild_after_tampering_creates_a_fresh_order(env):
     ("Buyer: sealed blind box?\nSeller: yes, $25 + $5 shipping\nBuyer: sounds good", "30.00", "5.00"),
     ("Buyer: jacket?\nSeller: C$60 plus shipping $12\nBuyer: deal", "72.00", "12.00"),
     ("Buyer: Dunks?\nSeller: $140 shipped\nBuyer: $130 shipped?\nSeller: ok $130 shipped works", "130.00", None),
-    ("Buyer: $35 with free shipping?\nSeller: sure, free shipping", "35.00", "0"),
+    ("Buyer: $35 with free shipping?\nSeller: sure, free shipping", "35.00", "0.00"),
 ])
 def test_shipping_word_labels_only_the_nearest_amount(chat, total, ship):
     t = read_terms(parse_chat(chat))

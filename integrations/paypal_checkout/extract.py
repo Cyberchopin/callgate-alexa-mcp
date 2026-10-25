@@ -174,7 +174,7 @@ class RuleReader:
         total_value = money(agreed.amount, cur)
         total_ev = [Evidence(agreed.message_index, agreed.quote)]
         if free is not None:
-            ship_field = Field("0", [Evidence(free[0], free[1])], "rules")
+            ship_field = Field(money_str(money(0, cur)), [Evidence(free[0], free[1])], "rules")
         elif ship_m is not None and ship_m.currency not in (cur, None) and not ship_m.bare_dollar:
             unresolved.append(f"shipping '{ship_m.quote}' is in a different currency from the price")
         elif ship_m is not None:
