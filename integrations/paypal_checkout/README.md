@@ -125,6 +125,15 @@ Every transition is written to an append-only event log, shown on the page as "W
 
 Each entry: `{item_id, seq, prev = SHA-256(previous signed entry), event, holder, where, when, serials, evidence[{kind, sha256}], note, recorded_at, signer}` plus an Ed25519 signature by the recording holder. Verification checks every signature, that `seq` runs 0…n, that every `prev` matches, and that all entries name the same item. Editing an entry breaks its signature; removing, reordering or re-signing a forged first entry breaks the next link. A sale through CallGate appends a signed `sold` entry, and the receipt commits to the chain head. Export with `GET /api/checkouts/{id}/passport`; the next seller imports it and adds their own entries. Anyone holding a photo can check it against the hashes in the chain.
 
+## AI in this project
+
+| Where | What the AI does | What it can't do |
+|---|---|---|
+| Reading the chat | A model reader (Claude, or any OpenAI-compatible model) reads the negotiation alongside the rule reader and must quote the chat for every value. | Add a value that isn't in the chat; settle a disagreement with the rule reader — a person does. |
+| Sales assistant | Claude, working for the seller, reads the deal and drafts the PayPal order through the agent gateway. Button on the seller page, or `python -m scripts.paypal_llm_agent` over MCP. | Confirm terms, approve for the payer, release a hold, ship or capture. A wrong draft — even one it was talked into by the chat — is blocked and gets no payer link. |
+
+Both need `ANTHROPIC_API_KEY` (the reader also accepts `OPENAI_API_KEY` + `OPENAI_MODEL`). Without a key the checkout still works with the rule reader and the AI button is hidden. Default models: `claude-sonnet-5-5` (override with `CALLGATE_MODEL` / `CALLGATE_AGENT_MODEL`).
+
 ## AI sales agents (MCP)
 
 The server exposes `/mcp` (streamable HTTP) with three tools:
@@ -165,7 +174,7 @@ The live PayPal host is refused unless `CALLGATE_ALLOW_LIVE=1`. `render.yaml` at
 
 ## Evidence
 
-- `pytest tests/paypal_checkout` — 88 tests: every reliability row above, approval, offer and webhook forgery, the chain of consent, rebuild after tampering, grounding, the MCP gateway over a real MCP client, packing / tracking / evidence, PayPal carrier codes, every risk check, provenance tampering (edit, remove, reorder, re-signed forgery, altered import), and the sandbox check script itself run against the stand-in.
+- `pytest tests/paypal_checkout` — 92 tests: every reliability row above, approval, offer and webhook forgery, the chain of consent, rebuild after tampering, grounding, the MCP gateway over a real MCP client, packing / tracking / evidence, PayPal carrier codes, every risk check, provenance tampering (edit, remove, reorder, re-signed forgery, altered import), the sandbox check script itself run against the stand-in, and the AI sales assistant's tool loop driven by a scripted model (in-process and over real MCP HTTP), including a model that proposes the planted $180 first.
 - `python -m evaluation_paypal.run` — CheckoutBench-lite, rules-only, October 25, 2026:
   - 18 negotiations (English, Chinese, mixed): 12/13 deals read exactly, 1 sent to a person (the injected-price chat), **0 wrong totals**, **0 of 5 no-deal chats made payable**;
   - 67/67 order mutations caught;
@@ -188,6 +197,7 @@ The live PayPal host is refused unless `CALLGATE_ALLOW_LIVE=1`. `render.yaml` at
 | `service.py` | The checkout flow and the chain of consent |
 | `shipping.py` | Packing checklist, photo storage, weight, tracking body, dispute evidence |
 | `agent_gateway.py` | MCP tools for AI sales agents |
+| `llm_agent.py` | Claude as the seller's sales assistant (tool-use loop over the gateway) |
 | `server/` | Seller page, payer page (`/pay/{id}`), JSON API, webhook endpoint, `/mcp` |
 | `../../scripts/paypal_sandbox_check.py` | End-to-end run against the real PayPal sandbox |
 

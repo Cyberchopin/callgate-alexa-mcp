@@ -482,7 +482,11 @@ function agentPanel(){
   const r = CO.agent_run; if (!r || payerView) return "";
   const rows = (r.calls||[]).map(c=>{
     const res = c.result || {}; const v = typeof res === "string" ? res : (res.result || res.state || "");
-    return `<li><b>${esc(c.tool)}</b> <small>${esc(JSON.stringify(c.input))}</small> → ${esc(v)}${c.is_error ? " (refused)" : ""}</li>`;
+    const i = c.input || {};
+    const what = c.tool==="propose_order" ? `drafted ${esc(i.total)} ${esc(i.currency)}${i.shipping ? ` (shipping ${esc(i.shipping)})` : ""}`
+      : c.tool==="read_deal" ? "read the chat" : "checked the status";
+    const verdict = {VERIFIED:"verified", BLOCKED_MISMATCH:"blocked — doesn't match the confirmed terms", WAITING_FOR_SELLER:"waiting for the seller"}[v] || v;
+    return `<li>${what} → <b>${esc(verdict)}</b>${c.is_error ? " (refused)" : ""}</li>`;
   }).join("");
   return `<details class="agent" open style="margin-bottom:14px"><summary><b>What the AI sales assistant did</b></summary>
     <ol style="font-size:.9rem;margin:8px 0">${rows}</ol>
