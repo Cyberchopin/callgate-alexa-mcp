@@ -381,7 +381,9 @@ function renderOrder(){
   if (s === "TERMS_CONFIRMED"){
     p.innerHTML = `<h2>Create the PayPal order</h2>
       <p>CallGate builds the order from the confirmed terms, so the amount can only be ${esc(CO.terms.total.value)} ${esc(CO.terms.currency.value)}.</p>
-      <div class="row"><button class="btn" id="build">Create PayPal order</button></div>`;
+      <div class="row"><button class="btn" id="build">Create PayPal order</button>
+      ${CFG.ai_agent ? `<button class="btn ghost" id="ai-draft">Let the AI sales assistant draft it</button>` : ""}</div>
+      ${CFG.ai_agent ? `<p style="color:var(--muted);font-size:.88rem;margin:6px 0 0">The assistant (${esc(CFG.ai_agent)}) can only draft. Whatever it drafts is checked against the terms above.</p>` : ""}`;
     return;
   }
   const o = (s==="ORDER_CHANGED" && CO.changed_order) ? CO.changed_order : CO.order;
@@ -443,7 +445,7 @@ function renderOrder(){
            <button class="btn" type="submit">Ship there and take the payment</button></form>
            <button class="btn ghost small" id="build">Rebuild the order instead</button>`; break;
   }
-  p.innerHTML = `<div class="order-head"><h2>PayPal order</h2><span>${o ? esc(o.id)+" · "+src : ""}</span></div>
+  p.innerHTML = agentPanel() + `<div class="order-head"><h2>PayPal order</h2><span>${o ? esc(o.id)+" · "+src : ""}</span></div>
     ${o ? `<table><thead><tr><th></th><th>Agreed in chat</th><th>PayPal order</th></tr></thead><tbody>${rows.join("")}</tbody></table>` : ""}
     ${verdict}<div class="row">${actions}</div>`;
 }
@@ -474,6 +476,17 @@ function packPanel(editable){
       ${ready ? "" : `<p style="color:var(--muted);font-size:.9rem;margin:6px 0 0">Every line needs a photo, or a reason it can't have one.</p>`}`;
   return `<h2 style="margin-top:16px">${editable ? "Pack what was promised" : "Packed before shipping"}</h2>
     <ul class="pack">${lines}</ul>${form}`;
+}
+
+function agentPanel(){
+  const r = CO.agent_run; if (!r || payerView) return "";
+  const rows = (r.calls||[]).map(c=>{
+    const res = c.result || {}; const v = typeof res === "string" ? res : (res.result || res.state || "");
+    return `<li><b>${esc(c.tool)}</b> <small>${esc(JSON.stringify(c.input))}</small> → ${esc(v)}${c.is_error ? " (refused)" : ""}</li>`;
+  }).join("");
+  return `<details class="agent" open style="margin-bottom:14px"><summary><b>What the AI sales assistant did</b></summary>
+    <ol style="font-size:.9rem;margin:8px 0">${rows}</ol>
+    ${r.final ? `<p style="font-size:.93rem;margin:0"><i>“${esc(r.final)}”</i></p>` : ""}</details>`;
 }
 
 function ackPanel(){
@@ -588,6 +601,9 @@ document.addEventListener("click", e=>{
   if (id==="ack-ok") act(async()=>render(await api(`/api/checkouts/${CO.id}/received`,{body:{as_described:true}})));
   if (id==="ack-bad"){ const note = prompt("What was different from what you agreed?"); if (note)
     act(async()=>render(await api(`/api/checkouts/${CO.id}/received`,{body:{as_described:false, note}}))); }
+  if (id==="ai-draft"){ const b=e.target; b.disabled=true; b.textContent="The assistant is working…";
+    act(async()=>{ render(await api(`/api/checkouts/${CO.id}/ai-draft`,{post:true})); toast("The assistant drafted an order. Check it against the chat."); })
+      .finally(()=>{ b.disabled=false; }); }
   if (id==="reconcile") act(async()=>render(await api(`/api/checkouts/${CO.id}/reconcile`,{post:true})));
   if (id==="fake-approve"){ e.preventDefault(); act(async()=>{ await api("/demo/approve",{body:{checkout_id:CO.id}}); toast("Approved in PayPal (simulated). Now complete the payment."); }); }
   const d = e.target.dataset.demo;

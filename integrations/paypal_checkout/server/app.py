@@ -39,7 +39,7 @@ def _load_key(path: Path) -> Ed25519PrivateKey:
 
 
 def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None = None,
-               model_reader="default", public_url: str | None = None) -> FastAPI:
+               model_reader="default", public_url: str | None = None, agent_complete="default") -> FastAPI:
     state = Path(state_dir or os.environ.get("CALLGATE_CHECKOUT_STATE", ".callgate-checkout"))
     state.mkdir(parents=True, exist_ok=True)
     public_url = (public_url or os.environ.get("CALLGATE_PUBLIC_URL") or os.environ.get("RENDER_EXTERNAL_URL")
@@ -58,6 +58,10 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
     app = FastAPI(title="CallGate Checkout", docs_url=None, redoc_url=None)
     app.state.svc, app.state.fake, app.state.mode = svc, fake, mode
     app.state.public_url = public_url
+    if agent_complete == "default":
+        from ..llm_agent import anthropic_messages
+        agent_complete = anthropic_messages() if os.environ.get("ANTHROPIC_API_KEY") else None
+    app.state.agent_complete = agent_complete
     demo_on = mode == "fake" or os.environ.get("CALLGATE_DEMO") == "1"
 
     @app.middleware("http")
@@ -110,6 +114,7 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
     @app.get("/api/config")
     def config():
         return {"mode": mode, "demo": demo_on, "model": reader.label if reader else None,
+                "ai_agent": getattr(app.state.agent_complete, "model", "scripted") if app.state.agent_complete else None,
                 "public_key": svc.public_key.public_bytes_raw().hex()}
 
     @app.post("/api/checkouts")
@@ -251,6 +256,26 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
         return {"offer": co["data"]["offer"], "approval": co["data"]["approval"], "receipt": svc.receipt(checkout_id),
                 "verify": "integrations.paypal_checkout.service.verify_chain_of_consent(receipt, offer, approval)"}
 
+    @app.post("/api/checkouts/{checkout_id}/ai-draft")
+    async def ai_draft(checkout_id: str):
+        """Hand the confirmed deal to the AI sales assistant; it drafts the order through the agent gateway."""
+        from ..agent_gateway import create_agent_gateway
+        from ..llm_agent import InProcessTools, run_agent
+        co = _get(svc, checkout_id)
+        if app.state.agent_complete is None:
+            raise HTTPException(409, "Set ANTHROPIC_API_KEY to use the AI sales assistant")
+        if not co["data"].get("terms_commitment"):
+            raise HTTPException(409, "Confirm the terms first; the assistant only drafts against confirmed terms")
+        tools = InProcessTools(create_agent_gateway(svc, base_url=app.state.public_url))
+        try:
+            run = await run_agent(tools, app.state.agent_complete, checkout_id=checkout_id)
+        except Exception as exc:                       # model/API errors must not take the page down
+            raise HTTPException(502, f"AI assistant failed: {type(exc).__name__}: {str(exc)[:200]}") from None
+        svc.ledger.transition(checkout_id, svc.ledger.get(checkout_id)["state"], svc.ledger.get(checkout_id)["state"],
+                              update={"agent_run": run},
+                              detail={"note": f"AI assistant made {run['steps']} tool call(s)"})
+        return _view(svc, _get(svc, checkout_id))
+
     @app.post("/webhooks/paypal")
     async def webhook(req: Request):
         return svc.handle_webhook(dict(req.headers), await req.body())
@@ -354,7 +379,7 @@ def _view(svc, co):
             "shipment": d.get("shipment"), "evidence_submitted": d.get("evidence_submitted"),
             "chat_flags": d.get("chat_flags", []), "payment_flags": d.get("payment_flags", []),
             "ship_to": d.get("ship_to"), "destination_override": d.get("destination_override"),
-            "buyer_ack": d.get("buyer_ack"),
+            "buyer_ack": d.get("buyer_ack"), "agent_run": d.get("agent_run"),
             "provenance": svc.passport(co["id"]) if (d.get("provenance") or {}).get("chain") else None,
             "events": svc.ledger.events(co["id"])}
 

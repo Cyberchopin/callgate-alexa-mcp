@@ -6,7 +6,7 @@ services:
     name: callgate-checkout
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements-lock.txt -r integrations/alexa_mcp/requirements.txt
+    buildCommand: pip install -r requirements-lock.txt -r integrations/alexa_mcp/requirements.txt -r integrations/paypal_checkout/requirements.txt
     startCommand: python -m integrations.paypal_checkout.server
     healthCheckPath: /api/config
     envVars:

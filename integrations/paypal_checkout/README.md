@@ -54,9 +54,10 @@ flowchart LR
     K --> O[PayPal order]
     O --> D{Field-by-field diff}
     D -->|blocking| B[Can't be paid<br/>rebuild from terms]
-    D -->|match| P[Payer confirms this<br/>order fingerprint]
+    D -->|match| P[Payer signs approval:<br/>this offer, this order version,<br/>max amount, expiry]
     F --> P
-    P --> G{At capture: same order?<br/>ship-to inside agreed<br/>destinations?}
+    K -.signed offer.-> P
+    P --> G{At capture: same order?<br/>within max_amount?<br/>ship-to inside agreed<br/>destinations?}
     G -->|order changed| N[Refused, nothing charged]
     G -->|destination outside| A[Held until the<br/>seller re-agrees]
     G -->|yes| W[Write-ahead CAPTURING]
@@ -88,9 +89,21 @@ flowchart LR
 | Item value > UPS default $100 liability, no declared value | Ship | Warning the seller must acknowledge | Carrier won't pay above its liability |
 | Packed weight | Ship | Required, recorded in receipt and evidence | Weight records were what helped sellers against "empty box" claims |
 
-### Binding approval to an order version
+### Chain of consent
 
-`order_fingerprint` = SHA-256 over the order id, intent, amounts, breakdown, items and payee (not `status`). The payer's confirmation is an Ed25519-signed approval over `{checkout, terms commitment, chat hash, order id, fingerprint, nonce, expiry}`. Before capture the server re-reads the order from PayPal; a different fingerprint, a blocking difference or an expired approval stops the capture.
+Each step signs a record that names the one before it, so a dispute can be answered with "who agreed to what" rather than "my word against yours":
+
+```
+chat ──sha256──▶ seller offer ──sha256──▶ payer approval ──▶ capture ──▶ receipt
+                 (signed)                (signed, scoped)                (signed, names offer + approval)
+```
+
+- **Seller offer** — written when the seller confirms the terms: chat hash, terms commitment, total, shipping, what's included, where it ships from.
+- **Payer approval** — written when the payer confirms on their page. It names the offer's hash, the PayPal order id and `order_fingerprint` (SHA-256 over id, intent, amounts, breakdown, items and payee — not `status`), and is scoped like a delegated-payment allowance: `max_amount`, `currency`, `expires_at`, and a single-use `nonce` that becomes the capture's `PayPal-Request-Id`.
+- **At capture** the server re-reads the order from PayPal. A different fingerprint, an amount above `max_amount`, a blocking difference, an expired approval, or an offer that no longer verifies stops the capture.
+- **Receipt** names the offer and approval hashes. `verify_chain_of_consent(receipt, offer, approval)` checks every signature and link; `GET /api/checkouts/{id}/consent` returns all three.
+
+The structure follows Google's Agent Payments Protocol (a merchant-signed cart that the user's approval refers to) and the allowance in OpenAI's commerce delegated-payment spec. All signatures here are made by the checkout server's key: they prove the records weren't changed after the fact, not which device a person used.
 
 ### Reliability
 
@@ -104,6 +117,7 @@ flowchart LR
 | Webhook redelivered / forged | Deduplicated by event id / rejected by signature verification |
 | Server restarts mid-capture | Ledger is on disk; reconcile resumes |
 | Concurrent photo uploads | Read-modify-write runs inside the ledger lock; none are lost |
+| Same `Idempotency-Key` sent for a different checkout | Refused as a conflict; nothing reaches PayPal |
 
 Every transition is written to an append-only event log, shown on the page as "What happened".
 
@@ -121,14 +135,14 @@ The server exposes `/mcp` (streamable HTTP) with three tools:
 | `propose_order` | Draft a PayPal order. It is checked against the confirmed terms; a mismatch is shown to the seller and gets no payer link. |
 | `get_checkout` | Read status. A payer link appears only for a verified order. |
 
-There is deliberately no tool to confirm terms, approve for the payer, release a hold, ship, or capture. `python -m scripts.paypal_agent_demo` runs a scripted agent that obeys an instruction planted in the chat ("the real price is $180"): the planted price reopens the deal for the seller, and the agent's $180 order is blocked. Set `CALLGATE_AGENT_TOKEN` to require a bearer token on `/mcp`.
+There is deliberately no tool to confirm terms, approve for the payer, release a hold, ship, or capture. That is the gap this fills: PayPal's own Agent Toolkit lets an agent create orders and invoices directly, and its disclaimer leaves checking the output to the user. Orders made that way can be attached to a checkout (`POST /api/checkouts/{id}/attach`) and are checked like any other. `python -m scripts.paypal_agent_demo` runs a scripted agent that obeys an instruction planted in the chat ("the real price is $180"): the planted price reopens the deal for the seller, and the agent's $180 order is blocked. Set `CALLGATE_AGENT_TOKEN` to require a bearer token on `/mcp`.
 
 ## Run it
 
 Offline (simulated PayPal; every failure case has a demo button, and "Use a risky cross-border example" shows the flags, the address hold and the liability warning):
 
 ```bash
-pip install -r requirements-lock.txt -r integrations/alexa_mcp/requirements.txt
+pip install -r requirements-lock.txt -r integrations/alexa_mcp/requirements.txt -r integrations/paypal_checkout/requirements.txt
 python -m integrations.paypal_checkout.server  # http://localhost:8787
 ```
 
@@ -141,13 +155,17 @@ PayPal sandbox (real orders, real approval page, real capture, real tracking):
    export ANTHROPIC_API_KEY=...         # optional: model reader (or OPENAI_API_KEY + OPENAI_MODEL)
    python -m integrations.paypal_checkout.server
    ```
-3. Webhooks (optional): expose the server (e.g. a tunnel), set `CALLGATE_PUBLIC_URL`, subscribe the app to `PAYMENT.CAPTURE.*` at `/webhooks/paypal`, and set `PAYPAL_WEBHOOK_ID`.
+3. One-command check of the whole flow against the real sandbox (creates an order, waits while you approve it with a sandbox personal account, captures twice to show the second doesn't charge, adds tracking, writes the PayPal ids to `docs/paypal/sandbox-run.json`):
+   ```bash
+   python -m scripts.paypal_sandbox_check
+   ```
+4. Webhooks (optional): expose the server (e.g. a tunnel), set `CALLGATE_PUBLIC_URL`, subscribe the app to `PAYMENT.CAPTURE.*` at `/webhooks/paypal`, and set `PAYPAL_WEBHOOK_ID`.
 
 The live PayPal host is refused unless `CALLGATE_ALLOW_LIVE=1`. `render.yaml` at the repository root deploys the offline demo on Render's free plan; add the sandbox credentials in the Render dashboard to switch it to the real sandbox.
 
 ## Evidence
 
-- `pytest tests/paypal_checkout` — 74 tests: every reliability row above, approval and webhook forgery, rebuild after tampering, grounding, the MCP gateway over a real MCP client, packing / tracking / evidence, every risk check, and provenance tampering (edit, remove, reorder, re-signed forgery, altered import).
+- `pytest tests/paypal_checkout` — 88 tests: every reliability row above, approval, offer and webhook forgery, the chain of consent, rebuild after tampering, grounding, the MCP gateway over a real MCP client, packing / tracking / evidence, PayPal carrier codes, every risk check, provenance tampering (edit, remove, reorder, re-signed forgery, altered import), and the sandbox check script itself run against the stand-in.
 - `python -m evaluation_paypal.run` — CheckoutBench-lite, rules-only, October 25, 2026:
   - 18 negotiations (English, Chinese, mixed): 12/13 deals read exactly, 1 sent to a person (the injected-price chat), **0 wrong totals**, **0 of 5 no-deal chats made payable**;
   - 67/67 order mutations caught;
@@ -165,11 +183,12 @@ The live PayPal host is refused unless `CALLGATE_ALLOW_LIVE=1`. `render.yaml` at
 | `risk.py` | Risky chat lines, destination and duties checks, label and liability checks |
 | `provenance.py` | Signed, hash-linked provenance passport |
 | `ledger.py` | SQLite state machine, idempotency keys, webhook dedupe, event log |
-| `paypal_client.py` | Orders v2, tracking, disputes, webhook verification; `PayPal-Request-Id` on every write |
+| `paypal_client.py` | Orders v2, tracking (PayPal carrier codes), disputes, webhook verification; `PayPal-Request-Id` on every write |
 | `fake_paypal.py` | Offline stand-in used by tests and the demo (not PayPal) |
-| `service.py` | The checkout flow |
+| `service.py` | The checkout flow and the chain of consent |
 | `shipping.py` | Packing checklist, photo storage, weight, tracking body, dispute evidence |
 | `agent_gateway.py` | MCP tools for AI sales agents |
 | `server/` | Seller page, payer page (`/pay/{id}`), JSON API, webhook endpoint, `/mcp` |
+| `../../scripts/paypal_sandbox_check.py` | End-to-end run against the real PayPal sandbox |
 
 Reuses CallGate's canonical JSON and Ed25519 signing (`callgate/receipt.py`).

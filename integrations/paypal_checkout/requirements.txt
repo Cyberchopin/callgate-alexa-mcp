@@ -1,0 +1,3 @@
+# CallGate Checkout extras on top of requirements-lock.txt and integrations/alexa_mcp/requirements.txt
+# (python-multipart is also pulled in by mcp; pinned here so photo uploads never depend on that)
+python-multipart==0.0.32
