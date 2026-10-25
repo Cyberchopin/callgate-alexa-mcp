@@ -356,12 +356,12 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
   },
   {
     "id": "readme-037",
-    "quote": "- Pinned runtime: **mcp 2.3.0** and **cryptography 50.0.0**.",
+    "quote": "- Pinned runtime: **mcp 2.3.0** and **cryptography 50.0.2**.",
     "check": "source_literals",
     "sources": [
       {
         "path": "integrations/alexa_mcp/requirements.txt",
-        "literals": ["mcp==2.3.0", "cryptography==50.0.0"]
+        "literals": ["mcp==2.3.0", "cryptography==50.0.2"]
       }
     ]
   },

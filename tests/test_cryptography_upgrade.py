@@ -36,8 +36,8 @@ def test_all_manifests_pin_the_selected_cryptography_version():
         ROOT / "requirements-verification.txt",
         ROOT / "integrations/alexa_mcp/requirements.txt",
     )
-    assert {_pins(path)["cryptography"] for path in paths} == {"50.0.0"}
-    assert cryptography.__version__ == "50.0.0"
+    assert {_pins(path)["cryptography"] for path in paths} == {"50.0.2"}
+    assert cryptography.__version__ == "50.0.2"
 
 
 def test_cryptography_46_ed25519_vector_verifies_on_50():
