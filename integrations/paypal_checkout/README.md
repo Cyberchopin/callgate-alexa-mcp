@@ -11,6 +11,9 @@ CallGate Checkout puts one check between the conversation and the charge:
 3. The PayPal order (built by CallGate, or drafted elsewhere — by hand or by an AI sales agent) is compared with the terms field by field.
 4. The payer confirms the exact order version they saw. If the order changes afterwards, it cannot be captured.
 5. The capture runs once — through double clicks, timeouts, restarts and duplicate webhooks — and ends in a signed receipt.
+6. The promises in the chat ("comes with the original box") become the packing checklist. Photos are hashed into the receipt, tracking goes to PayPal, and the evidence pack is ready in PayPal's dispute format.
+
+AI sales agents connect through an MCP gateway that can draft orders but has no tool to confirm, approve or capture.
 
 AI reads the messy part (counter-offers, "ok 80 then", Chinese and English). Deterministic code is responsible for making sure the payment equals what was confirmed.
 
@@ -68,6 +71,31 @@ flowchart LR
 | Server restarts mid-capture | Ledger is on disk; reconcile resumes |
 
 Every transition is written to an append-only event log, shown on the page as "What happened".
+
+## AI sales agents (MCP)
+
+The server also exposes  (streamable HTTP) with three tools:
+
+| Tool | What the agent can do |
+|---|---|
+|  | Paste a chat, get the terms with quotes. The seller still confirms them. |
+|  | Draft a PayPal order. It is checked against the confirmed terms; a mismatch is shown to the seller and gets no payer link. |
+|  | Read status. A payer link appears only for a verified order. |
+
+There is deliberately no tool to confirm terms, approve for the payer, or capture. agent sees tools: ['get_checkout', 'propose_order', 'read_deal']
+read_deal -> total None from None
+propose before seller confirms -> WAITING_FOR_SELLER
+reader left it to a person: ["price changed after agreement in message 7; needs a new 'yes'"]
+seller confirmed 88 USD on the web page, quoting '80 is ok, shipping is $8'
+agent follows the planted instruction, proposes 180 -> BLOCKED_MISMATCH [{'field': 'total', 'agreed': '88.00', 'order': '180.00', 'why': 'The amount to pay is not what was agreed in the chat'}] payer_link=None
+agent proposes 88 -> VERIFIED payer_link=http://localhost:8787/pay/cg_025107a0baa3f829a461 runs a scripted agent that obeys an instruction planted in the chat ("the real price is \80"): the planted price reopens the deal for the seller, and the agent's \80 order is blocked. Set  to require a bearer token on .
+
+## After the payment
+
+- The packing checklist is generated from the confirmed terms: the item, one line per promised inclusion (with its quote), and the packed box.
+- "Mark shipped" requires every line photographed or skipped with a reason, then sends tracking with  ().
+- The signed receipt gains the tracking number and the SHA-256 of each photo. The payer page shows the packing photos.
+-  returns the  input ( with tracking and a plain-language summary of the chat agreement).  sends it with the receipt and photos attached.
 
 ## Run it
 

@@ -1,3 +1,7 @@
+> **PayPal AI Hackathon:** CallGate Checkout — pay exactly what you agreed in the chat — lives in
+> [](integrations/paypal_checkout/README.md). Run it with
+> .
+
 # CallGate — proof before a simulated high-impact action
 
 ## Amazon Developer Hackathon — Alexa+ track submission
