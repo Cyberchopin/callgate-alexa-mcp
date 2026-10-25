@@ -33,6 +33,7 @@ from . import ledger as L
 from .extract import ModelReader, read_terms
 from .order_check import blocking, compare, order_fingerprint, order_from_terms
 from .paypal_client import PayPalClient, PayPalError, PayPalTimeout, approve_link, capture_of
+from . import provenance as PV
 from . import risk as RK
 from . import shipping as SH
 from .terms import (AgreedTerms, Evidence, Field, ground_terms, parse_chat, terms_from_dict)
@@ -278,10 +279,17 @@ class CheckoutService:
         status = (cap or {}).get("status")
         to = {"COMPLETED": L.CAPTURED, "PENDING": L.CAPTURE_PENDING}.get(status, L.CAPTURE_FAILED)
         co = self.ledger.get(checkout_id)
-        return self.ledger.transition(checkout_id, expect, to,
-                                      update={"capture_id": (cap or {}).get("id"), "capture_status": status,
-                                              "captured_amount": (cap or {}).get("amount"),
-                                              "checklist": SH.checklist(co["data"]["terms"], co["data"].get("title"))},
+        update = {"capture_id": (cap or {}).get("id"), "capture_status": status,
+                  "captured_amount": (cap or {}).get("amount"),
+                  "checklist": SH.checklist(co["data"]["terms"], co["data"].get("title"))}
+        chain = (co["data"].get("provenance") or {}).get("chain")
+        if to == L.CAPTURED and chain:
+            sold = PV.make_entry(chain, self.key, event="sold", holder=co["data"]["provenance"].get("holder") or "seller",
+                                 note=f"Sold through CallGate Checkout {checkout_id}; agreed total "
+                                      f"{(co['data']['terms'].get('total') or {}).get('value')}",
+                                 recorded_at=int(self.clock()))
+            update["provenance"] = {**co["data"]["provenance"], "chain": chain + [sold]}
+        return self.ledger.transition(checkout_id, expect, to, update=update,
                                       detail={"via": via, "capture_status": status})
 
     # ---------------------------------------------------- 6. reconcile
@@ -437,7 +445,8 @@ class CheckoutService:
 
     def photo_path(self, checkout_id: str, sha256: str):
         co = self.ledger.get(checkout_id)
-        if sha256 not in {p["sha256"] for p in (co["data"].get("photos") or {}).values()}:
+        allowed = {p["sha256"] for p in (co["data"].get("photos") or {}).values()} | set(co["data"].get("provenance_photos") or [])
+        if sha256 not in allowed:
             raise CheckoutError("NOT_FOUND", "no such photo on this checkout", 404)
         return self.photo_dir / sha256
 
@@ -466,6 +475,65 @@ class CheckoutService:
                                                                      "at": int(self.clock())}},
                                       detail={"note": f"evidence sent to PayPal dispute {dispute_id}", "files": len(files)})
 
+    # ------------------------------------------------ 10. provenance
+    _PV_OPEN = {L.DRAFT, L.TERMS_CONFIRMED, L.ORDER_ATTACHED, L.MISMATCH, L.READY, L.BUYER_CONFIRMED,
+                L.ORDER_CHANGED, L.ADDRESS_HOLD, L.CAPTURED}
+
+    def add_provenance(self, checkout_id: str, *, event: str, holder: str, where: str = "", when: str | None = None,
+                       serials: list[str] | None = None, photos: list[tuple[str, bytes]] | None = None,
+                       note: str = "") -> dict:
+        co = self.ledger.get(checkout_id)
+        if co["state"] not in self._PV_OPEN:
+            raise CheckoutError("WRONG_STATE", "Provenance is recorded before the item ships")
+        evidence = []
+        for kind, data in (photos or [])[:6]:
+            try:
+                ph = SH.store_photo(self.photo_dir, data)
+            except ValueError as e:
+                raise CheckoutError("BAD_PHOTO", str(e), 400) from None
+            evidence.append({"kind": kind, "sha256": ph["sha256"], "content_type": ph["content_type"]})
+        now = int(self.clock())
+
+        def add(data):
+            pv = data.setdefault("provenance", {"chain": []})
+            try:
+                pv["chain"].append(PV.make_entry(pv["chain"], self.key, event=event, holder=holder, where=where,
+                                                 when=when, serials=serials, evidence=evidence, note=note,
+                                                 recorded_at=now))
+            except ValueError as e:
+                raise CheckoutError("BAD_PROVENANCE", str(e), 400) from None
+            pv["holder"] = pv["chain"][-1]["entry"]["holder"]
+            data.setdefault("provenance_photos", []).extend(x["sha256"] for x in evidence)
+        return self.ledger.transition(checkout_id, co["state"], co["state"], mutate=add,
+                                      detail={"note": f"provenance: {event} recorded by {holder}"})
+
+    def import_passport(self, checkout_id: str, chain: list[dict]) -> dict:
+        co = self.ledger.get(checkout_id)
+        if co["state"] not in self._PV_OPEN:
+            raise CheckoutError("WRONG_STATE", "Provenance is recorded before the item ships")
+        if (co["data"].get("provenance") or {}).get("chain"):
+            raise CheckoutError("PASSPORT_EXISTS", "This checkout already has a passport")
+        check = PV.verify_chain(chain)
+        if not check["ok"]:
+            raise CheckoutError("PASSPORT_BROKEN", "This passport was altered or is incomplete", 400,
+                                problems=check["problems"])
+        return self.ledger.transition(checkout_id, co["state"], co["state"],
+                                      update={"provenance": {"chain": chain, "imported_entries": len(chain)}},
+                                      detail={"note": f"imported a passport with {len(chain)} verified entries "
+                                                      f"from {check['holders']} holder(s)"})
+
+    def passport(self, checkout_id: str) -> dict:
+        co = self.ledger.get(checkout_id)
+        chain = (co["data"].get("provenance") or {}).get("chain") or []
+        return {"chain": chain, "verification": PV.verify_chain(chain) if chain else None,
+                "this_seller": PV.key_id(self.public_key.public_bytes_raw().hex())}
+
+    def check_photo(self, checkout_id: str, data: bytes) -> dict:
+        digest = hashlib.sha256(data).hexdigest()
+        chain = (self.ledger.get(checkout_id)["data"].get("provenance") or {}).get("chain") or []
+        hits = PV.find_photo(chain, digest)
+        return {"sha256": digest, "matches_entries": [i + 1 for i in hits]}
+
     # -------------------------------------------------------- receipts
     def receipt(self, checkout_id: str) -> dict:
         co = self.ledger.get(checkout_id)
@@ -489,6 +557,7 @@ class CheckoutService:
                    "flags": sorted({f["code"] for f in (d.get("chat_flags") or []) + (d.get("payment_flags") or [])
                                     + ((d.get("shipment") or {}).get("flags") or [])}),
                    "buyer_acknowledgment": d.get("buyer_ack"),
+                   "provenance_head": PV.entry_hash(d["provenance"]["chain"][-1]) if (d.get("provenance") or {}).get("chain") else None,
                    "note": "Records what was agreed, confirmed, charged and photographed before shipping. "
                            "It does not prove what is in the photos or the item's condition."}
         return {"payload": payload, "signature": self.key.sign(canonical(payload)).hex(),

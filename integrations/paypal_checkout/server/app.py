@@ -9,6 +9,7 @@ Run:  python -m integrations.paypal_checkout.server  (http://localhost:8787)
 from __future__ import annotations
 
 import os
+import re
 import secrets
 from decimal import Decimal
 from pathlib import Path
@@ -175,7 +176,8 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
     def get_photo(checkout_id: str, sha256: str):
         path = svc.photo_path(checkout_id, sha256)
         co = svc.ledger.get(checkout_id)
-        mime = next(p["content_type"] for p in co["data"]["photos"].values() if p["sha256"] == sha256)
+        from ..shipping import sniff_image
+        mime = sniff_image(path.read_bytes()[:16]) or "application/octet-stream"
         return FileResponse(path, media_type=mime, headers={"Cache-Control": "private, max-age=3600",
                                                             "X-Content-Type-Options": "nosniff"})
 
@@ -212,6 +214,33 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
             return _view(svc, svc.submit_evidence(checkout_id, dispute_id))
         except ValueError as e:
             raise HTTPException(400, str(e)) from None
+
+    @app.post("/api/checkouts/{checkout_id}/provenance")
+    async def add_provenance(checkout_id: str, event: str = Form(...), holder: str = Form(...),
+                             where: str = Form(""), when: str = Form(""), serials: str = Form(""), note: str = Form(""),
+                             receipt: UploadFile | None = File(None), serial_photo: UploadFile | None = File(None)):
+        photos = []
+        for kind, f in (("receipt", receipt), ("serial", serial_photo)):
+            if f is not None and f.filename:
+                photos.append((kind, await f.read(8 * 1024 * 1024 + 1)))
+        return _view(svc, svc.add_provenance(checkout_id, event=event, holder=holder, where=where, when=when or None,
+                                             serials=[x for x in re.split(r"[,\n]", serials) if x.strip()],
+                                             photos=photos, note=note))
+
+    @app.post("/api/checkouts/{checkout_id}/passport")
+    async def import_passport(checkout_id: str, req: Request):
+        body = await req.json()
+        return _view(svc, svc.import_passport(checkout_id, body.get("chain") if isinstance(body, dict) else body))
+
+    @app.get("/api/checkouts/{checkout_id}/passport")
+    def get_passport(checkout_id: str):
+        _get(svc, checkout_id)
+        return svc.passport(checkout_id)
+
+    @app.post("/api/checkouts/{checkout_id}/passport/check-photo")
+    async def check_photo(checkout_id: str, photo: UploadFile = File(...)):
+        _get(svc, checkout_id)
+        return svc.check_photo(checkout_id, await photo.read(8 * 1024 * 1024 + 1))
 
     @app.post("/webhooks/paypal")
     async def webhook(req: Request):
@@ -316,7 +345,8 @@ def _view(svc, co):
             "shipment": d.get("shipment"), "evidence_submitted": d.get("evidence_submitted"),
             "chat_flags": d.get("chat_flags", []), "payment_flags": d.get("payment_flags", []),
             "ship_to": d.get("ship_to"), "destination_override": d.get("destination_override"),
-            "buyer_ack": d.get("buyer_ack"), "provenance": d.get("provenance"),
+            "buyer_ack": d.get("buyer_ack"),
+            "provenance": svc.passport(co["id"]) if (d.get("provenance") or {}).get("chain") else None,
             "events": svc.ledger.events(co["id"])}
 
 
