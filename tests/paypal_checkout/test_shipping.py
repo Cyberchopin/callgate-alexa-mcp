@@ -12,6 +12,7 @@ from .test_checkout import confirmed_and_approved, env  # noqa: F401  (fixture)
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
 JPG = b"\xff\xd8\xff\xe0" + b"\x01" * 64
+LABEL = {"label_country": "US", "label_postal": "92617-1234", "weight": "1.4", "weight_unit": "lb"}
 
 
 def paid(svc, fake):
@@ -26,7 +27,7 @@ def test_checklist_comes_from_the_chat_promises(env):  # noqa: F811
     labels = [x["label"] for x in co["data"]["checklist"]]
     assert labels[0].startswith("The item")
     assert "Included: comes with the original box" in labels and "Included: new with tags" in labels
-    assert labels[-1] == "Everything in the box, before sealing"
+    assert labels[-2:] == ["Everything in the box, before sealing", "Carrier counter receipt or label with weight"]
     box = next(x for x in co["data"]["checklist"] if "original box" in x["label"])
     assert box["quote"] == "comes with the original box"
 
@@ -35,7 +36,7 @@ def test_cannot_ship_until_every_line_is_photographed_or_explained(env):  # noqa
     svc, fake, _ = env
     co = paid(svc, fake)
     with pytest.raises(CheckoutError) as e:
-        svc.ship(co["id"], carrier="USPS", tracking_number="9400111899223")
+        svc.ship(co["id"], carrier="USPS", tracking_number="9400111899223", **LABEL)
     assert e.value.code == "CHECKLIST_INCOMPLETE"
     with pytest.raises(CheckoutError) as e:
         svc.add_photo(co["id"], "item", b"not an image at all")
@@ -44,12 +45,12 @@ def test_cannot_ship_until_every_line_is_photographed_or_explained(env):  # noqa
     for i, line in enumerate(lines[:-1]):
         svc.add_photo(co["id"], line, PNG + bytes([i]))
     svc.skip_line(co["id"], lines[-1], "taped the box before I remembered")
-    co = svc.ship(co["id"], carrier="usps", tracking_number="9400111899223")
+    co = svc.ship(co["id"], carrier="usps", tracking_number="9400111899223", **LABEL)
     assert co["state"] == L.SHIPPED
     tracker = fake.trackers[co["data"]["order_id"]][0]
     assert tracker["capture_id"] == co["data"]["capture_id"] and tracker["carrier"] == "USPS"
     assert tracker["notify_payer"] is True
-    again = svc.ship(co["id"], carrier="USPS", tracking_number="9400111899223")
+    again = svc.ship(co["id"], carrier="USPS", tracking_number="9400111899223", **LABEL)
     assert again["state"] == L.SHIPPED and len(fake.trackers[co["data"]["order_id"]]) == 1
     receipt = verify_receipt(svc.receipt(co["id"]))
     assert len(receipt["packing_photos"]) == len(lines) - 1
@@ -62,7 +63,7 @@ def test_unknown_carrier_goes_through_as_other(env):  # noqa: F811
     co = paid(svc, fake)
     for line in [x["id"] for x in co["data"]["checklist"]]:
         svc.add_photo(co["id"], line, JPG + line.encode())
-    co = svc.ship(co["id"], carrier="yunexpress", tracking_number="YT2512345678901")
+    co = svc.ship(co["id"], carrier="yunexpress", tracking_number="YT2512345678901", **LABEL)
     t = fake.trackers[co["data"]["order_id"]][0]
     assert (t["carrier"], t["carrier_name_other"]) == ("OTHER", "Yunexpress")
 
@@ -82,7 +83,7 @@ def test_evidence_pack_and_submission(env):  # noqa: F811
     co = paid(svc, fake)
     for line in [x["id"] for x in co["data"]["checklist"]]:
         svc.add_photo(co["id"], line, PNG + line.encode())
-    svc.ship(co["id"], carrier="UPS", tracking_number="1Z999AA10123456784")
+    svc.ship(co["id"], carrier="UPS", tracking_number="1Z999AA10123456784", **LABEL)
     pack = svc.evidence_pack(co["id"])
     ev = pack["input"]["evidences"][0]
     assert ev["evidence_type"] == "PROOF_OF_FULFILLMENT"

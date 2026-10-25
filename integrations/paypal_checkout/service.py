@@ -22,6 +22,7 @@ import hashlib
 import json
 import secrets
 import time
+from decimal import Decimal
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
@@ -32,6 +33,7 @@ from . import ledger as L
 from .extract import ModelReader, read_terms
 from .order_check import blocking, compare, order_fingerprint, order_from_terms
 from .paypal_client import PayPalClient, PayPalError, PayPalTimeout, approve_link, capture_of
+from . import risk as RK
 from . import shipping as SH
 from .terms import (AgreedTerms, Evidence, Field, ground_terms, parse_chat, terms_from_dict)
 
@@ -49,10 +51,11 @@ class CheckoutService:
     def __init__(self, ledger: L.Ledger, paypal: PayPalClient, signing_key: Ed25519PrivateKey, *,
                  model_reader: ModelReader | None = None, clock=time.time, approval_ttl: int = 900,
                  return_url: str = "http://localhost:8787/return", webhook_id: str | None = None,
-                 photo_dir=None):
+                 photo_dir=None, seller_country: str = "US"):
         from pathlib import Path
         self.ledger, self.paypal, self.key = ledger, paypal, signing_key
         self.photo_dir = Path(photo_dir) if photo_dir else Path(ledger.path).parent / "photos"
+        self.seller_country = seller_country.upper()
         self.model_reader, self.clock, self.ttl = model_reader, clock, approval_ttl
         self.return_url, self.webhook_id = return_url, webhook_id
 
@@ -72,7 +75,8 @@ class CheckoutService:
             "messages": chat_rows, "chat_sha256": hashlib.sha256(canonical(chat_rows)).hexdigest(),
             "title": (title or "")[:127] or None,
             "readers": ["rules-checkout-v1"] + ([self.model_reader.label] if self.model_reader else []),
-            "terms": terms.to_dict(), "ready": terms.ready()})
+            "terms": terms.to_dict(), "ready": terms.ready(),
+            "chat_flags": [f.to_dict() for f in RK.chat_flags(messages)]})
 
     # --------------------------------------------------------- 2. confirm
     def confirm_terms(self, checkout_id: str, *, resolutions: dict | None = None) -> dict:
@@ -233,6 +237,20 @@ class CheckoutService:
             raise CheckoutError("PAYER_NOT_APPROVED", "The payer has not approved this order on PayPal yet",
                                 approve_url=approve_link(order))
 
+        # The ship-to address exists only now, after the payer approved on PayPal.
+        dest = RK.ship_to(order)
+        flags = RK.payment_flags(_messages(co), order, seller_country=self.seller_country)
+        override = co["data"].get("destination_override") or {}
+        holds = [f for f in RK.blocking(flags)
+                 if not (f.code == "DESTINATION_MISMATCH" and dest and override.get("country_code") == dest["country_code"])]
+        self.ledger.transition(checkout_id, L.BUYER_CONFIRMED, L.BUYER_CONFIRMED,
+                               update={"ship_to": dest, "payment_flags": [f.to_dict() for f in flags]},
+                               detail={"note": "checked PayPal ship-to", "country": (dest or {}).get("country_code")})
+        if holds:
+            co = self.ledger.transition(checkout_id, L.BUYER_CONFIRMED, L.ADDRESS_HOLD,
+                                        detail={"note": "payment held: " + holds[0].title})
+            raise CheckoutError("ADDRESS_HOLD", holds[0].title + ". Nothing was charged.", checkout=co)
+
         rid = f"cg-cap-{approval['nonce']}"
         self.ledger.transition(checkout_id, L.BUYER_CONFIRMED, L.CAPTURING,
                                update={"capture_request_id": rid}, detail={"request_id": rid})
@@ -315,6 +333,18 @@ class CheckoutService:
         self.ledger.webhook_outcome(event_id, outcome)
         return {"status": "processed", "outcome": outcome}
 
+    def accept_destination(self, checkout_id: str, *, reason: str) -> dict:
+        """Seller agrees to ship to PayPal's address for the agreed price; recorded with their reason."""
+        co = self.ledger.get(checkout_id)
+        reason = (reason or "").strip()[:300]
+        if co["state"] != L.ADDRESS_HOLD or not reason:
+            raise CheckoutError("BAD_OVERRIDE", "Only a held payment can be released, and it needs a reason", 400)
+        dest = co["data"].get("ship_to") or {}
+        return self.ledger.transition(checkout_id, L.ADDRESS_HOLD, L.BUYER_CONFIRMED,
+                                      update={"destination_override": {"country_code": dest.get("country_code"),
+                                                                       "reason": reason, "at": int(self.clock())}},
+                                      detail={"note": f"seller accepted shipping to {dest.get('country_code')}: {reason}"})
+
     # ------------------------------------------------------ 8. shipping
     def add_photo(self, checkout_id: str, line_id: str, data: bytes) -> dict:
         co = self.ledger.get(checkout_id)
@@ -345,7 +375,9 @@ class CheckoutService:
                                       mutate=lambda data: data.setdefault("skipped", {}).__setitem__(line_id, reason),
                                       detail={"note": f"skipped {line_id}: {reason}"})
 
-    def ship(self, checkout_id: str, *, carrier: str, tracking_number: str) -> dict:
+    def ship(self, checkout_id: str, *, carrier: str, tracking_number: str, label_country: str = "",
+             label_postal: str = "", weight: str = "", weight_unit: str = "lb",
+             declared_value: str | None = None, acknowledge_warnings: bool = False) -> dict:
         co = self.ledger.get(checkout_id)
         if co["state"] == L.SHIPPED:
             return co
@@ -360,16 +392,48 @@ class CheckoutService:
         item = d["order_summary"]["items"][0]["name"] if (d.get("order_summary") or {}).get("items") else None
         try:
             body = SH.tracking_body(d["capture_id"], tracking_number, carrier, item)
+            packed = SH.parse_weight(weight, weight_unit)
+            declared = SH.parse_money(declared_value) if declared_value not in (None, "") else None
         except ValueError as e:
-            raise CheckoutError("BAD_TRACKING", str(e), 400) from None
+            raise CheckoutError("BAD_SHIPMENT", str(e), 400) from None
+        summary = d.get("order_summary") or {}
+        item_value = Decimal(summary.get("total") or "0") - Decimal(summary.get("shipping") or "0")
+        flags = RK.ship_flags(ship_to_addr=d.get("ship_to"), label_country=label_country, label_postal=label_postal,
+                              carrier=body.get("carrier_name_other") or body["carrier"], item_value=item_value,
+                              declared_value=declared)
+        blocks = RK.blocking(flags)
+        if blocks:
+            raise CheckoutError("LABEL_BLOCKED", blocks[0].title, 409, flags=[f.to_dict() for f in flags])
+        warns = [f for f in flags if f.severity == RK.WARN]
+        if warns and not acknowledge_warnings:
+            raise CheckoutError("SHIP_WARNINGS", "Read these before shipping", 409, flags=[f.to_dict() for f in flags])
         rid = "cg-track-" + hashlib.sha256(f"{checkout_id}|{body['tracking_number']}".encode()).hexdigest()[:24]
         self.paypal.add_tracking(d["order_id"], body, request_id=rid)
         shipment = {k: body[k] for k in ("tracking_number", "carrier") if k in body}
         if "carrier_name_other" in body:
             shipment["carrier_name_other"] = body["carrier_name_other"]
-        shipment["shipped_at"] = int(self.clock())
+        shipment.update({"shipped_at": int(self.clock()), "packed_weight": packed,
+                         "label_destination": {"country_code": label_country.strip().upper(),
+                                               "postal_code": RK.normalize_postal(label_postal, label_country or "US")},
+                         "declared_value": None if declared is None else str(declared),
+                         "flags": [f.to_dict() for f in flags]})
         return self.ledger.transition(checkout_id, L.CAPTURED, L.SHIPPED, update={"shipment": shipment},
                                       detail={"note": "tracking sent to PayPal", "tracking": body["tracking_number"]})
+
+    def acknowledge(self, checkout_id: str, *, as_described: bool, note: str = "") -> dict:
+        """The payer says it arrived as described — or what was wrong — in their own words."""
+        co = self.ledger.get(checkout_id)
+        if co["state"] != L.SHIPPED:
+            raise CheckoutError("WRONG_STATE", "You can confirm delivery once the order has shipped")
+        if co["data"].get("buyer_ack"):
+            return co
+        note = (note or "").strip()[:500]
+        if not as_described and not note:
+            raise CheckoutError("NOTE_REQUIRED", "Say what was different, so the seller can fix it", 400)
+        ack = {"as_described": bool(as_described), "note": note, "at": int(self.clock())}
+        return self.ledger.transition(checkout_id, L.SHIPPED, L.SHIPPED, update={"buyer_ack": ack},
+                                      detail={"note": "payer: received as described" if as_described
+                                              else f"payer reported a problem: {note}"})
 
     def photo_path(self, checkout_id: str, sha256: str):
         co = self.ledger.get(checkout_id)
@@ -420,6 +484,11 @@ class CheckoutService:
                    "shipment": d.get("shipment"),
                    "packing_photos": {k: v["sha256"] for k, v in (d.get("photos") or {}).items()},
                    "not_photographed": d.get("skipped") or {},
+                   "ship_to": {k: (d.get("ship_to") or {}).get(k) for k in ("country_code", "postal_code")} if d.get("ship_to") else None,
+                   "destination_override": d.get("destination_override"),
+                   "flags": sorted({f["code"] for f in (d.get("chat_flags") or []) + (d.get("payment_flags") or [])
+                                    + ((d.get("shipment") or {}).get("flags") or [])}),
+                   "buyer_acknowledgment": d.get("buyer_ack"),
                    "note": "Records what was agreed, confirmed, charged and photographed before shipping. "
                            "It does not prove what is in the photos or the item's condition."}
         return {"payload": payload, "signature": self.key.sign(canonical(payload)).hex(),

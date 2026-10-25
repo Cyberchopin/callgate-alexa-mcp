@@ -22,6 +22,7 @@ MISMATCH = "MISMATCH"                  # order differs from terms; must be fixed
 READY = "READY"                        # order matches; waiting for the payer's confirmation
 BUYER_CONFIRMED = "BUYER_CONFIRMED"    # payer confirmed this exact order version
 ORDER_CHANGED = "ORDER_CHANGED"        # order was modified after confirmation
+ADDRESS_HOLD = "ADDRESS_HOLD"          # PayPal ship-to is outside what the chat agreed; seller must decide
 CAPTURING = "CAPTURING"                # capture call in flight (write-ahead)
 CAPTURE_UNKNOWN = "CAPTURE_UNKNOWN"    # timeout / crash during capture; reconcile, never retry blind
 CAPTURE_PENDING = "CAPTURE_PENDING"    # PayPal accepted but funds pending (e.g. eCheck, review)
@@ -37,7 +38,8 @@ TRANSITIONS: dict[str, set[str]] = {
     ORDER_ATTACHED: {MISMATCH, READY, CANCELLED},
     MISMATCH: {ORDER_ATTACHED, CANCELLED},
     READY: {BUYER_CONFIRMED, ORDER_ATTACHED, CANCELLED},
-    BUYER_CONFIRMED: {CAPTURING, ORDER_CHANGED, ORDER_ATTACHED, CANCELLED},
+    BUYER_CONFIRMED: {CAPTURING, ORDER_CHANGED, ORDER_ATTACHED, ADDRESS_HOLD, CANCELLED},
+    ADDRESS_HOLD: {BUYER_CONFIRMED, ORDER_ATTACHED, CANCELLED},
     ORDER_CHANGED: {ORDER_ATTACHED, CANCELLED},
     CAPTURING: {CAPTURED, CAPTURE_PENDING, CAPTURE_FAILED, CAPTURE_UNKNOWN},
     CAPTURE_UNKNOWN: {CAPTURED, CAPTURE_PENDING, CAPTURE_FAILED, BUYER_CONFIRMED},

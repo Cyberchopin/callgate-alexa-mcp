@@ -51,7 +51,8 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
         mode, client, webhook_id = "fake", PayPalClient("fake", "fake", transport=fake.transport()), fake.webhook_id
     reader = default_model_reader() if model_reader == "default" else model_reader
     svc = CheckoutService(L.Ledger(state / "ledger.sqlite3"), client, _load_key(state / "signing.key"),
-                          model_reader=reader, return_url=f"{public_url}/return", webhook_id=webhook_id)
+                          model_reader=reader, return_url=f"{public_url}/return", webhook_id=webhook_id,
+                          seller_country=os.environ.get("SELLER_COUNTRY", "US"))
 
     app = FastAPI(title="CallGate Checkout", docs_url=None, redoc_url=None)
     app.state.svc, app.state.fake, app.state.mode = svc, fake, mode
@@ -182,7 +183,23 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
     async def ship(checkout_id: str, req: Request):
         body = await req.json()
         return _view(svc, svc.ship(checkout_id, carrier=str(body.get("carrier", "")),
-                                   tracking_number=str(body.get("tracking_number", ""))))
+                                   tracking_number=str(body.get("tracking_number", "")),
+                                   label_country=str(body.get("label_country", "")),
+                                   label_postal=str(body.get("label_postal", "")),
+                                   weight=str(body.get("weight", "")), weight_unit=str(body.get("weight_unit", "lb")),
+                                   declared_value=body.get("declared_value"),
+                                   acknowledge_warnings=bool(body.get("acknowledge_warnings"))))
+
+    @app.post("/api/checkouts/{checkout_id}/accept-destination")
+    async def accept_destination(checkout_id: str, req: Request):
+        body = await req.json()
+        return _view(svc, svc.accept_destination(checkout_id, reason=str(body.get("reason", ""))))
+
+    @app.post("/api/checkouts/{checkout_id}/received")
+    async def received(checkout_id: str, req: Request):
+        body = await req.json()
+        return _view(svc, svc.acknowledge(checkout_id, as_described=bool(body.get("as_described")),
+                                          note=str(body.get("note", ""))))
 
     @app.get("/api/checkouts/{checkout_id}/evidence")
     def evidence(checkout_id: str):
@@ -246,8 +263,9 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
     async def demo_approve(req: Request):
         body = await req.json()
         co = _get(svc, body["checkout_id"])
-        need_fake().approve(co["data"]["order_id"])
-        return {"approved": co["data"]["order_id"]}
+        ship = {k: body[k] for k in ("country_code", "postal_code", "admin_area_2", "admin_area_1") if body.get(k)}
+        need_fake().approve(co["data"]["order_id"], ship_to=ship or None)
+        return {"approved": co["data"]["order_id"], "ship_to": ship or FakePayPal.DEFAULT_SHIP_TO}
 
     @app.post("/demo/inject")
     async def demo_inject(req: Request):
@@ -296,6 +314,9 @@ def _view(svc, co):
             "capture_id": d.get("capture_id"), "capture_status": d.get("capture_status"),
             "checklist": d.get("checklist", []), "photos": d.get("photos", {}), "skipped": d.get("skipped", {}),
             "shipment": d.get("shipment"), "evidence_submitted": d.get("evidence_submitted"),
+            "chat_flags": d.get("chat_flags", []), "payment_flags": d.get("payment_flags", []),
+            "ship_to": d.get("ship_to"), "destination_override": d.get("destination_override"),
+            "buyer_ack": d.get("buyer_ack"), "provenance": d.get("provenance"),
             "events": svc.ledger.events(co["id"])}
 
 

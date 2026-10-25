@@ -40,12 +40,18 @@ class FakePayPal:
     def transport(self) -> httpx.MockTransport:
         return httpx.MockTransport(self._handle)
 
-    def approve(self, order_id: str, payer_email: str = "buyer@example.com") -> None:
+    DEFAULT_SHIP_TO = {"address_line_1": "1 Test St", "admin_area_2": "Irvine", "admin_area_1": "CA",
+                       "postal_code": "92617", "country_code": "US"}
+
+    def approve(self, order_id: str, payer_email: str = "buyer@example.com", ship_to: dict | None = None) -> None:
+        """Simulate the payer approving on PayPal; PayPal attaches the payer's shipping address."""
         o = self.orders[order_id]
         if o["status"] not in ("CREATED", "PAYER_ACTION_REQUIRED"):
             raise ValueError(f"cannot approve order in {o['status']}")
         o["status"] = "APPROVED"
         o["payer"] = {"email_address": payer_email, "payer_id": "FAKEPAYER1"}
+        address = {**self.DEFAULT_SHIP_TO, **(ship_to or {})}
+        o["purchase_units"][0]["shipping"] = {"name": {"full_name": "Test Buyer"}, "address": address}
 
     def set_amount(self, order_id: str, value: str) -> None:
         """Simulate a merchant-side edit (typo, compromised agent) after the buyer looked."""

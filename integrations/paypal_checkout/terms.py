@@ -183,6 +183,23 @@ def _field_from(d: dict | None) -> Field | None:
                  str(d.get("source", "human")))
 
 
+def _one_number_per_quote_sums_to(quotes: list[str], amount: Decimal) -> bool:
+    """Item price from one quote plus shipping from another: pick one number from each quote."""
+    from itertools import product
+    choices = []
+    for q in quotes[:4]:
+        nums = []
+        for m in _NUM.finditer(q):
+            try:
+                nums.append(Decimal(m.group(0).replace(",", "")))
+            except InvalidOperation:
+                pass
+        if not nums:
+            return False
+        choices.append(nums[:6])
+    return any(sum(c) == amount for c in product(*choices))
+
+
 def terms_from_dict(d: dict) -> AgreedTerms:
     items = [Item(_field_from(i["name"]), _field_from(i["quantity"]), _field_from(i.get("unit_amount")))
              for i in d.get("items", [])]
@@ -212,9 +229,6 @@ def ground_terms(terms: AgreedTerms, messages: list[Message]) -> list[str]:
     if terms.total is not None and terms.currency is not None:
         amt = money(terms.total.value, terms.currency.value)
         quotes = [e.quote for e in terms.total.evidence]
-        nums = []
-        for q in quotes:
-            nums += [Decimal(m.group(0).replace(",", "")) for m in _NUM.finditer(q)]
-        if not any(quote_contains_amount(q, amt) for q in quotes) and sum(nums) != amt:
+        if not any(quote_supports_total(q, amt) for q in quotes) and not _one_number_per_quote_sums_to(quotes, amt):
             problems.append(f"total: {terms.total.value} is neither stated in nor the sum of its quotes")
     return problems
