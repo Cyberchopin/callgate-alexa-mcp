@@ -375,3 +375,45 @@ def test_paypal_500_after_commit_is_unknown_not_failed(env):
     assert svc.capture(co["id"], idempotency_key="click-500-01")["state"] == L.CAPTURE_UNKNOWN
     assert svc.capture(co["id"], idempotency_key="click-500-02")["state"] == L.CAPTURED
     assert fake.capture_count[co["data"]["order_id"]] == 1
+
+
+def test_chain_of_consent_links_chat_offer_approval_and_charge(env):
+    import copy
+    from integrations.paypal_checkout.service import verify_chain_of_consent
+    svc, fake, _ = env
+    co = confirmed_and_approved(svc, fake)
+    svc.capture(co["id"], idempotency_key="consent-001")
+    d = svc.ledger.get(co["id"])["data"]
+    offer, approval, receipt = d["offer"], d["approval"], svc.receipt(co["id"])
+    links = verify_chain_of_consent(receipt, offer, approval)
+    assert all(links.values())
+    assert approval["payload"]["max_amount"] == "88.00" and approval["payload"]["currency"] == "USD"
+    forged = copy.deepcopy(offer)
+    forged["payload"]["total"] = "8.00"
+    with pytest.raises(Exception):
+        verify_chain_of_consent(receipt, forged, approval)
+    other = svc.confirm_terms(svc.start("Seller: $10\nBuyer: deal")["id"])["data"]["offer"]
+    with pytest.raises(ValueError):
+        verify_chain_of_consent(receipt, other, approval)        # signed, but not the offer this payer approved
+
+
+def test_capture_refused_if_seller_offer_was_altered(env):
+    svc, fake, _ = env
+    co = confirmed_and_approved(svc, fake)
+    d = svc.ledger.get(co["id"])["data"]
+    d["offer"]["payload"]["total"] = "8.00"
+    svc.ledger.transition(co["id"], L.BUYER_CONFIRMED, L.BUYER_CONFIRMED, update={"offer": d["offer"]})
+    with pytest.raises(CheckoutError) as e:
+        svc.capture(co["id"], idempotency_key="consent-002")
+    assert e.value.code in ("APPROVAL_MISMATCH", "OFFER_INVALID")
+    assert fake.capture_count.get(co["data"]["order_id"], 0) == 0
+
+
+def test_idempotency_key_reused_for_another_checkout_is_a_conflict(env):
+    svc, fake, _ = env
+    a = confirmed_and_approved(svc, fake)
+    svc.capture(a["id"], idempotency_key="shared-key-01")
+    b = confirmed_and_approved(svc, fake)
+    with pytest.raises(L.Conflict):
+        svc.capture(b["id"], idempotency_key="shared-key-01")
+    assert fake.capture_count.get(b["data"]["order_id"], 0) == 0

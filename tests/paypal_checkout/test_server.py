@@ -92,3 +92,17 @@ def test_demo_controls_are_off_in_sandbox_mode(tmp_path, monkeypatch):
     c = TestClient(create_app(state_dir=tmp_path, model_reader=None))
     assert c.get("/api/config").json() == {**c.get("/api/config").json(), "mode": "sandbox", "demo": False}
     assert c.post("/demo/edit-order", json={"checkout_id": "x"}).status_code == 404
+
+
+def test_consent_endpoint_returns_a_verifiable_chain(tmp_path):
+    from integrations.paypal_checkout.service import verify_chain_of_consent
+    c, fake = make(tmp_path)
+    co = c.post("/api/checkouts", json={"chat": HAT_CHAT}).json()
+    c.post(f"/api/checkouts/{co['id']}/confirm")
+    co = c.post(f"/api/checkouts/{co['id']}/build-order").json()
+    assert c.get(f"/api/checkouts/{co['id']}/consent").status_code == 409
+    c.post(f"/api/checkouts/{co['id']}/buyer-confirm", json={"seen_fingerprint": co["order_fingerprint"]})
+    c.post("/demo/approve", json={"checkout_id": co["id"]})
+    c.post(f"/api/checkouts/{co['id']}/capture", headers={"Idempotency-Key": "consent-http-1"})
+    body = c.get(f"/api/checkouts/{co['id']}/consent").json()
+    assert all(verify_chain_of_consent(body["receipt"], body["offer"], body["approval"]).values())

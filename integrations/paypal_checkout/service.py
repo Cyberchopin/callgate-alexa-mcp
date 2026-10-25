@@ -39,7 +39,8 @@ from . import risk as RK
 from . import shipping as SH
 from .terms import (AgreedTerms, Evidence, Field, ground_terms, parse_chat, terms_from_dict)
 
-APPROVAL_VERSION = "callgate-checkout-approval-v1"
+APPROVAL_VERSION = "callgate-checkout-approval-v2"
+OFFER_VERSION = "callgate-checkout-offer-v1"
 RECEIPT_VERSION = "callgate-checkout-receipt-v1"
 
 
@@ -101,9 +102,17 @@ class CheckoutService:
         if conflicts or not terms.ready():
             raise CheckoutError("TERMS_INCOMPLETE", "Resolve the price, currency and the other person's 'yes' first",
                                 400, unresolved=conflicts or terms.unresolved)
+        # The seller's offer: what they confirmed, bound to the exact chat it came from (like AP2's
+        # merchant-signed cart). The payer's approval later points at this offer's hash.
+        offer = {"version": OFFER_VERSION, "checkout_id": checkout_id, "chat_sha256": co["data"]["chat_sha256"],
+                 "terms_commitment": terms.commitment(), "currency": terms.currency.value,
+                 "total": terms.total.value, "shipping": terms.shipping.value if terms.shipping else None,
+                 "includes": [i.value for i in terms.inclusions], "ships_from": self.seller_country,
+                 "confirmed_at": int(self.clock())}
+        signed_offer = {"payload": offer, "signature": self.key.sign(canonical(offer)).hex()}
         return self.ledger.transition(checkout_id, {L.DRAFT, L.TERMS_CONFIRMED}, L.TERMS_CONFIRMED,
                                       update={"terms": terms.to_dict(), "terms_commitment": terms.commitment(),
-                                              "ready": True},
+                                              "ready": True, "offer": signed_offer},
                                       detail={"note": "terms confirmed", "resolved": sorted(resolutions or {})})
 
     # ------------------------------------------------------ 3. the order
@@ -166,9 +175,14 @@ class CheckoutService:
             raise CheckoutError("ORDER_CHANGED", "The order changed while you were looking; please review it again",
                                 checkout=co)
         now = int(self.clock())
+        summary = co["data"].get("order_summary") or {}
+        # Scoped like a delegated-payment allowance: one checkout, one order version, at most this amount,
+        # until this time, used once (the nonce becomes the capture's PayPal-Request-Id).
         approval = {"version": APPROVAL_VERSION, "checkout_id": checkout_id,
+                    "offer_sha256": _sha(co["data"]["offer"]),
                     "terms_commitment": co["data"]["terms_commitment"], "chat_sha256": co["data"]["chat_sha256"],
                     "order_id": co["data"]["order_id"], "order_fingerprint": fp,
+                    "max_amount": summary.get("total"), "currency": summary.get("currency"),
                     "nonce": secrets.token_hex(16), "issued_at": now, "expires_at": now + self.ttl}
         signed = {"payload": approval, "signature": self.key.sign(canonical(approval)).hex()}
         return self.ledger.transition(checkout_id, L.READY, L.BUYER_CONFIRMED, update={"approval": signed},
@@ -182,8 +196,13 @@ class CheckoutService:
         except (InvalidSignature, ValueError, TypeError):
             raise CheckoutError("APPROVAL_INVALID", "Approval signature does not verify", 403) from None
         if payload["checkout_id"] != co["id"] or payload["terms_commitment"] != co["data"]["terms_commitment"] \
-                or payload["order_id"] != co["data"]["order_id"]:
+                or payload["order_id"] != co["data"]["order_id"] or payload.get("offer_sha256") != _sha(co["data"].get("offer")):
             raise CheckoutError("APPROVAL_MISMATCH", "Approval does not belong to this checkout", 403)
+        offer = (co["data"].get("offer") or {})
+        try:
+            self.public_key.verify(bytes.fromhex(offer.get("signature", "")), canonical(offer.get("payload")))
+        except (InvalidSignature, ValueError, TypeError):
+            raise CheckoutError("OFFER_INVALID", "The seller's confirmed offer does not verify", 403) from None
         return payload
 
     # ------------------------------------------------------- 5. capture
@@ -225,7 +244,10 @@ class CheckoutService:
         order = self.paypal.get_order(approval["order_id"])
         fp = order_fingerprint(order)
         diffs = blocking(compare(terms_from_dict(co["data"]["terms"]), order))
-        if fp != approval["order_fingerprint"] or diffs:
+        amount = (order.get("purchase_units") or [{}])[0].get("amount") or {}
+        over_allowance = (amount.get("currency_code") != approval["currency"]
+                          or Decimal(amount.get("value") or "0") > Decimal(approval["max_amount"] or "0"))
+        if fp != approval["order_fingerprint"] or diffs or over_allowance:
             co = self.ledger.transition(checkout_id, L.BUYER_CONFIRMED, L.ORDER_CHANGED,
                                         update={"changed_order_summary": _summary(order),
                                                 "differences": [d.to_dict() for d in compare(
@@ -549,6 +571,8 @@ class CheckoutService:
                               "includes": [i["value"] for i in terms.get("inclusions", [])]},
                    "order_id": d.get("order_id"), "order_fingerprint": d.get("order_fingerprint"),
                    "approval_nonce": ((d.get("approval") or {}).get("payload") or {}).get("nonce"),
+                   "offer_sha256": _sha(d.get("offer")) if d.get("offer") else None,
+                   "approval_sha256": _sha(d.get("approval")) if d.get("approval") else None,
                    "capture_id": d.get("capture_id"), "capture_status": d.get("capture_status"),
                    "shipment": d.get("shipment"),
                    "packing_photos": {k: v["sha256"] for k, v in (d.get("photos") or {}).items()},
@@ -576,6 +600,32 @@ def verify_receipt(receipt: dict, public_key_hex: str | None = None) -> dict:
     key = Ed25519PublicKey.from_public_bytes(bytes.fromhex(public_key_hex or receipt["public_key"]))
     key.verify(bytes.fromhex(receipt["signature"]), canonical(receipt["payload"]))
     return receipt["payload"]
+
+
+def _sha(signed: dict | None) -> str | None:
+    """Hash of a signed record (payload + signature), so the next record can point at it."""
+    return None if not signed else hashlib.sha256(canonical(signed)).hexdigest()
+
+
+def verify_chain_of_consent(receipt: dict, offer: dict, approval: dict, public_key_hex: str | None = None) -> dict:
+    """Check that receipt -> approval -> offer -> chat all point at each other and are signed."""
+    key = Ed25519PublicKey.from_public_bytes(bytes.fromhex(public_key_hex or receipt["public_key"]))
+    for rec in (receipt, offer, approval):
+        key.verify(bytes.fromhex(rec["signature"]), canonical(rec["payload"]))
+    r, o, a = receipt["payload"], offer["payload"], approval["payload"]
+    links = {
+        "receipt_names_offer": r.get("offer_sha256") == _sha(offer),
+        "receipt_names_approval": r.get("approval_sha256") == _sha(approval),
+        "approval_names_offer": a.get("offer_sha256") == _sha(offer),
+        "same_chat": r["chat_sha256"] == o["chat_sha256"] == a["chat_sha256"],
+        "same_terms": r["terms_commitment"] == o["terms_commitment"] == a["terms_commitment"],
+        "same_order": r["order_id"] == a["order_id"] and r["order_fingerprint"] == a["order_fingerprint"],
+        "charged_within_allowance": r["agreed"]["total"] == o["total"] and
+                                    Decimal(a["max_amount"]) == Decimal(o["total"]),
+    }
+    if not all(links.values()):
+        raise ValueError(f"chain of consent broken: {[k for k, v in links.items() if not v]}")
+    return links
 
 
 def _messages(co):

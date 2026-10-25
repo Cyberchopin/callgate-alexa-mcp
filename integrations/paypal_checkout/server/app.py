@@ -242,6 +242,15 @@ def create_app(*, state_dir: str | Path | None = None, fake: FakePayPal | None =
         _get(svc, checkout_id)
         return svc.check_photo(checkout_id, await photo.read(8 * 1024 * 1024 + 1))
 
+    @app.get("/api/checkouts/{checkout_id}/consent")
+    def consent(checkout_id: str):
+        """Seller's signed offer, payer's signed approval and the receipt: enough to check who agreed to what."""
+        co = _get(svc, checkout_id)
+        if not co["data"].get("approval"):
+            raise HTTPException(409, "the payer hasn't confirmed yet")
+        return {"offer": co["data"]["offer"], "approval": co["data"]["approval"], "receipt": svc.receipt(checkout_id),
+                "verify": "integrations.paypal_checkout.service.verify_chain_of_consent(receipt, offer, approval)"}
+
     @app.post("/webhooks/paypal")
     async def webhook(req: Request):
         return svc.handle_webhook(dict(req.headers), await req.body())
