@@ -1,0 +1,30 @@
+# One-click hosted demo of CallGate Checkout on Render (offline PayPal stand-in, no real money).
+# For the PayPal sandbox, add PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET in the dashboard; the app
+# switches to the real sandbox automatically when they are present.
+services:
+  - type: web
+    name: callgate-checkout
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-lock.txt -r integrations/alexa_mcp/requirements.txt -r integrations/paypal_checkout/requirements.txt
+    startCommand: python -m integrations.paypal_checkout.server
+    healthCheckPath: /api/config
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: FORWARDED_ALLOW_IPS
+        value: "*"
+      - key: CALLGATE_CHECKOUT_STATE
+        value: /tmp/callgate-checkout
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CALLGATE_AGENT_TOKEN
+        generateValue: true
