@@ -241,6 +241,21 @@ def render_for_model(messages: list[Message]) -> str:
     return "\n".join(f"[{m.index}] {m.sender}: {m.text}" for m in messages)
 
 
+MODEL_UNAVAILABLE = "AI reader unavailable, read by rules only"
+
+
+def _describe(exc: Exception) -> str:
+    """A short reason a person can act on, without echoing credentials."""
+    resp = getattr(exc, "response", None)
+    if resp is not None:
+        try:
+            msg = (resp.json().get("error") or {}).get("message") or ""
+        except Exception:
+            msg = ""
+        return f"HTTP {resp.status_code} {msg}".strip()[:200]
+    return type(exc).__name__ + (f": {exc}"[:150] if str(exc) else "")
+
+
 class ModelReader:
     """LLM proposal + deterministic grounding.  `complete` is any function prompt -> text."""
     name = "model-grounded-v1"
@@ -250,7 +265,10 @@ class ModelReader:
         self.label = label
 
     def read(self, messages: list[Message], default_currency: str = "USD") -> AgreedTerms:
-        raw = self._complete(MODEL_INSTRUCTIONS, render_for_model(messages))
+        try:
+            raw = self._complete(MODEL_INSTRUCTIONS, render_for_model(messages))
+        except Exception as exc:      # bad key, no credit, network: fall back to the rule reader, say so
+            return AgreedTerms(None, None, unresolved=[f"{MODEL_UNAVAILABLE}: {_describe(exc)}"])
         try:
             data = json.loads(_strip_fence(raw))
             if not isinstance(data, dict):

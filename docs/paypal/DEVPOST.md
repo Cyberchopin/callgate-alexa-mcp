@@ -75,7 +75,7 @@ CallGate Checkout sits between the conversation and the money, and stays with th
 
 ### Accomplishments that we're proud of
 
-- 93 tests for this project (395 across the repository). They cover:
+- 94 tests for this project (396 across the repository). They cover:
   - ten simultaneous clicks capturing once, and a timeout after PayPal already committed;
   - forged approvals, offers and webhooks;
   - every kind of provenance tampering;

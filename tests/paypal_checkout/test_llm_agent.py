@@ -119,3 +119,20 @@ def test_assistant_over_real_mcp_http(tmp_path):
     finally:
         srv.should_exit = True
         t.join(timeout=5)
+
+
+def test_ai_reader_failure_falls_back_to_rules_and_says_why(tmp_path):
+    """A bad key or empty credit must not freeze the page: the rule reader still reads the deal."""
+    import httpx
+    from integrations.paypal_checkout.extract import ModelReader
+
+    def failing(system, user):
+        req = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+        resp = httpx.Response(401, request=req, json={"error": {"message": "invalid x-api-key"}})
+        raise httpx.HTTPStatusError("401", request=req, response=resp)
+
+    c = TestClient(create_app(state_dir=tmp_path, fake=FakePayPal(), model_reader=ModelReader(failing, label="claude")))
+    co = c.post("/api/checkouts", json={"chat": HAT_CHAT}).json()
+    assert co["terms"]["total"]["value"] == "88.00" and co["state"] == "DRAFT"
+    assert co["readers"] == ["rules-checkout-v1", "claude (unavailable)"]
+    assert any("HTTP 401 invalid x-api-key" in u for u in co["terms"]["unresolved"])

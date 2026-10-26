@@ -31,7 +31,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,
 from callgate.receipt import canonical
 
 from . import ledger as L
-from .extract import ModelReader, read_terms
+from .extract import MODEL_UNAVAILABLE, ModelReader, read_terms
 from .order_check import blocking, compare, order_fingerprint, order_from_terms
 from .paypal_client import PayPalClient, PayPalError, PayPalTimeout, approve_link, capture_of
 from . import provenance as PV
@@ -77,7 +77,8 @@ class CheckoutService:
         return self.ledger.create(checkout_id, {
             "messages": chat_rows, "chat_sha256": hashlib.sha256(canonical(chat_rows)).hexdigest(),
             "title": (title or "")[:127] or None,
-            "readers": ["rules-checkout-v1"] + ([self.model_reader.label] if self.model_reader else []),
+            "readers": ["rules-checkout-v1"] + ([self.model_reader.label + (" (unavailable)" if any(
+                u.startswith(MODEL_UNAVAILABLE) for u in terms.unresolved) else "")] if self.model_reader else []),
             "terms": terms.to_dict(), "ready": terms.ready(),
             "chat_flags": [f.to_dict() for f in RK.chat_flags(messages)]})
 

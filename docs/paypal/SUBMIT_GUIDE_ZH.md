@@ -22,7 +22,7 @@ git checkout paypal/checkout
 python -m venv .venv
 source .venv/bin/activate        # Windows 用 .venv\Scripts\activate
 pip install -r requirements-lock.txt -r integrations/alexa_mcp/requirements.txt -r integrations/paypal_checkout/requirements.txt
-python -m pytest tests/paypal_checkout -q          # 应该显示 93 passed
+python -m pytest tests/paypal_checkout -q          # 应该显示 94 passed
 ```
 
 ## 第 3 步：跑一遍真实 sandbox 检查（约 10 分钟）
