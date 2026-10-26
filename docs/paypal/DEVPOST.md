@@ -81,7 +81,7 @@ CallGate Checkout sits between the conversation and the money, and stays with th
   - every kind of provenance tampering;
   - the MCP gateway driven by a real MCP client;
   - the AI assistant's tool loop with a model that falls for the planted $180.
-- A full run against the real PayPal sandbox (`docs/paypal/sandbox-run.json`): a $180 order made outside CallGate was blocked (`6GX29075UE9014040`); the agreed $88 order `1TT79651VD893904L` was approved by a sandbox buyer and captured once (`60P925997Y377353R`); a second capture attempt didn't charge again; and tracking was registered with PayPal (`60P925997Y377353R-9400111899223817`).
+- A full run against the real PayPal sandbox (`docs/paypal/sandbox-run.json`): a $180 order made outside CallGate was blocked (`2B0732134L137850J`); the agreed $88 order `89S64973GT1527433` was approved by a sandbox buyer, its US ship-to checked against the chat, and captured once (`7YK05222A3295383M`); a second capture attempt didn't charge again; and tracking was registered with PayPal (`7YK05222A3295383M-9400111899223817`).
 - CheckoutBench-lite, rules only, written by us:
   - 12 of 13 deals read exactly and 1 sent to a person;
   - **0 wrong totals**, and **0 of 5 no-deal chats made payable**;

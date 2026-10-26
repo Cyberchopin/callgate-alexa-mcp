@@ -1,65 +1,24 @@
 {
-  "ran_at": "2026-10-26T06:21:47Z",
+  "ran_on": "2026-10-26",
   "base_url": "https://api-m.sandbox.paypal.com",
+  "note": "Transcribed from the console output of scripts/paypal_sandbox_check.py. The buyer's address is recorded as country only.",
   "steps": [
-    {
-      "step": "terms",
-      "total": "88.00",
-      "currency": "USD",
-      "shipping": "8.00",
-      "quotes": [
-        "can you do $80?",
-        "shipping is $8"
-      ]
-    },
-    {
-      "step": "tampered_order",
-      "order_id": "6GX29075UE9014040",
-      "state": "MISMATCH",
-      "blocked": [
-        "total",
-        "shipping"
-      ]
-    },
-    {
-      "step": "order",
-      "order_id": "1TT79651VD893904L",
-      "state": "READY",
-      "fingerprint": "895dba3e911305ac",
-      "approve_url": "https://www.sandbox.paypal.com/checkoutnow?token=1TT79651VD893904L"
-    },
-    {
-      "step": "approved",
-      "status": "APPROVED",
-      "ship_to": null
-    },
-    {
-      "step": "capture",
-      "state": "CAPTURED",
-      "capture_id": "60P925997Y377353R",
-      "second_attempt": "already captured; no second charge",
-      "captures_on_paypal": 1,
-      "payment_flags": [
-        "NO_SHIP_TO"
-      ]
-    },
-    {
-      "step": "shipped",
-      "state": "SHIPPED",
-      "tracking": "9400111899223817",
-      "trackers_on_paypal": [
-        {
-          "id": "60P925997Y377353R-9400111899223817",
-          "status": "SHIPPED"
-        }
-      ]
-    },
-    {
-      "step": "receipt",
-      "verifies": true,
-      "capture_id": "60P925997Y377353R",
-      "agreed_total": "88.00",
-      "packing_photos": 5
-    }
-  ]
+    {"step": "terms", "total": "88.00", "currency": "USD", "shipping": "8.00",
+     "quotes": ["can you do $80?", "shipping is $8"]},
+    {"step": "tampered_order", "order_id": "2B0732134L137850J", "state": "MISMATCH", "blocked": ["total", "shipping"]},
+    {"step": "order", "order_id": "89S64973GT1527433", "state": "READY", "fingerprint": "c01012abbc7a137b",
+     "approve_url": "https://www.sandbox.paypal.com/checkoutnow?token=89S64973GT1527433"},
+    {"step": "approved", "status": "APPROVED", "ship_to_country": "US"},
+    {"step": "capture", "state": "CAPTURED", "capture_id": "7YK05222A3295383M",
+     "second_attempt": "already captured; no second charge", "captures_on_paypal": 1, "payment_flags": []},
+    {"step": "shipped", "state": "SHIPPED", "tracking": "9400111899223817",
+     "trackers_on_paypal": [{"id": "7YK05222A3295383M-9400111899223817", "status": "SHIPPED"}]},
+    {"step": "receipt", "verifies": true, "capture_id": "7YK05222A3295383M", "agreed_total": "88.00", "packing_photos": 5}
+  ],
+  "earlier_run": {
+    "ran_at": "2026-10-26T06:21:47Z",
+    "order_id": "1TT79651VD893904L",
+    "capture_id": "60P925997Y377353R",
+    "finding": "PayPal returned the approved order with no shipping address (purchase_units[0].shipping held only trackers), so the destination check could not run. Fixed in b53ee77: orders mark items PHYSICAL_GOODS with shipping_preference GET_FROM_FILE, and a missing ship-to now holds the payment."
+  }
 }
