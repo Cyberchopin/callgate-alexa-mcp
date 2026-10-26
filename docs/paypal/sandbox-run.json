@@ -1,0 +1,65 @@
+{
+  "ran_at": "2026-10-26T06:21:47Z",
+  "base_url": "https://api-m.sandbox.paypal.com",
+  "steps": [
+    {
+      "step": "terms",
+      "total": "88.00",
+      "currency": "USD",
+      "shipping": "8.00",
+      "quotes": [
+        "can you do $80?",
+        "shipping is $8"
+      ]
+    },
+    {
+      "step": "tampered_order",
+      "order_id": "6GX29075UE9014040",
+      "state": "MISMATCH",
+      "blocked": [
+        "total",
+        "shipping"
+      ]
+    },
+    {
+      "step": "order",
+      "order_id": "1TT79651VD893904L",
+      "state": "READY",
+      "fingerprint": "895dba3e911305ac",
+      "approve_url": "https://www.sandbox.paypal.com/checkoutnow?token=1TT79651VD893904L"
+    },
+    {
+      "step": "approved",
+      "status": "APPROVED",
+      "ship_to": null
+    },
+    {
+      "step": "capture",
+      "state": "CAPTURED",
+      "capture_id": "60P925997Y377353R",
+      "second_attempt": "already captured; no second charge",
+      "captures_on_paypal": 1,
+      "payment_flags": [
+        "NO_SHIP_TO"
+      ]
+    },
+    {
+      "step": "shipped",
+      "state": "SHIPPED",
+      "tracking": "9400111899223817",
+      "trackers_on_paypal": [
+        {
+          "id": "60P925997Y377353R-9400111899223817",
+          "status": "SHIPPED"
+        }
+      ]
+    },
+    {
+      "step": "receipt",
+      "verifies": true,
+      "capture_id": "60P925997Y377353R",
+      "agreed_total": "88.00",
+      "packing_photos": 5
+    }
+  ]
+}
