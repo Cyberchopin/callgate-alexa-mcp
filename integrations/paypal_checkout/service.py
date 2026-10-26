@@ -123,7 +123,9 @@ class CheckoutService:
         terms = terms_from_dict(co["data"]["terms"])
         body = order_from_terms(terms, checkout_id=checkout_id, title=co["data"].get("title"))
         body["payment_source"] = {"paypal": {"experience_context": {
-            "user_action": "PAY_NOW", "return_url": f"{self.return_url}?checkout={checkout_id}",
+            "user_action": "PAY_NOW", "shipping_preference": "GET_FROM_FILE",
+            # Found on the real sandbox: without these, PayPal let the payer approve with no ship-to.
+            "return_url": f"{self.return_url}?checkout={checkout_id}",
             "cancel_url": f"{self.return_url}?checkout={checkout_id}&cancel=1"}}}
         # A retry of the same build reuses the request id, so PayPal returns the same order.
         # A deliberate rebuild (after a mismatch or an edit) gets a new id and a fresh order.
@@ -266,7 +268,8 @@ class CheckoutService:
         flags = RK.payment_flags(_messages(co), order, seller_country=self.seller_country)
         override = co["data"].get("destination_override") or {}
         holds = [f for f in RK.blocking(flags)
-                 if not (f.code == "DESTINATION_MISMATCH" and dest and override.get("country_code") == dest["country_code"])]
+                 if not (f.code == "DESTINATION_MISMATCH" and dest and override.get("country_code") == dest["country_code"])
+                 and not (f.code == "NO_SHIP_TO" and override and dest is None)]
         self.ledger.transition(checkout_id, L.BUYER_CONFIRMED, L.BUYER_CONFIRMED,
                                update={"ship_to": dest, "payment_flags": [f.to_dict() for f in flags]},
                                detail={"note": "checked PayPal ship-to", "country": (dest or {}).get("country_code")})

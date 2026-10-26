@@ -84,6 +84,7 @@ flowchart LR
 | Off-platform payment (friends & family, Zelle, wire, crypto, gift card, 微信转账) | Reading the chat | Flag | Not covered by Purchase Protection |
 | Overpayment refund | Reading the chat | Flag | Classic reversal scam |
 | PayPal ship-to outside the agreed destinations ("within the US only") | Capture | **Payment held**; seller can release with a recorded reason | The agreed shipping doesn't cover it |
+| PayPal returned no ship-to at all (found on the real sandbox; orders now request one) | Capture | **Payment held**; seller can release with a recorded reason | Nothing protected to ship to |
 | Cross-border and nobody mentioned duties | Capture | Warning (mentions the end of US de minimis on Aug 29, 2025 for US-bound parcels) | Surprise duty bills cause refused parcels |
 | Label ZIP/country ≠ PayPal ship-to | Ship | **Blocked** | Seller Protection address rule |
 | Item value > UPS default $100 liability, no declared value | Ship | Warning the seller must acknowledge | Carrier won't pay above its liability |
@@ -174,7 +175,7 @@ The live PayPal host is refused unless `CALLGATE_ALLOW_LIVE=1`. `render.yaml` at
 
 ## Evidence
 
-- `pytest tests/paypal_checkout` — 92 tests: every reliability row above, approval, offer and webhook forgery, the chain of consent, rebuild after tampering, grounding, the MCP gateway over a real MCP client, packing / tracking / evidence, PayPal carrier codes, every risk check, provenance tampering (edit, remove, reorder, re-signed forgery, altered import), the sandbox check script itself run against the stand-in, and the AI sales assistant's tool loop driven by a scripted model (in-process and over real MCP HTTP), including a model that proposes the planted $180 first.
+- `pytest tests/paypal_checkout` — 93 tests: every reliability row above, approval, offer and webhook forgery, the chain of consent, rebuild after tampering, grounding, the MCP gateway over a real MCP client, packing / tracking / evidence, PayPal carrier codes, every risk check, provenance tampering (edit, remove, reorder, re-signed forgery, altered import), the sandbox check script itself run against the stand-in, and the AI sales assistant's tool loop driven by a scripted model (in-process and over real MCP HTTP), including a model that proposes the planted $180 first.
 - `python -m evaluation_paypal.run` — CheckoutBench-lite, rules-only, October 25, 2026:
   - 18 negotiations (English, Chinese, mixed): 12/13 deals read exactly, 1 sent to a person (the injected-price chat), **0 wrong totals**, **0 of 5 no-deal chats made payable**;
   - 67/67 order mutations caught;

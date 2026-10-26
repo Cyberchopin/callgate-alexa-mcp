@@ -439,7 +439,9 @@ function renderOrder(){
     case "CAPTURE_FAILED":
       verdict = `<div class="verdict no">PayPal didn't accept the payment. Nothing was charged.</div>`; break;
     case "ADDRESS_HOLD":
-      verdict = `<div class="verdict no">Payment held: PayPal's ship-to is ${esc(CO.ship_to?.country_code)} ${esc(CO.ship_to?.postal_code)}, which the agreed shipping doesn't cover. Nothing was charged.</div>`;
+      verdict = CO.ship_to
+        ? `<div class="verdict no">Payment held: PayPal's ship-to is ${esc(CO.ship_to.country_code)} ${esc(CO.ship_to.postal_code)}, which the agreed shipping doesn't cover. Nothing was charged.</div>`
+        : `<div class="verdict no">Payment held: PayPal has no shipping address for this order, so there is nowhere protected to ship it. Nothing was charged.</div>`;
       actions = payerView ? `<p>The seller needs to confirm shipping to your address first.</p>`
         : `<form id="hold-form" class="row"><label>Why it's fine to ship there for the agreed price <input type="text" name="reason" size="30" required placeholder="Buyer is paying the extra shipping"></label>
            <button class="btn" type="submit">Ship there and take the payment</button></form>

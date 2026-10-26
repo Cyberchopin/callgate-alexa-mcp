@@ -102,6 +102,11 @@ def main() -> int:
         return 1
     # Saved file is public: keep only the country, never the test buyer's city or ZIP.
     record("approved", status=order["status"], ship_to_country=(ship_to(order) or {}).get("country_code"))
+    if ship_to(order) is None:
+        print("!! PayPal returned no shipping address, so the destination check can't run. "
+              "Did the buyer pick a Ship to address on the PayPal page?")
+        return 1
+    print(f"   PayPal ship-to country: {ship_to(order)['country_code']}")
 
     step("Capture — twice, to show the second attempt doesn't charge again")
     try:
