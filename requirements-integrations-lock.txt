@@ -38,7 +38,7 @@ numpy==2.5.3
 onnxruntime==1.24.4
 openai==2.54.0
 packaging==26.3
-pillow==12.3.0
+pillow==13.0.0
 pipecat-ai==1.8.1
 pluggy==1.6.0
 propcache==0.5.2
