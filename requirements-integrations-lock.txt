@@ -35,7 +35,7 @@ nltk==3.10.3
 num2words==0.5.14
 numba==0.68.0
 numpy==2.5.3
-onnxruntime==1.24.4
+onnxruntime==1.31.0
 openai==2.54.0
 packaging==26.3
 pillow==12.3.0
