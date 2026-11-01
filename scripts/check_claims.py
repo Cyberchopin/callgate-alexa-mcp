@@ -2,10 +2,16 @@
 
 This is a pre-event evidence checker, not a risk or authorization feature.
 Run from any directory: python scripts/check_claims.py.
+
+The original ``readme-*`` entries preserve and revalidate the earlier Amazon
+submission claims after the repository landing page moved to PayPal Checkout.
+Current landing-page claims use the ``paypal-readme-*`` prefix and must remain
+present verbatim.
 """
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,7 +31,8 @@ def coverage_errors(readme, entries):
 def validate_entry(entry, readme, root):
     prefix = entry['id']
     quote = entry['quote']
-    if quote not in readme.splitlines():
+    archived_amazon_claim = prefix.startswith('readme-')
+    if quote not in readme.splitlines() and not archived_amazon_claim:
         return [f'{prefix}: original README sentence changed or missing']
     if entry['check'] == 'pending':
         return [f'{prefix}: UNVERIFIED; {entry.get("reason", "needs an executable evidence binding")}']
@@ -71,6 +78,59 @@ def validate_entry(entry, readme, root):
             return []
         except (OSError, KeyError, TypeError) as exc:
             return [f'{prefix}: cannot verify source: {exc}']
+    if entry['check'] == 'paypal_scenario_amounts':
+        try:
+            data = json.loads((root / 'evaluation_paypal/scenarios.json').read_text(encoding='utf-8'))
+            first = data['scenarios'][0]['expect']
+            mutation = next(item for item in data['order_mutations'] if item['id'] == 'inflated-total')
+            shipping = int(float(first['shipping']))
+            total = int(float(first['total']))
+            item = total - shipping
+            inflated = int(float(mutation['set']['value']))
+            actual = [int(value) for value in re.findall(r'\$(\d+)', quote)]
+            allowed = ([item, shipping, inflated], [inflated, total])
+            return [] if actual in allowed else [
+                f'{prefix}: scenario amounts {actual} not in expected forms {allowed}']
+        except (OSError, KeyError, StopIteration, TypeError, ValueError) as exc:
+            return [f'{prefix}: cannot validate PayPal scenario amounts: {exc}']
+    if entry['check'] == 'paypal_sandbox_summary':
+        try:
+            data = json.loads((root / entry['evidence']).read_text(encoding='utf-8'))
+            steps = {item['step']: item for item in data['steps']}
+            actual = [int(value) for value in re.findall(r'\$(\d+)', quote)]
+            expected = [180, int(float(steps['terms']['total']))]
+            valid = (
+                actual == expected
+                and data['base_url'] == 'https://api-m.sandbox.paypal.com'
+                and steps['tampered_order']['state'] == 'MISMATCH'
+                and 'total' in steps['tampered_order']['blocked']
+                and steps['approved']['status'] == 'APPROVED'
+                and steps['approved']['ship_to_country'] == 'US'
+                and steps['capture']['captures_on_paypal'] == 1
+                and bool(steps['shipped']['trackers_on_paypal'])
+            )
+            return [] if valid else [f'{prefix}: sandbox summary does not match recorded evidence']
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            return [f'{prefix}: cannot validate PayPal sandbox summary: {exc}']
+    if entry['check'] == 'paypal_benchmark':
+        try:
+            if str(root) not in sys.path:
+                sys.path.insert(0, str(root))
+            from evaluation_paypal.run import run
+            result = run()
+            actual = [int(value) for value in re.findall(r'\d+', quote)]
+            if entry['metric'] == 'checkout':
+                counts = result['counts']
+                expected = [counts['exact'], counts['deals'], counts['abstained'], counts['wrong_total'],
+                            counts['false_ready'], counts['no_deals'],
+                            result['mutations']['correct'], result['mutations']['total']]
+            else:
+                risk = result['risk']
+                expected = [risk['caught'], risk['scam_lines'], len(risk['false_alarms']), risk['ordinary_lines']]
+            return [] if actual == expected else [
+                f'{prefix}: benchmark values {actual} != recomputed {expected}']
+        except (ImportError, KeyError, TypeError, ValueError) as exc:
+            return [f'{prefix}: cannot validate PayPal benchmark: {exc}']
     if entry['check'] == 'nonmetric_reference':
         # Only explicitly classified identifiers, instruction numbering and
         # dates. Performance quantities must use a measurement validator.

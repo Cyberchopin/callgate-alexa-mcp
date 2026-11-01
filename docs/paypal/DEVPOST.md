@@ -75,7 +75,7 @@ CallGate Checkout sits between the conversation and the money, and stays with th
 
 ### Accomplishments that we're proud of
 
-- 94 focused tests for this project; the full local suite passed 394 tests with 3 environment-specific tests skipped. They cover:
+- 94 focused tests for this project; the full local suite passed 396 tests with 3 environment-specific tests skipped. They cover:
   - ten simultaneous clicks capturing once, and a timeout after PayPal already committed;
   - forged approvals, offers and webhooks;
   - every kind of provenance tampering;
@@ -113,11 +113,12 @@ The smallest decisions carried the most weight: whether a bare "ok" counts as ac
 
 ## Built with (tags)
 
-python, fastapi, paypal, paypal-orders-api, paypal-webhooks, paypal-disputes-api, claude, anthropic, model-context-protocol, sqlite, ed25519, httpx, render
+python, fastapi, paypal, paypal-orders-api, paypal-webhooks, paypal-disputes-api, claude, anthropic, model-context-protocol, sqlite, ed25519, httpx
 
 ## "Try it out" links
 
-- Code: https://github.com/Cyberchopin/callgate-alexa-mcp/tree/paypal/checkout (start at `integrations/paypal_checkout/README.md`)
+- Code: https://github.com/Cyberchopin/callgate-alexa-mcp (start at `integrations/paypal_checkout/README.md`)
+- Technical deep dive: https://github.com/Cyberchopin/callgate-alexa-mcp/tree/main/integrations/paypal_checkout
 
 ## Video demo link
 
@@ -128,13 +129,13 @@ python, fastapi, paypal, paypal-orders-api, paypal-webhooks, paypal-disputes-api
 ## Hackathon questions (wording on the form may differ)
 
 **Which PayPal technologies did you use?**
-PayPal Orders v2 (create, get, capture, with `PayPal-Request-Id` idempotency and `payment_source.paypal.experience_context`), Order Tracking (`/v2/checkout/orders/{id}/track`), Disputes (`/v1/customer/disputes/{id}/provide-evidence`), and Webhooks (`PAYMENT.CAPTURE.*`, verified with `/v1/notifications/verify-webhook-signature`). Everything runs against the PayPal sandbox.
+PayPal Orders v2 (create, get, capture, with `PayPal-Request-Id` idempotency and `payment_source.paypal.experience_context`), Order Tracking (`/v2/checkout/orders/{id}/track`), Disputes (`/v1/customer/disputes/{id}/provide-evidence`), and Webhooks (`PAYMENT.CAPTURE.*`, verified with `/v1/notifications/verify-webhook-signature`). The recorded end-to-end integration uses the PayPal sandbox; a clearly labelled offline stand-in supports deterministic tests and local review.
 
 **Which AI tools did you use, and how?**
 Claude (`claude-sonnet-5`, via the Anthropic Messages API) in two runtime roles. As a reader, it extracts the agreed terms from the chat, and every value must quote the chat; a rule reader cross-checks it, and a person resolves disagreements. As the seller's sales assistant, it uses tool calls over our MCP gateway (`read_deal`, `propose_order`, `get_checkout`) to draft the PayPal order, and deterministic code verifies the draft against the seller's signed offer before any payer link exists. The reader also accepts any OpenAI-compatible model. Claude Code and OpenAI Codex were used as coding assistants for implementation, tests, review, and documentation; all product claims above are bounded by the checked-in tests and sandbox evidence.
 
 **Is this a new project or an existing one? What did you build during the hackathon?**
-CallGate Checkout extends our earlier project, CallGate (a voice-call safety gateway). The only code reused unchanged is CallGate's canonical JSON / Ed25519 signing helper. Everything in `integrations/paypal_checkout/`, `tests/paypal_checkout/`, `evaluation_paypal/`, `scripts/paypal_*` and `docs/paypal/` was built during the hackathon, starting October 25, 2026. The boundary is documented in `docs/paypal/PREEXISTING_WORK.md`, and the commit history on the `paypal/checkout` branch is the record.
+CallGate Checkout extends our earlier project, CallGate (a voice-call safety gateway). The only code reused unchanged is CallGate's canonical JSON / Ed25519 signing helper. Everything in `integrations/paypal_checkout/`, `tests/paypal_checkout/`, `evaluation_paypal/`, `scripts/paypal_*` and `docs/paypal/` was built during the hackathon, starting October 25, 2026. The boundary is documented in `docs/paypal/PREEXISTING_WORK.md`; the PayPal commits and merged PR #45 remain in the public repository history.
 
 **How can judges run it?**
 Judges can run the functional build locally from the public repository:
@@ -152,4 +153,5 @@ Then open http://localhost:8787 and click "Use a risky cross-border example". It
 - Best Use of PayPal + AI
 - Most Creative
 - Best Demo Delivery
-- Best Use of Render: only if the live demo is actually deployed on Render.
+
+Only add a sponsor-tool prize if that tool is actually used in the submitted project. Do not select Best Use of Render for the configuration file alone.

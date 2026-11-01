@@ -1,334 +1,220 @@
-> **PayPal AI Hackathon:** CallGate Checkout — pay exactly what you agreed in the chat — lives in
-> [`integrations/paypal_checkout/`](integrations/paypal_checkout/README.md). Run it with
-> `python -m integrations.paypal_checkout.server`.
+<div align="center">
 
-# CallGate — proof before a simulated high-impact action
+# CallGate Checkout
 
-## Amazon Developer Hackathon — Alexa+ track submission
+### Pay what the chat agreed. Ship what the seller promised.
 
-CallGate is a self-hosted MCP safety gateway that pauses simulated purchases and
-money transfers until a separately registered contact reviews the exact action.
+An AI-assisted PayPal checkout that grounds every amount in the conversation,
+blocks changed orders, checks the PayPal ship-to address, and preserves a
+signed evidence trail from agreement to delivery.
 
-> **Track note:** this repository contains real, executable MCP servers and a
-> simulated voice-assistant experience. It is not connected to the real Alexa+
-> product, any payment provider, or any real account, and it cannot move money.
+<p>
+  <a href="https://github.com/Cyberchopin/callgate-alexa-mcp/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/Cyberchopin/callgate-alexa-mcp/test.yml?branch=main&style=flat-square&label=Core_tests" alt="Core tests"></a>
+  <a href="https://github.com/Cyberchopin/callgate-alexa-mcp/actions/workflows/pip-audit.yml"><img src="https://img.shields.io/github/actions/workflow/status/Cyberchopin/callgate-alexa-mcp/pip-audit.yml?branch=main&style=flat-square&label=Dependency_audit" alt="Dependency audit"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/PayPal-Sandbox-blue?style=flat-square&logo=paypal&logoColor=white" alt="PayPal Sandbox">
+  <img src="https://img.shields.io/badge/MCP-Agent_gateway-purple?style=flat-square" alt="MCP agent gateway">
+</p>
 
-### Run it in one command
+**[Demo](#quick-demo)** · **[How it works](#how-it-works)** ·
+**[Verified evidence](#verified-evidence)** · **[Run locally](#run-locally)** ·
+**[Submission pack](#submission-pack)**
 
-After installing the pinned dependencies, run from Windows PowerShell:
+![CallGate Checkout — pay what the chat agreed and ship what the seller promised](docs/paypal/media/thumbnail.png)
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\demo.ps1
-```
-
-The launcher starts the simulated merchant MCP server, the CallGate MCP gateway,
-the assistant page, and the independent contact-review routes. Use `-Offline`
-for the deterministic, network-free injection comparison.
-
-To watch the full chain on macOS, Linux, or WSL, follow the exact commands in
-the [demo runbook](docs/release/AMAZON_DEMO_RUNBOOK.md).
-`scripts.run_amazon_services` starts both MCP servers plus a live
-simulated-assistant page, and prints a simulated contact credential. The page's
-backend is a real MCP client of both servers. It shows each connection, product
-cards, the paused request, and a link to the contact's review page.
-`scripts.amazon_live_demo` walks the same chain in a terminal. Both are scripted
-clients, not Alexa+ or an LLM. The gateway's `/demo` page is a fixed
-illustrative fixture.
-
-### Architecture
-
-```mermaid
-flowchart LR
-    U[Simulated voice assistant] --> M[Merchant MCP server]
-    M --> A[Untrusted product and cart context]
-    A --> G[CallGate MCP gateway]
-    G --> P{Policy proof valid?}
-    P -->|No| E[URL-mode elicitation]
-    E --> R[Registered contact review page]
-    R -->|Approve exact action| G
-    P -->|Yes, unused, matching| X[One simulated execution]
-    P -->|Canary or mismatch| B[Blocked with stable reason]
-    G --> S[(SQLite replay store)]
-```
-
-The merchant server exposes product search and cart tools. The gateway exposes
-`send_money`, `place_order`, and the permanently blocked canary
-`share_verification_code`. Protected actions reuse the existing CallGate policy,
-signature, contact-selection, and replay logic rather than duplicating it in the
-MCP adapter.
-
-### MCP details
-
-- Protocol compatibility floor: **MCP 2025-11-25**, including URL-mode elicitation; real-client tests assert the negotiated protocol is at least that version.
-- Transport: self-hosted **Streamable HTTP**, with local HTTPS for the approval demonstration.
-- Pinned runtime: **mcp 2.3.0** and **cryptography 50.0.2**.
-- Replay protection: the MCP gateway uses the existing `SQLiteReplayStore`, so a consumed proof remains consumed after a server restart.
-- Approval display: the contact page obtains amount, destination, and request identity from server-held state, not URL query parameters.
-
-### What changed during the competition period
-
-The submission adds the self-hosted MCP gateway, URL-mode approval flow, stable
-protocol error mapping, SQLite-backed replay integration, simulated merchant
-server, deterministic injection experiment, accessible review experience,
-ApprovalBench Lite, dependency audit gates, and submission checks. The exact
-pre-existing-work boundary and first post-cutoff commits are generated from Git
-history in [PREEXISTING_WORK.md](docs/amazon/PREEXISTING_WORK.md).
-
-### Security boundaries and what we do not claim
-
-- Every product, identity, contact, payment, transfer, and approval is simulated.
-- The saved `subject` is a configured test identity, not proof of a real person.
-- Separate local credentials demonstrate role separation, not independent human identity.
-- This release does not claim commitment v2, durable cross-session recovery, production tenant isolation, or enforcement over a real assistant or payment system.
-- Agent Scan was postponed; dependency audit and Gitleaks results are not an external certification.
-- We do not claim invention of a new vulnerability category, production readiness, or superiority over all other approval designs.
-
-### Test and audit evidence
-
-Final local gate: **288 Python tests passed and 3 optional-dependency tests skipped**; the committed frozen evaluation blobs separately matched their SHA-256 manifest. The real-client MCP suites, merchant approval-and-replay chain, claim registry, both dependency audits, and redacted full-history secret scan passed. See [the build log](docs/amazon/BUILD_LOG.md), [security scan record](docs/amazon/SECURITY_SCAN.md), and [final gate](docs/amazon/FINAL_GATE.md). These checks support this repository state; they are not evidence of production safety or real-user effectiveness.
+</div>
 
 ---
 
-## Background: voice-risk research prototype
+Resale deals are negotiated in chat, but the payment link is created somewhere
+else. A seller may agree to **$80 + $8 shipping**, while an assistant drafts **$180**. A buyer may ask for delivery to a cousin, but PayPal Seller Protection
+depends on shipping to the address attached to the transaction. When the chat,
+the order, and the parcel are disconnected, both sides lose the evidence they
+need.
 
-**Streaming speech. Traceable risk evidence. Scoped approval.**
+CallGate Checkout keeps those stages connected:
 
-The original CallGate work is a local prototype for examining risky voice
-requests and authorizing a simulated action. The MCP submission above builds on
-that research while preserving its limitations and evaluation history.
+| 💬 Ground the deal | 🛡️ Gate the action | 🧾 Preserve the proof |
+| --- | --- | --- |
+| A rule reader and an AI reader quote the exact chat lines behind price, shipping, currency, and acceptance | Deterministic code compares the drafted PayPal order with the seller-confirmed terms before any payer link can be used | Signed offer, scoped payer approval, capture, packing evidence, tracking, and provenance remain linked |
 
-[Quick start](#quick-start) · [Evaluation](#evaluation) · [Security boundaries](#security-boundaries) · [Documentation](#documentation)
+> **Design rule:** AI reads the messy conversation and may draft an order.
+> Deterministic code and explicit human confirmation decide whether money or a
+> parcel can move.
 
-<sub>Python · AssemblyAI · NetworkX · Ed25519 · SQLite · MIT</sub>
+## Quick demo
 
----
+- Paste a bilingual resale chat and click **Read the agreement**.
+- Inspect the agreed total beside the exact words that support it.
+- Let the AI sales assistant draft an order. A planted **$180** instruction is rejected because it does not match the confirmed **$88** deal.
+- Let the buyer inspect and approve the exact verified order.
+- Re-read PayPal before capture. A changed order or unsupported destination is
+   blocked or held; a valid order is captured once.
+- Turn promises such as “original box included” into a packing checklist, add
+   tracking, and export the signed evidence chain.
 
-## Current Status
-
-**Research prototype · Author-labeled synthetic pilot · No independent validation**
-
-CallGate connects live transcription, a deterministic risk policy, evidence inspection, and a separate reviewer flow. It cannot control a phone call or block a real bank transfer. Risk decisions do not use an LLM.
-
-| Area | Implemented today | Boundary |
-| :--- | :--- | :--- |
-| Speech | Streaming transcription and text fallback | Live text has bounded English/Mandarin/mixed rules; Mandarin streaming ASR is not validated |
-| Risk policy | Four states, evidence revisions, deduplicated scoring | Heuristic scores, not fraud probabilities |
-| Approval | Scoped, expiring confirmation for one simulated action | Separate role credentials, not enrolled human identities |
-| Evidence | Source graph and signed risk receipts | Integrity does not establish judgment correctness |
-| Measurement | Local timing, provider timing proxies, bounded SQLite history | No end-to-end SLA or measured infrastructure cost |
-| Evaluation | Frozen first-run results, baseline, failure analysis, policy ablations | Small synthetic sample with provisional author labels |
-
-The pilot contains **60 calls: 36 development and 24 initially held out**. The test set has 8 scam, 8 benign and 8 ambiguous calls. It is now revealed and retired from final improvement claims. Expansion to **600 new scenario families is planned, not completed**.
-
-Independent annotation has not been completed. No new outreach or completed independent annotation was verified in this audit. The old outreach deadlines have passed and are not active commitments. See the [recruitment and scope conditions](evaluation_v1/STEP3_CONDITIONS.md).
-
-### Evaluation disclosure
-
-This evaluation uses synthetic transcripts with provisional labels supplied by the same project assistant that authored the cases and had prior access to the CallGate implementation. Labels were not derived from CallGate predictions. No independent human annotation, adjudication, or inter-rater reliability study has been completed. A frozen holdout limits later tuning exposure but does not establish author independence or real-world validity.
+The complete under-three-minute recording plan and exact English narration are
+in the **[bilingual demo script](docs/paypal/DEMO_SCRIPT.md)**.
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    A[Microphone] --> B[AssemblyAI transcript]
-    B --> D[Risk events and evidence]
-    C[Text fallback] --> D
-    D --> E[Four-state policy]
-    E --> F[Guardian advice]
-    D --> G[Evidence graph and signed receipt]
-    E --> H{Approval eligible?}
-    H -->|CHALLENGED| I[Scoped request and challenge]
-    I --> J[Separate reviewer approval]
-    J --> K[One simulated action]
-    H -->|Other states| L[No approval request]
+    C[Buyer–seller chat] --> R[Rule reader]
+    C --> A[AI reader]
+    R --> X{Quoted values agree?}
+    A --> X
+    X -->|No| H[Human resolves by pointing at words]
+    X -->|Yes| T[Seller-confirmed terms]
+    H --> T
+    T --> M[MCP sales assistant drafts order]
+    M --> D{Field-by-field PayPal diff}
+    D -->|Mismatch| B[Blocked — no payer link]
+    D -->|Match| P[Buyer approves exact fingerprint]
+    P --> G{Re-check order + ship-to}
+    G -->|Changed| B
+    G -->|Unsupported destination| O[Hold for seller re-agreement]
+    G -->|Valid| W[Idempotent capture]
+    W --> S[Packing + tracking]
+    S --> E[Signed receipt + dispute evidence]
 ```
 
-Speech contributes evidence; it does not establish identity or grant authority. The trusted application supplies the proposed amount and destination. Transcript changes invalidate pending approval.
+### Agentic commerce without agentic authority
 
-The connected reviewer demo now uses a live safety policy with bounded bilingual rules and session-monotone safety categories. Corrected transcript evidence remains inspectable; corrections cannot relax a previously established risk restriction. Start a fresh consented session for a separate test. The archived English engine and frozen pilot remain unchanged; new live behavior is not represented by the old pilot scores.
+The MCP gateway exposes only three tools:
 
-| State | Meaning in the connected demo |
-| :--- | :--- |
-| `UNVERIFIED` | No qualifying high-impact request detected; identity remains unverified |
-| `CHALLENGED` | The user may request a scoped second confirmation |
-| `COOLING_OFF` | High-impact request plus secrecy pressure; approval is unavailable |
-| `BLOCKED` | Sensitive credential request; approval is unavailable |
+| Tool | Agent capability | Deliberate boundary |
+| --- | --- | --- |
+| `read_deal` | Read quoted terms and risk flags | Cannot confirm disputed terms |
+| `propose_order` | Draft a PayPal order | A mismatch receives no payer link |
+| `get_checkout` | Read checkout status | Cannot approve, capture, release, or ship |
 
-Only **UNVERIFIED (23)** and **CHALLENGED (1)** appeared in the 24-call pilot. COOLING_OFF and BLOCKED have separate fixture tests. VERIFIED_BOUNDED and ESCALATED are earlier design concepts, not implemented Conversation states. Neither BLOCKED nor COOLING_OFF hangs up a call.
+The model has no tool for seller confirmation, payer approval, hold release,
+capture, or shipping. Its draft must survive the same deterministic comparison
+as any externally created order.
 
-## Quick start
+### Reliability where money can move
 
-Use **Python 3.12** for the recorded dependency set. Node.js is needed only for the frontend logic tests.
+- A write-ahead SQLite state machine records `CAPTURING` before PayPal is called.
+- `PayPal-Request-Id`, compare-and-set transitions, and webhook deduplication
+  prevent double capture across clicks, timeouts, retries, and restarts.
+- If PayPal may have charged before a timeout, CallGate reads the order and
+  reconciles instead of capturing again.
+- A payer approval is scoped to one offer, one order fingerprint, a maximum
+  amount, currency, expiry, and single-use nonce.
+- Packing photos are hashed; label destination, packed weight, carrier, and
+  tracking become part of the evidence record.
+
+Read the **[technical deep dive](integrations/paypal_checkout/README.md)** for the
+state machine, consent chain, provenance passport, risk checks, and API map.
+
+## Verified evidence
+
+| Evidence | Recorded result | Inspect |
+| --- | --- | --- |
+| Real PayPal sandbox run | A $180 order was blocked; the agreed $88 order was approved, its US ship-to checked, captured once, and given PayPal tracking | [Redacted sandbox record](docs/paypal/sandbox-run.json) |
+| Focused checkout tests | Passing in the recorded release check | `python -m pytest tests/paypal_checkout -q` |
+| CheckoutBench-lite | 12/13 deals exact, 1 abstained, 0 wrong totals; 0/5 no-deal chats payable; 67/67 mutations caught | [Evaluation fixtures](evaluation_paypal/scenarios.json) |
+| Risk-line fixtures | 16/16 risky lines flagged; 0/12 ordinary lines falsely flagged | [Evaluation runner](evaluation_paypal/run.py) |
+
+The benchmark chats and labels were written by the project author. They test
+known patterns; they are **not** a real-world accuracy estimate or independent
+evaluation. The sandbox record uses test accounts and proves one bounded API
+flow, not production readiness.
+
+## Run locally
+
+Python 3.12 is the pinned development target.
 
 ```bash
 git clone https://github.com/Cyberchopin/callgate-alexa-mcp.git
 cd callgate-alexa-mcp
 python -m venv .venv
+source .venv/bin/activate
+python -m pip install \
+  -r requirements-lock.txt \
+  -r integrations/alexa_mcp/requirements.txt \
+  -r integrations/paypal_checkout/requirements.txt
+python -m integrations.paypal_checkout.server
 ```
 
-Activate the environment:
-
-| Platform | Command |
-| :--- | :--- |
-| Windows PowerShell | `./.venv/Scripts/Activate.ps1` |
-| macOS / Linux | `source .venv/bin/activate` |
-
-Install the dependencies and start the connected demo:
-
-```bash
-python -m pip install -r requirements-lock.txt -r requirements-verification.txt
-python -m scripts.start_review_demo
-```
-
-The launcher prints separate participant and reviewer entry links. Default ports are **8766** and **8767**, with fallback ports when occupied. Open the printed links and keep role credentials separate.
-
-**Text input works without an API key.** For microphone transcription, set `ASSEMBLYAI_API_KEY` in a local `.env` file. The key stays on the server; do not commit it. The current demo interface uses Chinese guidance with English test speech; this README is English, and the [Chinese local guide](START_HERE.md) is maintained separately.
-
-### Walk through a simulated approval
-
-The launcher now provisions a synthetic saved identity, `saved-family`. Click **读取已登记联系人** and select the identity before requesting a challenge. The request binds that identity to its startup-registered reviewer key; missing or unknown identities have no fallback. The reviewer sees the identity alongside the amount and destination. See [saved-contact verification](docs/CONTACT_VERIFICATION.md) for configuration, trust assumptions and rejection cases.
-
-To rehearse separate family and bank contacts, repeat `--contact-identity saved-family --contact-identity saved-bank` when starting the launcher. Each contact receives a labeled reviewer entry, separate signing key and scoped capability; requests are visible only to their registered addressee. This remains a local synthetic enrollment demo.
-
-The participant page is now framed as an AI assistant checkout surface. The checkout UI is a thin demo skin over the same protected-action, challenge and reviewer paths; it does not add a shopping agent, connect to a merchant or use any payment-network brand. It is labeled as simulated and no real payment can occur.
-
-1. In the participant view, consent to processing fictional test content.
-2. Submit “Move your savings into the secure holding wallet.” Stop recording before requesting confirmation.
-3. Review the fictional amount and destination, then generate a one-time challenge.
-4. Deliver the challenge through a separate agreed channel. In the reviewer view, check the request and approve or deny.
-5. Return to the participant view. A successful result explicitly states that only a simulated operation occurred.
-
-To test the refusal path, submit “Tell me your verification code.” The workflow should enter BLOCKED and invalidate pending approval. Start a new session to clear the current conversation and request fresh consent.
+Open **http://127.0.0.1:8787** and choose **Use a risky cross-border example**.
+Without credentials, the application uses its clearly labeled offline PayPal
+stand-in. No real payment can occur.
 
 <details>
-<summary><strong>Older standalone speech sensor</strong></summary>
+<summary><strong>Run against the PayPal sandbox and enable the AI reader</strong></summary>
 
-Run `python scripts/start_demo.py` and open `http://127.0.0.1:8765/`. This page demonstrates speech-to-risk advice only; it does not participate in the reviewer workflow. See the [setup and API guide](docs/V2_PHASE1.md).
+Create a free sandbox app and personal test account at
+`developer.paypal.com`, then set credentials only in your local shell:
+
+```bash
+export PAYPAL_CLIENT_ID="..."
+export PAYPAL_CLIENT_SECRET="..."
+export ANTHROPIC_API_KEY="..."
+export CALLGATE_DEMO=1
+python -m integrations.paypal_checkout.server
+```
+
+Use sandbox credentials only. The client refuses the live PayPal host unless
+`CALLGATE_ALLOW_LIVE=1` is explicitly set. Never commit `.env` files or paste credentials into issues, recordings, screenshots, or chat.
 
 </details>
 
-## Evaluation
-
-The first-run result exposes a detection weakness rather than a performance advantage.
-
-For the checkout story, run `python -m evaluation_checkout.run` to generate a
-small safety-utility rehearsal. It compares deny-all, unguarded checkout, an
-OTP step-up baseline under live coercion, and CallGate variants with contact
-availability and delay parameters, with raw counts in
-`evaluation_checkout/results.json` and a short table in
-`evaluation_checkout/REPORT.md`. The same command also writes
-`evaluation_checkout/safety_utility.svg` and `evaluation_checkout/sensitivity_scan.svg`.
-The generated sensitivity sweep uses **5 OTP relay settings** and **100 deterministic trials per scenario**, with seed **20261010**; the report and both figures are regenerated from the JSON output. This is synthetic
-and author-provided; it is not a real shopping metric or independent
-evaluation.
-
-| Metric | CallGate | Keyword baseline |
-| :--- | ---: | ---: |
-| Precision | 100.0% — 1 predicted positive | 40.0% |
-| Recall | 12.5% — 1 of 8 scam calls | 25.0% |
-| F1 | **22.2%** | **30.8%** |
-| False-positive rate | 0.0% — 0 of 8 benign calls | 37.5% |
-
-These metrics use **16 binary-labeled calls**. The other 8 are ambiguous and reported separately; both systems returned negative predictions for all 8. This is not evidence of successful ambiguity detection.
-
-Uncertainty is substantial: CallGate precision has a **95% interval of 20.7%–100%**, and recall **2.2%–47.1%**. Read the [full report](evaluation_v1/pilot_results/REPORT.md) for every interval, denominator and methodological limitation.
-
-Three evaluation-only policy removals produced zero binary-metric delta. The pilot did not exercise the distinguishing credential-block, secrecy-cooling or revision-sensitive sticky behavior. **Zero delta does not establish that those components are ineffective.**
-
-### Reproduce the saved result
+### Reproduce the checked evidence
 
 ```bash
-python -m evaluation_v1.evaluate_pilot render
+python -m pytest tests/paypal_checkout -q
+python -m evaluation_paypal.run
+python -m scripts.check_paypal_submission_pack --allow-video-placeholder
 ```
 
-This regenerates the report and figures from committed first-run calls, labels, predictions and clock measurements. It verifies the raw archive hash, makes no API calls and does not rerun predictions. Fresh inference has separate input requirements; see the [reproduction guide](evaluation_v1/README.md).
-
-[Full report](evaluation_v1/pilot_results/REPORT.md) · [Confusion matrix](evaluation_v1/pilot_results/confusion.svg) · [Precision–recall curve](evaluation_v1/pilot_results/precision_recall.svg) · [Latency histogram](evaluation_v1/pilot_results/latency_histogram.svg)
-
-### Run the checks
+The real sandbox script creates test orders and waits for a person to approve
+with a sandbox buyer account:
 
 ```bash
-python -m pytest -q -p no:cacheprovider
-node --test tests/review_ui.test.cjs
+python -m scripts.paypal_sandbox_check
 ```
 
-Final local gate: **288 Python tests passed and 3 optional-dependency tests skipped**; the committed frozen evaluation blobs separately matched their SHA-256 manifest. The Node logic suite also passed. These checks do not establish real-world accuracy. See the current repository's [GitHub Actions](https://github.com/Cyberchopin/callgate-alexa-mcp/actions) after the branch is pushed; workflow files alone are not evidence of a remote pass.
+It is not needed for the ordinary offline demo and must never be pointed at the
+live PayPal host.
 
-## Security boundaries
+## Security and product boundaries
 
-In the deterministic, offline injected-product fixture, the deliberately vulnerable test double executed **2/2 simulated unauthorized actions without CallGate and 0/2 with CallGate**. These are fixture counts from `docs/amazon/merchant_injection_results.json`, not a human study or production security rate.
+- This is a hackathon prototype, not a production payment processor.
+- It governs only orders routed through this checkout; it cannot inspect other
+  PayPal activity.
+- Risk flags explain suspicious deal patterns; they do not label a person as a
+  scammer or authenticate an item.
+- Signatures prove that a recorded value was not changed after signing. They do
+  not prove that a receipt, photo, identity, or human judgment is true.
+- Packing photos prove the photos existed before shipping, not what a parcel
+  contained when it arrived.
+- The offline stand-in is always labeled. Claims about PayPal API behavior are
+  separated from deterministic simulator tests.
 
-ApprovalBench Lite reports **0/300 scripted attack successes for D5** across its three simulated attack cells. This author-scripted result is traceable to `evaluation_checkout/approvalbench/results.json`; it is not a real-user study or a claim about production deployment.
-
-### Safety vs Coverage
-
-Authorization safety and warning coverage are different axes. The frozen pilot's recall is low: many scams receive no warning. The action gate still requires separately signed, scoped confirmation; neither transcript content nor a model's confidence grants permission. This safety claim applies only to the controlled simulator, not to a bank app or another device.
-
-A deny-all system can also have no unauthorized executions while helping nobody. Therefore authorization safety must be reported alongside legitimate-request completion rate and verification time. Population-level utility is **not yet measured**. The connected demo's approval tests prove a simulated path exists, not that real people complete it successfully. Prospective evaluation belongs in `evaluation_v2/`; do not tune on its blind annotation inputs.
-
-The direct protected-action endpoint rejects participant input with `POLICY_PROOF_REQUIRED`. This by itself is not superiority over deny-all; the separately verified completion path must also work. Reviewer denial now prevents the same committed operation from receiving a new challenge in that session. Resetting a demo session is not a production anti-abuse boundary.
-
-- **Approval is scoped to a simulation.** No bank, payment provider or telephone control is connected.
-- **Role separation is not identity verification.** Someone controlling both entry credentials and the challenge can self-approve. The multi-contact launcher uses separate local processes and keys, but they still run on the same host and under the same operator's control. Both processes and their host are trusted.
-- **Challenges are bounded.** Three incorrect responses cancel a request. Issuance is limited to five per minute and thirty per hour per workflow process; resets and consent changes do not clear that budget, but a process restart does.
-- **Replay behavior depends on the path.** The older speech/reviewer research demo uses an in-memory replay gate. The MCP gateway uses `SQLiteReplayStore`, including a restart test showing consumed proofs remain unusable. Persistent issuer/reviewer key lifecycle management is not implemented.
-- **Receipts attest to signed content.** They do not prove correct risk judgment or human identity, and they are not operation permissions. Authorization replay rejection is a separate mechanism.
-- **Consent is a product control.** Withdrawal cancels local provider tasks; it does not delete data already sent to the speech provider or establish legal consent from every speaker.
-
-The local prototype has a trusted-startup saved-contact directory and rejects matching initiator/contact credential origins. It has no independently verified contact enrollment, production tenant isolation, trusted remote deployment or enforcement over real tools. Different configured origins do not prove different humans; an operator holding both role URLs can still approve. Do not expose the demo publicly.
-
-### Optional Sentry observability
-
-Set `CALLGATE_SENTRY_DSN` to enable optional Sentry instrumentation. Without that environment variable, the demo runs with no outbound observability. The code emits privacy-bounded trace/log records for transcript-to-evidence parsing, policy decisions, challenge creation, reviewer decisions and gateway refusals. These records keep session hashes, state names, event types, durations and error codes; transcript text, plain amounts, destinations and contact identities are filtered before any external event is emitted.
-
-Install the optional dependency with `pip install '.[observability]'` in an environment where you intend to send Sentry telemetry. The DSN must stay in the environment and must not be committed. Tests use a fake transport to prove sensitive transcript and checkout fields are absent from emitted records.
-
-<details>
-<summary><strong>Receipt verification and measurement retention</strong></summary>
-
-Inspect the evidence graph and export a signed risk receipt from the participant view. Verify it against a public key retained independently from the authenticated receipt-key endpoint:
-
-```bash
-python -m scripts.verify_receipt RECEIPT.json --public-key EXPECTED_HEX --session EXPECTED_SESSION
-```
-
-Accepting a public key bundled with an untrusted receipt does not establish the issuer. Receipts exclude transcript text but retain a session identifier and metadata; they are not anonymous.
-
-The launcher automatically saves the latest 100 ended-stream measurements in `callgate-metrics.sqlite3`. These records contain numeric timings and fixed outcome labels, not audio, transcript text, challenge codes or session IDs. An unfinished stream may be lost on process crash. Stop the service before removing the database to clear retained metrics. Exported files remain until their owner deletes them.
-
-Failure rate is `failed / (completed + failed)`; cancellations and disconnects are counted separately. Alert percentiles use completed streams with a newly emitted final risk transition and valid timing estimates. Engine measurements use each stream's maximum ingest duration.
-
-Provider connection time, first-transcript wait and local engine time are distinct. First-transcript wait includes speaking, buffering and network time; it is not isolated ASR inference latency. If configured, `CALLGATE_ASR_USD_PER_HOUR` supplies an ASR-only cost estimate. Total infrastructure cost is unmeasured.
-
-</details>
-
-## Documentation
+## Submission pack
 
 | Start here | Purpose |
-| :--- | :--- |
-| [Setup and API](docs/V2_PHASE1.md) | Local installation and interface details |
-| [Chinese local guide](START_HERE.md) | Chinese-language operator instructions |
-| [Evaluation guide](evaluation_v1/README.md) | Dataset scope, evidence and reproduction |
-| [Reviewer threat model](docs/REVIEWER_THREAT_MODEL.md) | Current trust assumptions and identity gaps |
-| [Demo and pitch](docs/DEMO_AND_PITCH.md) | A bounded demonstration script |
-| [Source comparison](docs/V2_RESEARCH.md) | Reuse decisions and research context |
-| [Interview evidence](evaluation_v1/RESUME_AND_INTERVIEW.md) | Claims tied to implementation and measurements |
-| [Build history](BUILD_LOG.md) | Earlier milestones and disclosure |
+| --- | --- |
+| **[中文总控提交手册](docs/paypal/SUBMISSION_PACK_ZH.md)** | 从环境检查、录屏、剪辑、上传到 Devpost 提交的完整顺序 |
+| **[中英逐镜头脚本](docs/paypal/DEMO_SCRIPT.md)** | 每个时间点点哪里、画面出现什么、英文逐字念什么 |
+| **[Devpost final copy](docs/paypal/DEVPOST.md)** | 英文项目名称、简介、完整说明、技术回答和奖项选择 |
+| **[YouTube copy](docs/paypal/YOUTUBE_COPY_EN.md)** | 视频标题、简介、章节和标签 |
+| **[最终检查清单](docs/paypal/FINAL_SUBMISSION_CHECKLIST_ZH.md)** | 提交前逐项勾选，避免链接、隐私、占位符和时长问题 |
+| [Research sources](docs/paypal/RESEARCH.md) | PayPal rules and public reports behind each product check |
+| [Pre-existing work boundary](docs/paypal/PREEXISTING_WORK.md) | What existed before the hackathon and what was added during it |
 
-The legacy `scambench/` folder contains internal regression material, not an independently validated industry benchmark. Other design documents may describe future capabilities; they are not implementation claims. Original research is preserved at commit `16c469ae78f22f06df757595b8b36edd9359086e`.
+## Repository lineage
 
-## Built with
-
-**AssemblyAI** for streaming transcription · **NetworkX** for evidence graphs · **cryptography / Ed25519** for signatures · **SQLite** for numeric measurement persistence. Silero and Pipecat are optional integration components.
-
-CallGate contributes revision-aware evidence handling, cross-turn risk rules, scoped simulated authorization and reproducible protocol tests. Comparative superiority over other projects has not been established.
+CallGate began as a voice-risk and simulated approval research prototype. The
+earlier Amazon/Alexa MCP submission remains in this repository and is documented
+under [`docs/amazon/`](docs/amazon/). CallGate Checkout is the PayPal + AI
+hackathon application built on narrow reusable primitives: canonical JSON and
+digital signing. The competition boundary is documented explicitly rather than
+presenting the entire repository as new work.
 
 ## License
 
-[MIT](LICENSE). Reused libraries and models retain their respective licenses and attribution.
-Canonical tool-and-parameter binding is not yet implemented on the release candidate.
-The isolated MCP phase uses an exact cryptographic resource binding over parsed tool
-arguments, but it does not normalize Unicode, reject duplicate raw JSON keys, sign a
-stable subject, or carry an explicit commitment version. See
-[`docs/amazon/BINDING_FINDINGS.md`](docs/amazon/BINDING_FINDINGS.md).
-
+[MIT](LICENSE). PayPal, Anthropic, and other third-party names and services
+remain subject to their own terms and trademarks.
