@@ -36,7 +36,7 @@ num2words==0.5.14
 numba==0.68.0
 numpy==2.5.3
 onnxruntime==1.24.4
-openai==2.54.0
+openai==3.37.0
 packaging==26.3
 pillow==12.3.0
 pipecat-ai==1.8.1
