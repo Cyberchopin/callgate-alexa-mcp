@@ -1,6 +1,6 @@
 # Public numeric claim registry
 
-Exact numeric README sentences are bound below. Metrics are recomputed from the frozen archive; operational constants are checked against source literals. Dates, identifiers and instruction numbering are explicitly classified as nonmetrics. These source checks do not prove production safety or independent annotation. Historical test counts are checked as historical records, not asserted as current test totals.
+Exact numeric README sentences are bound below. The original `readme-*` entries preserve and revalidate the earlier Amazon submission claims even though those sentences no longer need to remain on the current PayPal landing page. Current root-README claims use `paypal-readme-*` and must remain present verbatim. Metrics are recomputed from frozen or deterministic fixtures; operational constants are checked against source literals. These checks do not prove production safety, real-world accuracy or independent annotation.
 
 Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered digit-bearing lines, archived-evidence edits and inconsistent metric percentages fail closed. Changes to this registry require review; no CI can prevent an authorized person from changing both code and evidence.
 
@@ -381,6 +381,78 @@ Run `python scripts/check_claims.py`. Numeric sentence changes, unregistered dig
       {
         "path": "docs/amazon/BUILD_LOG.md",
         "literals": ["288 passed", "3 skipped"]
+      }
+    ]
+  },
+  {
+    "id": "paypal-readme-001",
+    "quote": "else. A seller may agree to **$80 + $8 shipping**, while an assistant drafts **$180**. A buyer may ask for delivery to a cousin, but PayPal Seller Protection",
+    "check": "paypal_scenario_amounts"
+  },
+  {
+    "id": "paypal-readme-002",
+    "quote": "- Let the AI sales assistant draft an order. A planted **$180** instruction is rejected because it does not match the confirmed **$88** deal.",
+    "check": "paypal_scenario_amounts"
+  },
+  {
+    "id": "paypal-readme-003",
+    "quote": "| Real PayPal sandbox run | A $180 order was blocked; the agreed $88 order was approved, its US ship-to checked, captured once, and given PayPal tracking | [Redacted sandbox record](docs/paypal/sandbox-run.json) |",
+    "evidence": "docs/paypal/sandbox-run.json",
+    "check": "paypal_sandbox_summary"
+  },
+  {
+    "id": "paypal-readme-004",
+    "quote": "| CheckoutBench-lite | 12/13 deals exact, 1 abstained, 0 wrong totals; 0/5 no-deal chats payable; 67/67 mutations caught | [Evaluation fixtures](evaluation_paypal/scenarios.json) |",
+    "check": "paypal_benchmark",
+    "metric": "checkout"
+  },
+  {
+    "id": "paypal-readme-005",
+    "quote": "| Risk-line fixtures | 16/16 risky lines flagged; 0/12 ordinary lines falsely flagged | [Evaluation runner](evaluation_paypal/run.py) |",
+    "check": "paypal_benchmark",
+    "metric": "risk"
+  },
+  {
+    "id": "paypal-readme-006",
+    "quote": "Python 3.12 is the pinned development target.",
+    "check": "source_literals",
+    "sources": [
+      {
+        "path": ".github/workflows/test.yml",
+        "literals": ["python-version: '3.12'"]
+      }
+    ]
+  },
+  {
+    "id": "paypal-readme-007",
+    "quote": "Open **http://127.0.0.1:8787** and choose **Use a risky cross-border example**.",
+    "check": "source_literals",
+    "sources": [
+      {
+        "path": "integrations/paypal_checkout/server/__main__.py",
+        "literals": ["\"127.0.0.1\"", "\"8787\""]
+      }
+    ]
+  },
+  {
+    "id": "paypal-readme-008",
+    "quote": "export CALLGATE_DEMO=1",
+    "check": "source_literals",
+    "sources": [
+      {
+        "path": "integrations/paypal_checkout/server/app.py",
+        "literals": ["os.environ.get(\"CALLGATE_DEMO\") == \"1\""]
+      }
+    ]
+  },
+  {
+    "id": "paypal-readme-009",
+    "quote": "`CALLGATE_ALLOW_LIVE=1` is explicitly set. Never commit `.env` files or paste credentials into issues, recordings, screenshots, or chat.",
+    "check": "source_literals",
+    "sources": [
+      {
+        "path": "integrations/paypal_checkout/paypal_client.py",
+        "literals": ["os.environ.get(\"CALLGATE_ALLOW_LIVE\") != \"1\""]
       }
     ]
   }

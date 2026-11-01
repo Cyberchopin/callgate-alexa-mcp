@@ -24,6 +24,12 @@ def test_changed_claim_fails_even_when_ledger_is_unchanged():
     assert checker().validate_entry(entry, 'Changed 100%', Path('.'))
 
 
+def test_archived_amazon_claim_need_not_remain_on_current_landing_page(tmp_path):
+    entry = {'id': 'readme-legacy', 'quote': 'Original version 1',
+             'check': 'nonmetric_reference', 'reason': 'Archived version label.', 'references': []}
+    assert not checker().validate_entry(entry, 'Current PayPal landing page', tmp_path)
+
+
 def test_verified_metric_must_match_evidence(tmp_path):
     import json
     evidence = tmp_path / 'metrics.json'
@@ -41,4 +47,17 @@ def test_matching_metric_and_denominator_pass(tmp_path):
                                               'baseline': {'recall': {'value': 0.25}}}}))
     entry = {'id': 'x', 'quote': '| Recall | 12.5% — 1 of 8 scam calls | 25.0% |',
              'check': 'metric_row', 'metric': 'recall', 'evidence': 'metrics.json'}
+    assert not checker().validate_entry(entry, entry['quote'], tmp_path)
+
+
+def test_paypal_scenario_amounts_are_bound_to_fixture(tmp_path):
+    import json
+    path = tmp_path / 'evaluation_paypal'
+    path.mkdir()
+    (path / 'scenarios.json').write_text(json.dumps({
+        'scenarios': [{'expect': {'total': '88.00', 'shipping': '8.00'}}],
+        'order_mutations': [{'id': 'inflated-total', 'set': {'value': '180.00'}}],
+    }))
+    entry = {'id': 'paypal-readme-test', 'quote': 'Agreed $80 + $8; blocked $180.',
+             'check': 'paypal_scenario_amounts'}
     assert not checker().validate_entry(entry, entry['quote'], tmp_path)

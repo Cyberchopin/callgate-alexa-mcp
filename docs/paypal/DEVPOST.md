@@ -75,7 +75,7 @@ CallGate Checkout sits between the conversation and the money, and stays with th
 
 ### Accomplishments that we're proud of
 
-- 94 focused tests for this project; the full local suite passed 394 tests with 3 environment-specific tests skipped. They cover:
+- 94 focused tests for this project; the full local suite passed 396 tests with 3 environment-specific tests skipped. They cover:
   - ten simultaneous clicks capturing once, and a timeout after PayPal already committed;
   - forged approvals, offers and webhooks;
   - every kind of provenance tampering;

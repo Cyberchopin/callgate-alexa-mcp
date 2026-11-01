@@ -9,26 +9,25 @@ blocks changed orders, checks the PayPal ship-to address, and preserves a
 signed evidence trail from agreement to delivery.
 
 <p>
-  <a href="https://github.com/Cyberchopin/callgate-alexa-mcp/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/Cyberchopin/callgate-alexa-mcp/test.yml?branch=main&style=flat-square&label=Core%20tests" alt="Core tests"></a>
-  <a href="https://github.com/Cyberchopin/callgate-alexa-mcp/actions/workflows/pip-audit.yml"><img src="https://img.shields.io/github/actions/workflow/status/Cyberchopin/callgate-alexa-mcp/pip-audit.yml?branch=main&style=flat-square&label=Dependency%20audit" alt="Dependency audit"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB?style=flat-square" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/PayPal-Sandbox-003087?style=flat-square&logo=paypal&logoColor=white" alt="PayPal Sandbox">
-  <img src="https://img.shields.io/badge/MCP-Agent%20gateway-7C3AED?style=flat-square" alt="MCP agent gateway">
+  <a href="https://github.com/Cyberchopin/callgate-alexa-mcp/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/Cyberchopin/callgate-alexa-mcp/test.yml?branch=main&style=flat-square&label=Core_tests" alt="Core tests"></a>
+  <a href="https://github.com/Cyberchopin/callgate-alexa-mcp/actions/workflows/pip-audit.yml"><img src="https://img.shields.io/github/actions/workflow/status/Cyberchopin/callgate-alexa-mcp/pip-audit.yml?branch=main&style=flat-square&label=Dependency_audit" alt="Dependency audit"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/PayPal-Sandbox-blue?style=flat-square&logo=paypal&logoColor=white" alt="PayPal Sandbox">
+  <img src="https://img.shields.io/badge/MCP-Agent_gateway-purple?style=flat-square" alt="MCP agent gateway">
 </p>
 
-**[Demo](#demo-in-60-seconds)** · **[How it works](#how-it-works)** ·
+**[Demo](#quick-demo)** · **[How it works](#how-it-works)** ·
 **[Verified evidence](#verified-evidence)** · **[Run locally](#run-locally)** ·
 **[Submission pack](#submission-pack)**
 
-<img src="docs/paypal/media/thumbnail.png" width="100%" alt="CallGate Checkout — pay what the chat agreed and ship what the seller promised">
+![CallGate Checkout — pay what the chat agreed and ship what the seller promised](docs/paypal/media/thumbnail.png)
 
 </div>
 
 ---
 
 Resale deals are negotiated in chat, but the payment link is created somewhere
-else. A seller may agree to **$80 + $8 shipping**, while an assistant drafts
-**$180**. A buyer may ask for delivery to a cousin, but PayPal Seller Protection
+else. A seller may agree to **$80 + $8 shipping**, while an assistant drafts **$180**. A buyer may ask for delivery to a cousin, but PayPal Seller Protection
 depends on shipping to the address attached to the transaction. When the chat,
 the order, and the parcel are disconnected, both sides lose the evidence they
 need.
@@ -43,16 +42,15 @@ CallGate Checkout keeps those stages connected:
 > Deterministic code and explicit human confirmation decide whether money or a
 > parcel can move.
 
-## Demo in 60 seconds
+## Quick demo
 
-1. Paste a bilingual resale chat and click **Read the agreement**.
-2. Inspect the agreed total beside the exact words that support it.
-3. Let the AI sales assistant draft an order. A planted **$180** instruction is
-   rejected because it does not match the confirmed **$88** deal.
-4. Let the buyer inspect and approve the exact verified order.
-5. Re-read PayPal before capture. A changed order or unsupported destination is
+- Paste a bilingual resale chat and click **Read the agreement**.
+- Inspect the agreed total beside the exact words that support it.
+- Let the AI sales assistant draft an order. A planted **$180** instruction is rejected because it does not match the confirmed **$88** deal.
+- Let the buyer inspect and approve the exact verified order.
+- Re-read PayPal before capture. A changed order or unsupported destination is
    blocked or held; a valid order is captured once.
-6. Turn promises such as “original box included” into a packing checklist, add
+- Turn promises such as “original box included” into a packing checklist, add
    tracking, and export the signed evidence chain.
 
 The complete under-three-minute recording plan and exact English narration are
@@ -115,8 +113,7 @@ state machine, consent chain, provenance passport, risk checks, and API map.
 | Evidence | Recorded result | Inspect |
 | --- | --- | --- |
 | Real PayPal sandbox run | A $180 order was blocked; the agreed $88 order was approved, its US ship-to checked, captured once, and given PayPal tracking | [Redacted sandbox record](docs/paypal/sandbox-run.json) |
-| Focused checkout tests | **94 passed** | `python -m pytest tests/paypal_checkout -q` |
-| Full local suite | **394 passed, 3 skipped** in the recorded release check | GitHub workflows and repository tests |
+| Focused checkout tests | Passing in the recorded release check | `python -m pytest tests/paypal_checkout -q` |
 | CheckoutBench-lite | 12/13 deals exact, 1 abstained, 0 wrong totals; 0/5 no-deal chats payable; 67/67 mutations caught | [Evaluation fixtures](evaluation_paypal/scenarios.json) |
 | Risk-line fixtures | 16/16 risky lines flagged; 0/12 ordinary lines falsely flagged | [Evaluation runner](evaluation_paypal/run.py) |
 
@@ -160,8 +157,7 @@ python -m integrations.paypal_checkout.server
 ```
 
 Use sandbox credentials only. The client refuses the live PayPal host unless
-`CALLGATE_ALLOW_LIVE=1` is explicitly set. Never commit `.env` files or paste
-credentials into issues, recordings, screenshots, or chat.
+`CALLGATE_ALLOW_LIVE=1` is explicitly set. Never commit `.env` files or paste credentials into issues, recordings, screenshots, or chat.
 
 </details>
 
@@ -214,8 +210,8 @@ live PayPal host.
 CallGate began as a voice-risk and simulated approval research prototype. The
 earlier Amazon/Alexa MCP submission remains in this repository and is documented
 under [`docs/amazon/`](docs/amazon/). CallGate Checkout is the PayPal + AI
-hackathon application built on a narrow reusable primitive: canonical JSON and
-Ed25519 signing. The competition boundary is documented explicitly rather than
+hackathon application built on narrow reusable primitives: canonical JSON and
+digital signing. The competition boundary is documented explicitly rather than
 presenting the entire repository as new work.
 
 ## License

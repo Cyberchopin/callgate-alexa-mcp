@@ -9,7 +9,7 @@
 - PayPal Checkout 核心流程、AI reader、MCP sales assistant、订单差异检查、地址 gate、幂等 capture、packing/tracking/evidence 已实现。
 - 已有一次脱敏后的真实 PayPal sandbox 成功记录：`docs/paypal/sandbox-run.json`。
 - PayPal 专项测试：**94 passed**。
-- 最近记录的全仓库本地测试：**394 passed, 3 skipped**。
+- 最近记录的全仓库本地测试：**396 passed, 3 skipped**。
 - README、Devpost 英文文案、缩略图和视频脚本均在仓库中。
 - GitHub 仓库公开，根目录已有 MIT `LICENSE`。
 
