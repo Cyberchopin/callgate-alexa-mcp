@@ -31,7 +31,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,
 from callgate.receipt import canonical
 
 from . import ledger as L
-from .extract import ModelReader, read_terms
+from .extract import MODEL_UNAVAILABLE, ModelReader, read_terms
 from .order_check import blocking, compare, order_fingerprint, order_from_terms
 from .paypal_client import PayPalClient, PayPalError, PayPalTimeout, approve_link, capture_of
 from . import provenance as PV
@@ -77,7 +77,8 @@ class CheckoutService:
         return self.ledger.create(checkout_id, {
             "messages": chat_rows, "chat_sha256": hashlib.sha256(canonical(chat_rows)).hexdigest(),
             "title": (title or "")[:127] or None,
-            "readers": ["rules-checkout-v1"] + ([self.model_reader.label] if self.model_reader else []),
+            "readers": ["rules-checkout-v1"] + ([self.model_reader.label + (" (unavailable)" if any(
+                u.startswith(MODEL_UNAVAILABLE) for u in terms.unresolved) else "")] if self.model_reader else []),
             "terms": terms.to_dict(), "ready": terms.ready(),
             "chat_flags": [f.to_dict() for f in RK.chat_flags(messages)]})
 
@@ -123,7 +124,9 @@ class CheckoutService:
         terms = terms_from_dict(co["data"]["terms"])
         body = order_from_terms(terms, checkout_id=checkout_id, title=co["data"].get("title"))
         body["payment_source"] = {"paypal": {"experience_context": {
-            "user_action": "PAY_NOW", "return_url": f"{self.return_url}?checkout={checkout_id}",
+            "user_action": "PAY_NOW", "shipping_preference": "GET_FROM_FILE",
+            # Found on the real sandbox: without these, PayPal let the payer approve with no ship-to.
+            "return_url": f"{self.return_url}?checkout={checkout_id}",
             "cancel_url": f"{self.return_url}?checkout={checkout_id}&cancel=1"}}}
         # A retry of the same build reuses the request id, so PayPal returns the same order.
         # A deliberate rebuild (after a mismatch or an edit) gets a new id and a fresh order.
@@ -266,7 +269,8 @@ class CheckoutService:
         flags = RK.payment_flags(_messages(co), order, seller_country=self.seller_country)
         override = co["data"].get("destination_override") or {}
         holds = [f for f in RK.blocking(flags)
-                 if not (f.code == "DESTINATION_MISMATCH" and dest and override.get("country_code") == dest["country_code"])]
+                 if not (f.code == "DESTINATION_MISMATCH" and dest and override.get("country_code") == dest["country_code"])
+                 and not (f.code == "NO_SHIP_TO" and override and dest is None)]
         self.ledger.transition(checkout_id, L.BUYER_CONFIRMED, L.BUYER_CONFIRMED,
                                update={"ship_to": dest, "payment_flags": [f.to_dict() for f in flags]},
                                detail={"note": "checked PayPal ship-to", "country": (dest or {}).get("country_code")})

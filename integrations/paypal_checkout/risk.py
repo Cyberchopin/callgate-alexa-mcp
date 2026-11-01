@@ -169,9 +169,10 @@ def payment_flags(messages: list[Message], order: dict, *, seller_country: str) 
     flags: list[Flag] = []
     dest = ship_to(order)
     if dest is None:
-        flags.append(Flag("NO_SHIP_TO", WARN, "PayPal has no shipping address for this order",
+        flags.append(Flag("NO_SHIP_TO", BLOCK, "PayPal has no shipping address for this order",
                           "Seller Protection needs proof of delivery to the address on the transaction. "
-                          "Without one, an 'item not received' claim is hard to defend.",
+                          "Without one, an 'item not received' claim is hard to defend, so the payment is held "
+                          "until the seller decides. The usual fix is to ask the buyer to pay again and pick an address.",
                           source=SOURCES["seller_protection"], protects="seller"))
         return flags
     agreed, where = agreed_destinations(messages, seller_country)

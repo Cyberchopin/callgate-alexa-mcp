@@ -100,8 +100,15 @@ def main() -> int:
     else:
         print("!! not approved within 15 minutes")
         return 1
-    destination = ship_to(order) or {}
-    record("approved", status=order["status"], ship_to_country=destination.get("country_code"))
+    # Saved file is public: keep only the country, never the test buyer's city or ZIP.
+    destination = ship_to(order)
+    record("approved", status=order["status"],
+           ship_to_country=destination.get("country_code") if destination else None)
+    if destination is None:
+        print("!! PayPal returned no shipping address, so the destination check can't run. "
+              "Did the buyer pick a Ship to address on the PayPal page?")
+        return 1
+    print(f"   PayPal ship-to country: {destination['country_code']}")
 
     step("Capture — twice, to show the second attempt doesn't charge again")
     try:

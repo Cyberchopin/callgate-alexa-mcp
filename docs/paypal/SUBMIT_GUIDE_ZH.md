@@ -22,7 +22,7 @@ git checkout paypal/checkout
 python -m venv .venv
 source .venv/bin/activate        # Windows 用 .venv\Scripts\activate
 pip install -r requirements-lock.txt -r integrations/alexa_mcp/requirements.txt -r integrations/paypal_checkout/requirements.txt
-python -m pytest tests/paypal_checkout -q          # 应该显示 92 passed
+python -m pytest tests/paypal_checkout -q          # 应该显示 94 passed
 ```
 
 ## 第 3 步：跑一遍真实 sandbox 检查（约 10 分钟）
@@ -36,7 +36,7 @@ python -m scripts.paypal_sandbox_check
 
 脚本会打印一个 PayPal 链接。用浏览器打开，用第 1 步记下的**买家账号**登录并点付款。付完会跳转到 example.com，这是正常的，回到终端等它跑完。
 
-跑通后会生成 `docs/paypal/sandbox-run.json`，里面有真实的订单号、扣款号和物流记录。把这个文件提交到仓库，Devpost 文案里所有 `[[…]]` 都用它里面的号码填。
+跑通后会更新 `docs/paypal/sandbox-run.json`，里面有真实的订单号、扣款号和物流记录。当前仓库已经包含一次脱敏后的成功 sandbox 运行；如果重跑，只提交不含姓名、街道、城市和邮编的公开证据。
 
 **如果某一步报错**：把终端里的完整报错复制给我，我来修。那就说明真实 PayPal 和模拟器有差别，正好是这一步要发现的。
 
@@ -74,7 +74,7 @@ python -m scripts.paypal_llm_agent                # 终端 2，看 Claude 怎么
 - 拿他最近真实的一段买卖聊天（隐去名字），粘贴进去，看读出的价格对不对、有没有标出风险。
 - 记下来：读对没有？标出了什么？他觉得有用还是麻烦？
 - 能有一句他的原话最好，比如“上次那单要是有这个，就不会寄错地址了”。
-- 写进 Devpost 的 Accomplishments，填掉那行 `[[Real use…]]`。只写真实发生的事，没有就删掉那一行，不要编。
+- 如果确实完成了真实试用，再把结果作为一条新的 Accomplishment 写进 Devpost。当前草稿没有声称真实用户试用，不要为了这一项编内容。
 
 ## 第 7 步：录视频（约 1–2 小时）
 
@@ -90,7 +90,7 @@ python -m scripts.paypal_llm_agent                # 终端 2，看 Claude 怎么
 
 1. Project name、Elevator pitch
 2. Thumbnail：上传 `docs/paypal/media/thumbnail.png`
-3. About the project：整段复制，并把所有 `[[…]]` 换成真实内容
+3. About the project：整段复制；sandbox 证据已经填好
 4. Built with：复制标签
 5. Try it out：GitHub 分支链接，加上 Render 网址（如果部署了）
 6. Video：YouTube 链接
@@ -98,7 +98,7 @@ python -m scripts.paypal_llm_agent                # 终端 2，看 Claude 怎么
 8. 奖项勾选：Overall、Most Impactful、Best Use of Agentic Commerce、Best Use of PayPal + AI、Most Creative、Best Demo Delivery；部署了 Render 再勾 Best Use of Render。
 
 **提交前检查：**
-- [ ] 全文搜一下 `[[`，确保一个都不剩
+- [ ] 把唯一的 `[[YouTube link…]]` 替换成公开视频链接，再全文搜索 `[[`，确保一个都不剩
 - [ ] 仓库是公开的，根目录有 LICENSE（MIT，已经有了）
 - [ ] 视频是公开的，且不到 3 分钟
 - [ ] 打开 GitHub 分支链接，能看到 `integrations/paypal_checkout/README.md`

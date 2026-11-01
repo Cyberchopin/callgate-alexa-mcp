@@ -177,7 +177,7 @@ def order_from_terms(terms: AgreedTerms, *, checkout_id: str, title: str | None 
             "amount": {"currency_code": cur, "value": money_str(total),
                        "breakdown": {"item_total": {"currency_code": cur, "value": money_str(item_total)},
                                      "shipping": {"currency_code": cur, "value": money_str(ship)}}},
-            "items": [{"name": name, "quantity": qty,
+            "items": [{"name": name, "quantity": qty, "category": "PHYSICAL_GOODS",
                        "unit_amount": {"currency_code": cur, "value": money_str(money(unit, cur))}}],
         }],
     }
