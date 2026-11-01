@@ -339,7 +339,7 @@ def anthropic_complete(model: str | None = None, timeout: float = 30.0):
     """Claude Messages API; requires ANTHROPIC_API_KEY. Imported lazily so tests need no key."""
     import httpx
     key = os.environ["ANTHROPIC_API_KEY"]
-    model = model or os.environ.get("CALLGATE_MODEL", "claude-sonnet-5-5")
+    model = model or os.environ.get("CALLGATE_MODEL", "claude-sonnet-5")
 
     def complete(system: str, user: str) -> str:
         r = httpx.post("https://api.anthropic.com/v1/messages", timeout=timeout,

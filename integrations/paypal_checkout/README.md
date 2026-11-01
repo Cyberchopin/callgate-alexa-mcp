@@ -132,7 +132,7 @@ Each entry: `{item_id, seq, prev = SHA-256(previous signed entry), event, holder
 | Reading the chat | A model reader (Claude, or any OpenAI-compatible model) reads the negotiation alongside the rule reader and must quote the chat for every value. | Add a value that isn't in the chat; settle a disagreement with the rule reader — a person does. |
 | Sales assistant | Claude, working for the seller, reads the deal and drafts the PayPal order through the agent gateway. Button on the seller page, or `python -m scripts.paypal_llm_agent` over MCP. | Confirm terms, approve for the payer, release a hold, ship or capture. A wrong draft — even one it was talked into by the chat — is blocked and gets no payer link. |
 
-Both need `ANTHROPIC_API_KEY` (the reader also accepts `OPENAI_API_KEY` + `OPENAI_MODEL`). Without a key the checkout still works with the rule reader and the AI button is hidden. Default models: `claude-sonnet-5-5` (override with `CALLGATE_MODEL` / `CALLGATE_AGENT_MODEL`).
+Both need `ANTHROPIC_API_KEY` (the reader also accepts `OPENAI_API_KEY` + `OPENAI_MODEL`). Without a key the checkout still works with the rule reader and the AI button is hidden. Default model: `claude-sonnet-5` (override with `CALLGATE_MODEL` / `CALLGATE_AGENT_MODEL`).
 
 ## AI sales agents (MCP)
 

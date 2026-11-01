@@ -60,7 +60,7 @@ class InProcessTools:
 def anthropic_messages(model: str | None = None, timeout: float = 60.0):
     import httpx
     key = os.environ["ANTHROPIC_API_KEY"]
-    model = model or os.environ.get("CALLGATE_AGENT_MODEL", "claude-sonnet-5-5")
+    model = model or os.environ.get("CALLGATE_AGENT_MODEL", "claude-sonnet-5")
 
     async def complete(body: dict) -> dict:
         async with httpx.AsyncClient(timeout=timeout) as c:

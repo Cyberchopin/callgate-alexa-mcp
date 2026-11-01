@@ -100,7 +100,8 @@ def main() -> int:
     else:
         print("!! not approved within 15 minutes")
         return 1
-    record("approved", status=order["status"], ship_to=ship_to(order))
+    destination = ship_to(order) or {}
+    record("approved", status=order["status"], ship_to_country=destination.get("country_code"))
 
     step("Capture — twice, to show the second attempt doesn't charge again")
     try:
