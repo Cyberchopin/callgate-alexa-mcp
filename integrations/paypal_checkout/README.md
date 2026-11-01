@@ -84,6 +84,7 @@ flowchart LR
 | Off-platform payment (friends & family, Zelle, wire, crypto, gift card, 微信转账) | Reading the chat | Flag | Not covered by Purchase Protection |
 | Overpayment refund | Reading the chat | Flag | Classic reversal scam |
 | PayPal ship-to outside the agreed destinations ("within the US only") | Capture | **Payment held**; seller can release with a recorded reason | The agreed shipping doesn't cover it |
+| PayPal returned no ship-to at all (found on the real sandbox; orders now request one) | Capture | **Payment held**; seller can release with a recorded reason | Nothing protected to ship to |
 | Cross-border and nobody mentioned duties | Capture | Warning (mentions the end of US de minimis on Aug 29, 2025 for US-bound parcels) | Surprise duty bills cause refused parcels |
 | Label ZIP/country ≠ PayPal ship-to | Ship | **Blocked** | Seller Protection address rule |
 | Item value > UPS default $100 liability, no declared value | Ship | Warning the seller must acknowledge | Carrier won't pay above its liability |
@@ -132,7 +133,7 @@ Each entry: `{item_id, seq, prev = SHA-256(previous signed entry), event, holder
 | Reading the chat | A model reader (Claude, or any OpenAI-compatible model) reads the negotiation alongside the rule reader and must quote the chat for every value. | Add a value that isn't in the chat; settle a disagreement with the rule reader — a person does. |
 | Sales assistant | Claude, working for the seller, reads the deal and drafts the PayPal order through the agent gateway. Button on the seller page, or `python -m scripts.paypal_llm_agent` over MCP. | Confirm terms, approve for the payer, release a hold, ship or capture. A wrong draft — even one it was talked into by the chat — is blocked and gets no payer link. |
 
-Both need `ANTHROPIC_API_KEY` (the reader also accepts `OPENAI_API_KEY` + `OPENAI_MODEL`). Without a key the checkout still works with the rule reader and the AI button is hidden. Default models: `claude-sonnet-5-5` (override with `CALLGATE_MODEL` / `CALLGATE_AGENT_MODEL`).
+Both need `ANTHROPIC_API_KEY` (the reader also accepts `OPENAI_API_KEY` + `OPENAI_MODEL`). Without a key the checkout still works with the rule reader and the AI button is hidden. Default model: `claude-sonnet-5` (override with `CALLGATE_MODEL` / `CALLGATE_AGENT_MODEL`).
 
 ## AI sales agents (MCP)
 
@@ -174,7 +175,7 @@ The live PayPal host is refused unless `CALLGATE_ALLOW_LIVE=1`. `render.yaml` at
 
 ## Evidence
 
-- `pytest tests/paypal_checkout` — 92 tests: every reliability row above, approval, offer and webhook forgery, the chain of consent, rebuild after tampering, grounding, the MCP gateway over a real MCP client, packing / tracking / evidence, PayPal carrier codes, every risk check, provenance tampering (edit, remove, reorder, re-signed forgery, altered import), the sandbox check script itself run against the stand-in, and the AI sales assistant's tool loop driven by a scripted model (in-process and over real MCP HTTP), including a model that proposes the planted $180 first.
+- `pytest tests/paypal_checkout` — 94 tests: every reliability row above, approval, offer and webhook forgery, the chain of consent, rebuild after tampering, grounding, the MCP gateway over a real MCP client, packing / tracking / evidence, PayPal carrier codes, every risk check, provenance tampering (edit, remove, reorder, re-signed forgery, altered import), the sandbox check script itself run against the stand-in, and the AI sales assistant's tool loop driven by a scripted model (in-process and over real MCP HTTP), including a model that proposes the planted $180 first.
 - `python -m evaluation_paypal.run` — CheckoutBench-lite, rules-only, October 25, 2026:
   - 18 negotiations (English, Chinese, mixed): 12/13 deals read exactly, 1 sent to a person (the injected-price chat), **0 wrong totals**, **0 of 5 no-deal chats made payable**;
   - 67/67 order mutations caught;

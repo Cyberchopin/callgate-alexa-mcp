@@ -28,6 +28,7 @@ class FakePayPal:
         self.base_url = base_url
         self.webhook_id = webhook_id
         self.orders: dict[str, dict] = {}
+        self.create_bodies: dict[str, dict] = {}
         self.request_ids: dict[tuple[str, str], tuple[int, dict]] = {}
         self.capture_count: dict[str, int] = {}
         self.trackers: dict[str, list[dict]] = {}
@@ -43,13 +44,16 @@ class FakePayPal:
     DEFAULT_SHIP_TO = {"address_line_1": "1 Test St", "admin_area_2": "Irvine", "admin_area_1": "CA",
                        "postal_code": "92617", "country_code": "US"}
 
-    def approve(self, order_id: str, payer_email: str = "buyer@example.com", ship_to: dict | None = None) -> None:
+    def approve(self, order_id: str, payer_email: str = "buyer@example.com", ship_to: dict | None = None,
+                no_address: bool = False) -> None:
         """Simulate the payer approving on PayPal; PayPal attaches the payer's shipping address."""
         o = self.orders[order_id]
         if o["status"] not in ("CREATED", "PAYER_ACTION_REQUIRED"):
             raise ValueError(f"cannot approve order in {o['status']}")
         o["status"] = "APPROVED"
         o["payer"] = {"email_address": payer_email, "payer_id": "FAKEPAYER1"}
+        if no_address:       # what the real sandbox returned when the order didn't ask for shipping
+            return
         address = {**self.DEFAULT_SHIP_TO, **(ship_to or {})}
         o["purchase_units"][0]["shipping"] = {"name": {"full_name": "Test Buyer"}, "address": address}
 
@@ -162,6 +166,7 @@ class FakePayPal:
             pu.setdefault("reference_id", "default")
             pu.setdefault("payee", {"merchant_id": "FAKEMERCHANT"})
         self.orders[oid] = order
+        self.create_bodies[oid] = copy.deepcopy(body)     # what the client asked for, for tests
         return 200, copy.deepcopy(order)
 
     def _patch(self, oid, ops):

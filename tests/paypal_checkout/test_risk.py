@@ -85,6 +85,23 @@ def test_destination_outside_agreement_holds_the_payment(mk):
     assert "DESTINATION_MISMATCH" in r["flags"]
 
 
+def test_order_asks_paypal_for_a_ship_to_and_missing_one_holds_the_payment(mk):
+    """Found on the real sandbox: an order that didn't ask for shipping came back approved with no address."""
+    svc, fake = mk()
+    co = svc.build_order(svc.confirm_terms(svc.start(US_SALE)["id"])["id"])
+    body = fake.create_bodies[co["data"]["order_id"]]
+    assert body["purchase_units"][0]["items"][0]["category"] == "PHYSICAL_GOODS"
+    assert body["payment_source"]["paypal"]["experience_context"]["shipping_preference"] == "GET_FROM_FILE"
+    co = svc.buyer_confirm(co["id"], seen_fingerprint=co["data"]["order_fingerprint"])
+    fake.approve(co["data"]["order_id"], no_address=True)
+    with pytest.raises(CheckoutError) as e:
+        svc.capture(co["id"], idempotency_key="noaddr-0001")
+    assert e.value.code == "ADDRESS_HOLD" and fake.capture_count.get(co["data"]["order_id"], 0) == 0
+    assert [f["code"] for f in svc.ledger.get(co["id"])["data"]["payment_flags"]] == ["NO_SHIP_TO"]
+    svc.accept_destination(co["id"], reason="Local pickup, agreed in chat")
+    assert svc.capture(co["id"], idempotency_key="noaddr-0002")["state"] == L.CAPTURED
+
+
 def test_cross_border_into_us_mentions_de_minimis(mk):
     svc, fake = mk(seller_country="JP")
     co = to_payer_approved(svc, fake, "Buyer: how much shipped to the USA?\nSeller: $50 shipped to the USA\nBuyer: deal")

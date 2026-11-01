@@ -157,7 +157,7 @@ input[type=text],select{border:1px solid var(--line);border-radius:6px;padding:7
       <button class="btn ghost small" id="example">Use the hat sale example</button>
       <button class="btn ghost small" id="example-zh">Use a Chinese example</button>
       <button class="btn ghost small" id="example-risky">Use a risky cross-border example</button>
-      <button class="btn" id="read">Read the agreement</button>
+      <button class="btn" id="read" data-busy="Reading the chat…">Read the agreement</button>
     </div>
   </section>
 
@@ -238,10 +238,16 @@ async function api(path, opts={}){
   return data;
 }
 
+let CLICKED = null;
 async function act(fn){
+  // Show that something is happening: reading with the AI model can take several seconds.
+  const btn = CLICKED; CLICKED = null;
+  const label = btn ? btn.textContent : null;
+  if (btn){ if (btn.disabled) return; btn.disabled = true; btn.textContent = btn.dataset.busy || "Working…"; }
   try { await fn(); }
-  catch(e){ if (e.data?.checkout) render(e.data.checkout); toast(e.message);
+  catch(e){ if (e.data?.checkout) render(e.data.checkout); toast(e.message || "Something went wrong; see the server terminal");
             if (e.data?.problems) toast(e.message + ": " + e.data.problems.join("; ")); }
+  finally { if (btn && btn.isConnected){ btn.disabled = false; btn.textContent = label; } }
 }
 
 // ------------------------------------------------------------- rendering
@@ -439,7 +445,9 @@ function renderOrder(){
     case "CAPTURE_FAILED":
       verdict = `<div class="verdict no">PayPal didn't accept the payment. Nothing was charged.</div>`; break;
     case "ADDRESS_HOLD":
-      verdict = `<div class="verdict no">Payment held: PayPal's ship-to is ${esc(CO.ship_to?.country_code)} ${esc(CO.ship_to?.postal_code)}, which the agreed shipping doesn't cover. Nothing was charged.</div>`;
+      verdict = CO.ship_to
+        ? `<div class="verdict no">Payment held: PayPal's ship-to is ${esc(CO.ship_to.country_code)} ${esc(CO.ship_to.postal_code)}, which the agreed shipping doesn't cover. Nothing was charged.</div>`
+        : `<div class="verdict no">Payment held: PayPal has no shipping address for this order, so there is nowhere protected to ship it. Nothing was charged.</div>`;
       actions = payerView ? `<p>The seller needs to confirm shipping to your address first.</p>`
         : `<form id="hold-form" class="row"><label>Why it's fine to ship there for the agreed price <input type="text" name="reason" size="30" required placeholder="Buyer is paying the extra shipping"></label>
            <button class="btn" type="submit">Ship there and take the payment</button></form>
@@ -590,6 +598,7 @@ document.addEventListener("click", e=>{
   if (j){ e.preventDefault(); const m = $("#m"+j.dataset.jump); m.scrollIntoView({block:"center",behavior:"smooth"});
           m.classList.add("flash"); setTimeout(()=>m.classList.remove("flash"),1400); return; }
   const id = e.target.id;
+  CLICKED = e.target.tagName === "BUTTON" ? e.target : null;
   if (id==="example"){ $("#chat").value = EX; $("#title").value = "Haunted Mansion cap"; }
   if (id==="example-zh"){ $("#chat").value = EX_ZH; $("#title").value = "鬼屋帽子"; }
   if (id==="example-risky"){ $("#chat").value = EX_RISKY; $("#title").value = "Sanrio x Tokyo Disney cap"; }

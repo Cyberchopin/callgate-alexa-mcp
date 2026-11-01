@@ -2,3 +2,6 @@
 3b4525ff0ce85beab9bd541f377b442f44e7d27c:scambench/local-check.json:generic-api-key:7
 3b4525ff0ce85beab9bd541f377b442f44e7d27c:scambench/local-check.json:generic-api-key:21
 3b4525ff0ce85beab9bd541f377b442f44e7d27c:scambench/local-check.json:generic-api-key:27
+
+# Public PayPal sandbox approval URL from the recorded hackathon evidence; not a credential.
+006abb502fbd6bcee73946fd0e36c0d3339cb52e:docs/paypal/sandbox-run.json:generic-api-key:29

@@ -24,4 +24,6 @@ def test_sandbox_check_script_runs_end_to_end(monkeypatch, tmp_path):
     steps = {s["step"]: s for s in run["steps"]}
     assert "total" in steps["tampered_order"]["blocked"]
     assert steps["capture"]["captures_on_paypal"] == 1 and "no second charge" in steps["capture"]["second_attempt"]
+    assert steps["approved"]["ship_to_country"] == "US"
+    assert "ship_to" not in steps["approved"]
     assert steps["shipped"]["trackers_on_paypal"] and steps["receipt"]["verifies"]
